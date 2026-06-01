@@ -4672,15 +4672,25 @@ function renderValidationPanel(op) {
 function bilanTotal(t) {
   return BILAN_SECTIONS.reduce((s, sec) => s + bilanSectionTotal(t, sec.key), 0);
 }
-// Op-level: sum surfaces from all tranches (fallback to op.total_surface if no tranche surfaces)
+// Op-level: sum surfaces from all tranches. Returns null if nothing saved.
 function opTotalSurface(op) {
+  if (!op?.tranches?.length) return null;
   let total = 0;
+  let hasAny = false;
   (op.tranches || []).forEach(t => {
     if (t.surfaces) {
-      total += Object.values(t.surfaces).reduce((s, v) => s + (Number(v) || 0), 0);
+      for (const v of Object.values(t.surfaces)) {
+        const n = Number(v);
+        if (!isNaN(n) && n !== 0) { total += n; hasAny = true; }
+      }
+    }
+    // Also accept a m2 / m2_utiles scalar field on the tranche
+    if (!hasAny) {
+      const m2 = Number(t.m2_utiles ?? t.m2);
+      if (!isNaN(m2) && m2 !== 0) { total += m2; hasAny = true; }
     }
   });
-  return total > 0 ? total : (Number(op.total_surface) || 0);
+  return hasAny ? total : null;
 }
 // Op-level: sum of all tranches' bilan totals
 function opBilanTotal(op) {
@@ -5514,25 +5524,71 @@ function fmtSurface(v) {
 }
 
 // On-the-fly totals (recompute when tranches change)
-function sumTrancheField(op, field) { return op.tranches.reduce((s, t) => s + (Number(t[field]) || 0), 0); }
+// Règle : champ stocké directement sur la tranche (saisie utilisateur).
+// Au niveau op, on somme ce qui est saisi sur les tranches. Si AUCUNE tranche
+// n'a la valeur saisie (toutes null/undefined), on renvoie null (= "—" à l'affichage).
+function sumTrancheField(op, field) {
+  if (!op?.tranches?.length) return null;
+  let total = 0;
+  let hasAny = false;
+  for (const t of op.tranches) {
+    const v = t[field];
+    if (v !== null && v !== undefined && v !== '') {
+      const n = Number(v);
+      if (!isNaN(n)) { total += n; hasAny = true; }
+    }
+  }
+  return hasAny ? total : null;
+}
 function sumVol(t) {
   if (!t || !t.vol) return 0;
   return Object.values(t.vol).reduce((s, v) => s + (Number(v) || 0), 0);
 }
+// Logements d'une tranche : saisie directe (champ logements stocké en DB)
+// La volumétrie T1-T5+ est un détail informatif qui ne court-circuite plus la saisie.
 function trancheLogements(t) {
-  // Prefer sum of volumétrie cells. Falls back to logements field if vol is empty.
-  const vs = sumVol(t);
-  return vs > 0 ? vs : (Number(t?.logements) || 0);
+  const v = t?.logements;
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
 }
-function totalLgts(op) { return op.tranches.reduce((s, t) => s + trancheLogements(t), 0); }
+// Total logements op : somme des tranches qui ont une saisie, sinon null
+function totalLgts(op) {
+  if (!op?.tranches?.length) return null;
+  let total = 0;
+  let hasAny = false;
+  for (const t of op.tranches) {
+    const v = trancheLogements(t);
+    if (v !== null) { total += v; hasAny = true; }
+  }
+  return hasAny ? total : null;
+}
 function totalBudget(op) { return sumTrancheField(op, 'budget_ttc'); }
 
 // Best amount = most committed value (contract > LO > simulation)
+// Renvoie 0 si aucun montant (pour rester compatible avec les reduce)
 function bestPretAmount(p) {
   return Number(p.montant_contrat) || Number(p.montant_lo) || Number(p.montant_sim) || 0;
 }
 function bestSubvAmount(s) {
-  return Number(s.montant_notifie) || Number(s.montant_demande) || 0;
+  return Number(s.montant_notifie ?? s.montant_notif) || Number(s.montant_demande) || 0;
+}
+// Variantes qui renvoient null si aucun montant (pour affichage "—")
+function bestPretAmountOrNull(p) {
+  const c = Number(p.montant_contrat);
+  if (!isNaN(c) && c !== 0) return c;
+  const l = Number(p.montant_lo);
+  if (!isNaN(l) && l !== 0) return l;
+  const s = Number(p.montant_sim);
+  if (!isNaN(s) && s !== 0) return s;
+  return null;
+}
+function bestSubvAmountOrNull(s) {
+  const n = Number(s.montant_notifie ?? s.montant_notif);
+  if (!isNaN(n) && n !== 0) return n;
+  const d = Number(s.montant_demande);
+  if (!isNaN(d) && d !== 0) return d;
+  return null;
 }
 
 // Tranche-level derived totals (from sub-entity detail cards if present, else stored field)
@@ -6142,7 +6198,7 @@ function renderOpDetail() {
     <div class="metric-row" style="--cols: 4;">
       <div class="metric-card"><div class="metric-label">Logements</div><div class="metric-value" id="op-total-lgts-live">${diffWrap(String(totalLgts(displayedOp) || '—'), totalLgts(displayedOp), compareWithIdx != null ? totalLgtsFromSnap(op) : null)}</div></div>
       <div class="metric-card"><div class="metric-label">Surface utile</div><div class="metric-value">${fmtSurface(opTotalSurface(displayedOp))}</div></div>
-      <div class="metric-card"><div class="metric-label">Prix de revient TTC</div><div class="metric-value">${diffWrap(fmtMontant(opBilanTotal(displayedOp) || totalBudget(displayedOp)), opBilanTotal(displayedOp) || totalBudget(displayedOp), compareWithIdx != null ? totalBudgetFromSnap(op) : null)}</div></div>
+      <div class="metric-card"><div class="metric-label">Prix de revient TTC</div><div class="metric-value">${diffWrap(fmtMontant(totalBudget(displayedOp)), totalBudget(displayedOp), compareWithIdx != null ? totalBudgetFromSnap(op) : null)}</div></div>
       <div class="metric-card"><div class="metric-label">Tranches</div><div class="metric-value">${displayedOp.tranches.length}</div></div>
     </div>
 
@@ -7633,7 +7689,7 @@ function renderGarantiesSection(garanties, op) {
 }
 
 function renderGarLoanCard(pret, gars, op) {
-  const amount = bestPretAmount(pret);
+  const amount = bestPretAmountOrNull(pret);
 
   // Case 1: prêt non garanti — render different layout
   if (pret.non_garanti) {
