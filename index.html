@@ -12550,6 +12550,13 @@ async function loadFromSupabase() {
         trancheSuffixMap[t.id] = suffix;
       });
 
+      // Mapping pret.id Supabase → pret.ligne (ex: 1 → "PLAI bâti")
+      // Le mockup utilise la ligne du prêt comme identifiant dans pret_lie
+      const pretLigneMap = {};
+      pretsRows.filter(p => p.operation_id === row.id).forEach(p => {
+        pretLigneMap[p.id] = p.ligne || '';
+      });
+
       // Récupérer les prêts liés
       const pretsForOp = pretsRows
         .filter(p => p.operation_id === row.id)
@@ -12557,7 +12564,7 @@ async function loadFromSupabase() {
       // Récupérer les garanties liées
       const garantiesForOp = garantiesRows
         .filter(g => g.operation_id === row.id)
-        .map(g => mapGarantieFromSupabase(g, trancheSuffixMap));
+        .map(g => mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap));
 
       return {
         ...blankTemplate,
@@ -12695,15 +12702,20 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
   };
 }
 
-function mapGarantieFromSupabase(g, trancheSuffixMap) {
+function mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap) {
+  // Convertir quotite : si entre 0 et 1, multiplier par 100 (format pourcentage attendu)
+  let quotite = g.quotite;
+  if (quotite != null && quotite > 0 && quotite <= 1) {
+    quotite = Math.round(quotite * 100);
+  }
   return {
     _supabase_id: g.id,
     id: 'ga-supabase-' + g.id,
     tranche: trancheSuffixMap[g.tranche_id] || '',
     tranche_id: 'tr-supabase-' + g.tranche_id,
-    pret_lie: g.pret_id ? 'pr-supabase-' + g.pret_id : '',
+    pret_lie: pretLigneMap && g.pret_id ? (pretLigneMap[g.pret_id] || '') : '',
     garant: g.garant || '',
-    quotite: g.quotite,
+    quotite: quotite,
     montant_couvert: g.montant_couvert,
     date_demande: g.date_demande || '',
     date_ap: g.date_ap || '',
