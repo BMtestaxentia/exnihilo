@@ -12524,6 +12524,9 @@ async function loadFromSupabase() {
       nb_batiments: '',
     }));
     console.log('Chargé depuis Supabase :', DATA.length, 'opérations');
+    // Réinitialiser la sélection sur la première op chargée
+    selectedOpCode = DATA[0]?._uid || null;
+    selectedTrancheIdx = 0;
     // Re-render avec les nouvelles données
     renderAll();
     renderOpTable();
