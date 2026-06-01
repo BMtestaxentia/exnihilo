@@ -9833,24 +9833,24 @@ function renderValidations() {
             // Distinction émetteur / destinataire
             const me = (typeof CURRENT_USER !== 'undefined') ? CURRENT_USER : '';
             const iAmSender = (w.sender === me);
-            // Si pending et que je suis émetteur → bouton Annuler (et pas valider/refuser)
-            if (overallStatus === 'pending' && iAmSender) {
-              return `<button class="btn-small btn-perm-delete" data-wf-action="cancel" data-wf-id="${escapeHtml(w.id)}" title="Annuler ce workflow"><i class="ti ti-x"></i>Annuler</button>`;
+            const myPendingRecipients = (overallStatus === 'pending')
+              ? pendingRecipients.filter(r => r.name === me)
+              : [];
+            const iAmPendingRecipient = myPendingRecipients.length > 0;
+
+            // Aucun cas pertinent en attente → pas d'action
+            if (overallStatus !== 'pending') return '';
+
+            // Construction des boutons selon le rôle
+            const buttons = [];
+            if (iAmPendingRecipient) {
+              buttons.push(`<button class="btn-small btn-restore" data-wf-action="approve" data-wf-recipient="${escapeHtml(me)}" data-wf-id="${escapeHtml(w.id)}"><i class="ti ti-check"></i>Valider</button>`);
+              buttons.push(`<button class="btn-small btn-perm-delete" data-wf-action="refuse" data-wf-recipient="${escapeHtml(me)}" data-wf-id="${escapeHtml(w.id)}"><i class="ti ti-x"></i>Refuser</button>`);
             }
-            // Si pending et que je suis destinataire en attente → boutons Valider/Refuser
-            if (overallStatus === 'pending' && pendingRecipients.length > 0) {
-              const myPendingRecipients = pendingRecipients.filter(r => r.name === me);
-              if (myPendingRecipients.length === 0) {
-                // Je ne suis ni émetteur ni destinataire en attente → pas d'action
-                return '';
-              }
-              // Je suis destinataire en attente → bouton Valider/Refuser pour moi
-              return `
-                <button class="btn-small btn-restore" data-wf-action="approve" data-wf-recipient="${escapeHtml(me)}" data-wf-id="${escapeHtml(w.id)}"><i class="ti ti-check"></i>Valider</button>
-                <button class="btn-small btn-perm-delete" data-wf-action="refuse" data-wf-recipient="${escapeHtml(me)}" data-wf-id="${escapeHtml(w.id)}"><i class="ti ti-x"></i>Refuser</button>
-              `;
+            if (iAmSender) {
+              buttons.push(`<button class="btn-small btn-perm-delete" data-wf-action="cancel" data-wf-id="${escapeHtml(w.id)}" title="Annuler ce workflow"><i class="ti ti-x"></i>Annuler</button>`);
             }
-            return '';
+            return buttons.join('');
           })()}
           ${(overallStatus === 'refused' || overallStatus === 'approved') ? `
             <button class="btn-small" data-wf-action="archive" data-wf-id="${escapeHtml(w.id)}" title="Archiver"><i class="ti ti-trash"></i></button>
