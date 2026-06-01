@@ -2160,6 +2160,20 @@
   }
   .topnav-tab:hover { background: var(--bg-secondary); color: var(--text-primary); }
 
+  /* Badge compteur sur l'onglet (ex: nb workflows en attente) */
+  .topnav-badge {
+    background: var(--warning-accent, #ba7517);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+    margin-left: 2px;
+  }
+
   /* Group color accents on hover and when active */
   .topnav-group-pilotage .topnav-tab.active {
     background: var(--info-bg); color: var(--info-text);
@@ -3881,7 +3895,7 @@
     </div>
     <div class="topnav-sep"></div>
     <div class="topnav-group topnav-group-docs">
-      <div class="topnav-tab" data-view="validations"><i class="ti ti-file-certificate"></i>Validations</div>
+      <div class="topnav-tab" data-view="validations"><i class="ti ti-file-certificate"></i>Validations<span class="topnav-badge" id="navBadgePending" style="display:none;"></span></div>
       <div class="topnav-tab" data-view="comites"><i class="ti ti-users"></i>Comités</div>
     </div>
     <div class="topnav-sep"></div>
@@ -5557,9 +5571,9 @@ function fmtMontant(v) {
   return k.toLocaleString('fr-FR').replace(/ /g, ' ').replace(/,/g, ' ') + ' k€';
 }
 function fmtEuros(v) {
-  if (v === null || v === undefined || v === 0 || v === '') return '0 €';
+  if (v === null || v === undefined || v === '') return '—';
   const n = Number(v);
-  if (isNaN(n)) return '0 €';
+  if (isNaN(n)) return '—';
   const rounded = Math.round(n);
   return rounded.toLocaleString('fr-FR').replace(/ /g, ' ').replace(/,/g, ' ') + ' €';
 }
@@ -8384,7 +8398,31 @@ function selectOp(code) {
   renderAll();
 }
 function selectTranche(idx) { selectedTrancheIdx = idx; renderTrancheDetail(); replaceTablerIcons(); }
-function renderAll() { renderSidebar(); renderOpDetail(); renderTrancheDetail(); replaceTablerIcons(); }
+function renderAll() { renderSidebar(); renderOpDetail(); renderTrancheDetail(); refreshNavBadges(); replaceTablerIcons(); }
+
+// Met à jour le badge "Validations" avec le nombre de workflows en attente pour l'utilisateur courant
+function refreshNavBadges() {
+  const badge = document.getElementById('navBadgePending');
+  if (!badge) return;
+  // Compte les workflows où l'utilisateur courant est destinataire ET le statut est pending
+  const me = (typeof CURRENT_USER !== 'undefined') ? CURRENT_USER : '';
+  let pendingForMe = 0;
+  WORKFLOWS.forEach(w => {
+    if (Array.isArray(w.recipients)) {
+      w.recipients.forEach(r => {
+        if (r.name === me && r.status === 'pending') pendingForMe++;
+      });
+    } else if (w.recipient === me && w.status === 'pending') {
+      pendingForMe++;
+    }
+  });
+  if (pendingForMe > 0) {
+    badge.textContent = pendingForMe;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
 
 // ============== GANTT VIEW ==============
 
@@ -9005,6 +9043,7 @@ function openWfModalForComite(comite, op) {
       comite_id: comite.id,
     };
     WORKFLOWS.push(wf);
+    persistNewWorkflow(wf);
     comite.submitted_wf_id = wfId;
     const recipientLabel = recipientNames.length === 1
       ? recipientNames[0]
@@ -9978,7 +10017,7 @@ function handleWfAction(action, id, recipientName) {
 
   if (action === 'send') {
     const recipients = getWfRecipients(wf);
-    if (recipients.length === 0) { showToast('Choisis un validateur d\'abord', 'alert-triangle'); return; }
+    if (recipients.length === 0) { showToast("Choisis un validateur d'abord", 'alert-triangle'); return; }
     wf.status = 'pending';
     wf.sent_at = new Date().toISOString();
     // Ensure all recipients are pending after sending
@@ -9986,47 +10025,49 @@ function handleWfAction(action, id, recipientName) {
       wf.recipients.forEach(r => { if (!r.status || r.status === 'draft') r.status = 'pending'; });
     }
     const label = recipients.length === 1 ? recipients[0].name : `${recipients.length} validateurs`;
-    showToast(`Envoyé à ${label} (simulation)`, 'check');
+    showToast(`Envoyé à ${label}`, 'check');
+    // Persist
+    persistWorkflowChange(wf);
   }
   else if (action === 'approve') {
-    if (!confirm(`Valider le document « ${wf.doc_name} »${recipientName ? ` en tant que ${recipientName}` : ''} ?\n\nCette action enregistre une signature électronique simulée.`)) return;
+    if (!confirm(`Valider le document « ${wf.doc_name} »${recipientName ? ` en tant que ${recipientName}` : ''} ?
+
+Cette action enregistre une signature électronique simulée.`)) return;
     const now = new Date().toISOString();
     if (Array.isArray(wf.recipients) && wf.recipients.length > 0) {
       if (recipientName) {
         const r = wf.recipients.find(x => x.name === recipientName);
-        if (r) { r.status = 'approved'; r.responded_at = now; }
+        if (r) { r.status = 'approved'; r.responded_at = now; persistRecipientChange(r); }
       } else {
-        // Legacy/single fallback: approve all pending
-        wf.recipients.forEach(r => { if (r.status === 'pending') { r.status = 'approved'; r.responded_at = now; } });
+        wf.recipients.forEach(r => { if (r.status === 'pending') { r.status = 'approved'; r.responded_at = now; persistRecipientChange(r); } });
       }
-      // Update overall status
       wf.status = computeWfOverallStatus(wf);
     } else {
-      // Legacy: approve single recipient
       wf.status = 'approved';
       wf.validated_at = now;
     }
+    persistWorkflowChange(wf);
     showToast(recipientName ? `Validé par ${recipientName}` : 'Document validé', 'check');
   }
   else if (action === 'refuse') {
-    const reason = prompt('Motif du refus (visible par l\'émetteur) :');
+    const reason = prompt("Motif du refus (visible par l'émetteur) :");
     if (reason === null) return;
     const cleanReason = reason.trim() || 'Non précisé';
     const now = new Date().toISOString();
     if (Array.isArray(wf.recipients) && wf.recipients.length > 0) {
       if (recipientName) {
         const r = wf.recipients.find(x => x.name === recipientName);
-        if (r) { r.status = 'refused'; r.responded_at = now; r.refused_reason = cleanReason; }
+        if (r) { r.status = 'refused'; r.responded_at = now; r.refused_reason = cleanReason; persistRecipientChange(r); }
       } else {
-        wf.recipients.forEach(r => { if (r.status === 'pending') { r.status = 'refused'; r.responded_at = now; r.refused_reason = cleanReason; } });
+        wf.recipients.forEach(r => { if (r.status === 'pending') { r.status = 'refused'; r.responded_at = now; r.refused_reason = cleanReason; persistRecipientChange(r); } });
       }
       wf.status = computeWfOverallStatus(wf);
     } else {
-      // Legacy
       wf.status = 'refused';
       wf.validated_at = now;
       wf.refused_reason = cleanReason;
     }
+    persistWorkflowChange(wf);
     showToast(recipientName ? `Refusé par ${recipientName}` : 'Document refusé', 'x');
   }
   else if (action === 'delete' || action === 'archive') {
@@ -10034,9 +10075,144 @@ function handleWfAction(action, id, recipientName) {
     if (!confirm(`Voulez-vous ${verb} ?`)) return;
     const idx = WORKFLOWS.indexOf(wf);
     if (idx >= 0) WORKFLOWS.splice(idx, 1);
+    persistWorkflowDelete(wf);
     showToast(action === 'delete' ? 'Brouillon supprimé' : 'Document archivé', 'trash');
   }
   renderValidations();
+  refreshNavBadges();
+}
+
+// ===== Persistance workflows vers Supabase =====
+async function persistNewWorkflow(wf) {
+  // POST workflow + POST workflow_recipients
+  try {
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+    };
+    // Trouver l'operation_id Supabase à partir de op_uid
+    let operationId = null;
+    if (wf.op_uid) {
+      const op = DATA.find(o => o._uid === wf.op_uid);
+      if (op && op._supabase_id) operationId = op._supabase_id;
+    }
+    const wfPayload = {
+      operation_id: operationId,
+      doc_name: wf.doc_name || '',
+      doc_type: wf.doc_type || '',
+      doc_size: wf.doc_size || null,
+      sender_name: wf.sender || '',
+      status: wf.status || 'pending',
+      sent_at: wf.sent_at || null,
+      message: wf.message || null,
+    };
+    const wfRes = await fetch(`${SUPABASE_URL}/rest/v1/workflows`, {
+      method: 'POST', headers, body: JSON.stringify(wfPayload),
+    });
+    if (!wfRes.ok) throw new Error('Workflow POST: ' + wfRes.status);
+    const wfCreated = await wfRes.json();
+    const wfSupabaseId = Array.isArray(wfCreated) ? wfCreated[0]?.id : wfCreated.id;
+    wf._supabase_id = wfSupabaseId;
+
+    // Insérer les recipients
+    if (Array.isArray(wf.recipients) && wf.recipients.length > 0) {
+      const recipPayloads = wf.recipients.map(r => ({
+        workflow_id: wfSupabaseId,
+        recipient_name: r.name,
+        status: r.status || 'pending',
+        responded_at: r.responded_at || null,
+        refused_reason: r.refused_reason || null,
+      }));
+      const recipRes = await fetch(`${SUPABASE_URL}/rest/v1/workflow_recipients`, {
+        method: 'POST', headers, body: JSON.stringify(recipPayloads),
+      });
+      if (recipRes.ok) {
+        const created = await recipRes.json();
+        if (Array.isArray(created)) {
+          created.forEach((c, idx) => { if (wf.recipients[idx]) wf.recipients[idx]._supabase_id = c.id; });
+        }
+      }
+    }
+    return wfSupabaseId;
+  } catch (err) {
+    console.error('persistNewWorkflow error:', err);
+    showToast('Erreur création workflow Supabase : ' + err.message, 'alert-triangle');
+    return null;
+  }
+}
+
+async function persistWorkflowChange(wf) {
+  if (!wf._supabase_id) {
+    // Création différée si pas encore en DB
+    return persistNewWorkflow(wf);
+  }
+  try {
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+    };
+    const payload = {
+      status: wf.status,
+      sent_at: wf.sent_at || null,
+    };
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/workflows?id=eq.${wf._supabase_id}`, {
+      method: 'PATCH', headers, body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    return true;
+  } catch (err) {
+    console.error('persistWorkflowChange error:', err);
+    return false;
+  }
+}
+
+async function persistRecipientChange(recipient) {
+  if (!recipient._supabase_id) return false;
+  try {
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+    };
+    const payload = {
+      status: recipient.status,
+      responded_at: recipient.responded_at || null,
+      refused_reason: recipient.refused_reason || null,
+    };
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/workflow_recipients?id=eq.${recipient._supabase_id}`, {
+      method: 'PATCH', headers, body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    return true;
+  } catch (err) {
+    console.error('persistRecipientChange error:', err);
+    return false;
+  }
+}
+
+async function persistWorkflowDelete(wf) {
+  if (!wf._supabase_id) return false;
+  try {
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+    };
+    // Supprimer les recipients liés (au cas où FK cascade n'est pas activée)
+    await fetch(`${SUPABASE_URL}/rest/v1/workflow_recipients?workflow_id=eq.${wf._supabase_id}`, {
+      method: 'DELETE', headers,
+    });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/workflows?id=eq.${wf._supabase_id}`, {
+      method: 'DELETE', headers,
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    return true;
+  } catch (err) {
+    console.error('persistWorkflowDelete error:', err);
+    return false;
+  }
 }
 
 // Handle file drop / browse
@@ -10176,6 +10352,7 @@ function openWfModal(prefill) {
   backdrop.querySelector('#wfFormDraft').addEventListener('click', () => {
     const wf = buildWf('draft');
     WORKFLOWS.push(wf);
+    persistNewWorkflow(wf);
     showToast('Brouillon enregistré', 'check');
     close();
     renderValidations();
@@ -10184,12 +10361,13 @@ function openWfModal(prefill) {
   backdrop.querySelector('#wfFormSend').addEventListener('click', () => {
     const recipient = backdrop.querySelector('#wfFormRecipient').value;
     if (!recipient) {
-      showToast('Choisis un validateur avant d\'envoyer', 'alert-triangle');
+      showToast("Choisis un validateur avant d'envoyer", 'alert-triangle');
       return;
     }
     const wf = buildWf('pending');
     WORKFLOWS.push(wf);
-    showToast(`Envoyé à ${recipient} (simulation)`, 'check');
+    persistNewWorkflow(wf);
+    showToast(`Envoyé à ${recipient}`, 'check');
     close();
     renderValidations();
   });
@@ -11792,13 +11970,15 @@ function synthData(op) {
     op,
     nbTranches: tranches.length,
     totalLgts: totalLgts(op),
-    totalSurface: Number(op.total_surface) || 0,
+    totalSurface: opTotalSurface(op),
     vol,
     totalBudget: totalBudget(op),
     totalPrets: opTotalPrets(op),
     totalSubv: opTotalSubv(op),
     totalFP: totalFondsPropres(op),
-    equilibre: totalBudget(op) - (opTotalPrets(op) + opTotalSubv(op) + totalFondsPropres(op)),
+    equilibre: (totalBudget(op) == null)
+      ? null
+      : (totalBudget(op) - ((opTotalPrets(op) || 0) + (opTotalSubv(op) || 0) + (totalFondsPropres(op) || 0))),
     typeEtab, gestionnaire,
     yearProg, nSiap, agrStatut,
     subvNb: subv.length, subvDem, subvNotif, subvNbNotif,
@@ -11875,7 +12055,8 @@ const SYNTH_TABS = [
       { label: 'Fonds propres', get: d => fmtMontant(d.totalFP), align: 'num' },
       { label: 'Équilibre', get: d => {
           const e = d.equilibre;
-          if (!e || Math.abs(e) < 1) return '<span style="color: var(--success-text); font-weight: 600;">✓ équilibré</span>';
+          if (e == null) return '—';
+          if (Math.abs(e) < 1) return '<span style="color: var(--success-text); font-weight: 600;">✓ équilibré</span>';
           return `<span style="color: var(--warning-accent);">${fmtMontant(e)}</span>`;
         }, raw: true, align: 'num' },
     ]
@@ -13108,10 +13289,14 @@ function mapWorkflowFromSupabase(w, wfRecipsByWf) {
     _supabase_id: w.id,
     id: 'wf-supabase-' + w.id,
     doc_name: w.doc_name || '',
+    doc_type: w.doc_type || '',
     doc_size: w.doc_size || null,
     doc_data_url: w.doc_data_url || null,
-    type: w.type || '',
+    sender: w.sender_name || '',
+    op_uid: w.operation_id ? ('op-supabase-' + w.operation_id) : null,
     status: w.status || 'pending',
+    sent_at: w.sent_at || null,
+    message: w.message || null,
     notes: w.notes || '',
     recipients: recipients,
     created_at: w.created_at || null,
