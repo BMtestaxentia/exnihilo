@@ -5848,7 +5848,12 @@ function saveOpEdits() {
   editMode = false;
   editSessionSnap = null;
   renderAll();
-  showToast('Modifications enregistrées (mémoire locale — mockup)');
+  // === Push modifications to Supabase if op came from Supabase ===
+  if (op._uid && op._uid.startsWith('op-supabase-')) {
+    saveOpToSupabase(op);
+  } else {
+    showToast('Modifications enregistrées (mémoire locale — mockup)');
+  }
 }
 
 function cancelOpEdits() {
@@ -12570,6 +12575,52 @@ function phaseBadgeColor(phase) {
     'GPA': '#3b82f6',
   };
   return colors[phase] || '#94a3b8';
+}
+
+// Envoie une op modifiée vers Supabase via PATCH
+async function saveOpToSupabase(op) {
+  // Extraire l'id Supabase depuis le _uid (format : "op-supabase-1" → 1)
+  const supabaseId = op._uid.replace('op-supabase-', '');
+  if (!supabaseId || isNaN(parseInt(supabaseId))) {
+    console.warn('UID non Supabase, sauvegarde locale uniquement:', op._uid);
+    return;
+  }
+  // Construire le payload : uniquement les champs scalaires connus de la table Supabase
+  const payload = {
+    code: op.code,
+    display_name: op.display_name,
+    phase_actuelle: op.phase_actuelle,
+    commune: op.commune,
+    code_postal: op.code_postal,
+    region: op.region,
+    developpeur: op.developpeur,
+    resp_op: op.resp_op,
+    charge_fin: op.charge_fin,
+    latitude: op.latitude,
+    longitude: op.longitude,
+  };
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/operations?id=eq.${supabaseId}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Status ${response.status} — ${errText}`);
+    }
+    const updated = await response.json();
+    console.log('Sauvegardé dans Supabase :', updated);
+    showToast('Modifications enregistrées dans Supabase', 'check');
+  } catch (err) {
+    console.error('Erreur sauvegarde Supabase :', err);
+    showToast('Erreur Supabase : modifs locales seulement', 'alert-triangle');
+  }
 }
 
 // Démarrer le chargement Supabase
