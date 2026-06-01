@@ -4281,6 +4281,42 @@ const REFERENTIELS = {
   // Types de comités (CA = Conseil d'Administration AXENTIA, C2I = Comité Interne d'Investissement, Revue = Revue d'opération)
   types_comite: { label: 'Types de comités', items: ['CA', 'C2I', 'Revue'] },
 
+  // Types d'établissement (nomenclature standard secteur médico-social et social)
+  // Format : "CODE - Libellé complet" — utilisable comme valeur de t.type_structure
+  types_structure: { label: "Types d'établissement", items: [
+    "ADJ - Accueil de Jour",
+    "AFPA - Accueil Familial P.A.",
+    "BUR - Bureaux",
+    "CHA - Centre Heb. Et d'Accueil",
+    "CHAH - Centre Heb. Et d'Accueil Handi",
+    "CHRS - Centre Heb.Réinsertion Sociale",
+    "CHVS - Centre Heb.Violences Sexuelles",
+    "EANM - Etab.Accueil non Médicalisé",
+    "EFAM - Etab.Foyer Accueil Médicalisé",
+    "EHPAD - Etab.Heb.P.A. Dépendantes",
+    "ETUD - Résidence Étudiante",
+    "FDV - Foyer de Vie",
+    "FJT - Foyer de Jeunes Travailleurs",
+    "HPHV - Heb. Pers. Agées Vieillissant",
+    "IEM - Institut d'Éducation Motrice",
+    "IME - Institut Médico Éducatif",
+    "IMO - Traitement Immo. et Sub.",
+    "LAC - Locaux commerciaux",
+    "LIPA - Logt.Inclusif P.A. (RSS)",
+    "LIPH - Logt.Inclusif P.Handicap.",
+    "LLS - Logements Locatifs Sociaux",
+    "MAS - Maison Acc. Handi. dépendants",
+    "MECS - Maison Enf.Caractère Social",
+    "PFAM - Pension de famille",
+    "RA - Résidence Autonomie et EHPA",
+    "RHVS - Résid.Hotel.Vocation Sociale",
+    "RSEN - Résidence Seniors sociale",
+    "RSERV - Résidence Service",
+    "RSJA - Résid.Sociale Jeunes actifs",
+    "RSOC - Résidence Sociale",
+    "SESSAD - Serv.Ed.Spéc. Soins à Domicile"
+  ] },
+
   // Lignes du bilan d'opération (par catégorie LEON)
   bilan_charge_fonciere: { label: 'Lignes Charge Foncière', items: ['Terrain', 'Sondages / Études de sols', 'Démolition', 'VRD', 'Branchements', 'Droits et taxes', "Frais d'acquisition", 'Commission achat & divers', "Taxe d'aménagement", 'Fondations spéciales', 'Désamiantage', 'Autres charges foncières'] },
   bilan_batiment: { label: 'Lignes Bâtiment', items: ['Travaux de construction', 'Aléas', 'Autres bâtiment'] },
@@ -6279,7 +6315,7 @@ function renderTrancheDetail() {
     const reservataires = (op.reservataires || []).map((s, idx) => ({...s, _originalIdx: idx})).filter(x => x.tranche === trancheKey);
 
     const titleHtml = editMode
-      ? `<input type="text" class="editable-input" style="font-size:17px;font-weight:600;text-align:left;width:100%;min-width:0;" data-edit-tranche-field="type_structure" value="${escapeHtml(t.type_structure || '')}" placeholder="Nom de la tranche (ex: RSJA, Habitat inclusif, EHPAD…)">`
+      ? `<input type="text" class="editable-input" style="font-size:17px;font-weight:600;text-align:left;width:100%;min-width:0;" list="types-structure-list" data-edit-tranche-field="type_structure" value="${escapeHtml(t.type_structure || '')}" placeholder="Type d'établissement (FJT, EHPAD, MAS…)"><datalist id="types-structure-list">${getRef('types_structure').map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist>`
       : escapeHtml(t.type_structure || trCode);
 
     const liveLogements = trancheLogements(t);
@@ -12727,6 +12763,9 @@ function mapTrancheFromSupabase(t) {
     statut_agrement: t.statut_agrement || '',
     reservataire: t.reservataire || '',
     type_logement: t.type_logement || '',
+    type_structure: t.type_structure || '',
+    gestionnaire: t.gestionnaire || '',
+    n_siap: t.n_siap || '',
     public_cible: t.public_cible || '',
     nb_chambres: t.nb_chambres,
     notes: t.notes || '',
@@ -13265,6 +13304,9 @@ function buildTranchePayload(t, operationId) {
     statut_agrement: t.statut_agrement || '',
     reservataire: t.reservataire || '',
     type_logement: t.type_logement || '',
+    type_structure: t.type_structure || '',
+    gestionnaire: t.gestionnaire || '',
+    n_siap: t.n_siap || '',
     public_cible: t.public_cible || '',
     nb_chambres: t.nb_chambres,
     t1: t.vol?.['T1'] || null,
