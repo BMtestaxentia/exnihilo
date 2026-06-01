@@ -4764,17 +4764,64 @@ Les données actuelles seront archivées et timestampées. La nouvelle phase com
 
   // Take snapshot of current state
   const snap = snapshotOp(op);
-  op.phases_history.push({
-    name: op.phase_actuelle,
-    date_fige: fmtDateStr(new Date()),
+  const phaseFigee = op.phase_actuelle || PHASES[currentIdx];
+  const dateFige = fmtDateStr(new Date());
+  const historyEntry = {
+    name: phaseFigee,
+    date_fige: dateFige,
+    figee_par: (typeof CURRENT_USER !== 'undefined' ? CURRENT_USER : ''),
     snapshot: snap,
-  });
+  };
+  op.phases_history.push(historyEntry);
+
   // Advance
   op.phase_actuelle = nextPhase;
   // Phase is now an op-level concept only — no propagation to tranches
 
-  showToast(`Phase « ${snap.phase_actuelle || PHASES[currentIdx]} » figée · vous êtes maintenant en phase « ${nextPhase} »`, 'check');
+  // Persist to Supabase if op comes from Supabase
+  if (op._uid && op._uid.startsWith('op-supabase-')) {
+    pushPhaseSnapshotToSupabase(op, historyEntry).then(supId => {
+      if (supId) historyEntry._supabase_id = supId;
+      // Also update op.phase_actuelle in Supabase
+      saveOpToSupabase(op);
+    });
+  } else {
+    showToast(`Phase « ${phaseFigee} » figée · vous êtes maintenant en phase « ${nextPhase} »`, 'check');
+  }
   renderAll();
+}
+
+// Pousse un nouveau snapshot de phase vers Supabase, retourne l'id Supabase créé
+async function pushPhaseSnapshotToSupabase(op, historyEntry) {
+  const operationId = op._supabase_id || parseInt((op._uid || '').replace('op-supabase-', ''));
+  if (!operationId || isNaN(operationId)) return null;
+  try {
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+    };
+    const payload = {
+      operation_id: operationId,
+      phase: historyEntry.name,
+      date_figeage: historyEntry.date_fige,
+      figee_par: historyEntry.figee_par || null,
+      snapshot: historyEntry.snapshot || {},
+    };
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/phase_snapshots`, {
+      method: 'POST', headers, body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const created = await res.json();
+    const newId = Array.isArray(created) ? created[0]?.id : created.id;
+    showToast(`Phase « ${historyEntry.name} » figée dans Supabase`, 'check');
+    return newId;
+  } catch (err) {
+    console.error('Erreur figeage snapshot Supabase :', err);
+    showToast('Erreur figeage Supabase : ' + err.message, 'alert-triangle');
+    return null;
+  }
 }
 
 function viewSnapshot(idx) {
@@ -12655,7 +12702,7 @@ async function loadFromSupabase() {
       workflows: [],
       tags: [],
       audit_log: [],
-      phases_snapshots: {},
+      phases_history: [],
     };
 
     // Indexer workflow_recipients par workflow_id pour les rattacher
@@ -12724,15 +12771,17 @@ async function loadFromSupabase() {
         .filter(tg => tg.operation_id === row.id)
         .map(tg => tg.tag_name);
 
-      // Phase snapshots
-      const snapshotsObj = {};
-      snapsRows.filter(s => s.operation_id === row.id).forEach(s => {
-        snapshotsObj[s.phase] = {
+      // Phase snapshots → phases_history (tableau attendu par le mockup)
+      const phasesHistory = snapsRows
+        .filter(s => s.operation_id === row.id)
+        .sort((a, b) => (a.id || 0) - (b.id || 0)) // ordre chronologique de création
+        .map(s => ({
           _supabase_id: s.id,
-          date_figeage: s.date_figeage,
+          name: s.phase || '',
+          date_fige: s.date_figeage || '',
+          figee_par: s.figee_par || '',
           snapshot: s.snapshot || {},
-        };
-      });
+        }));
 
       return {
         ...blankTemplate,
@@ -12789,7 +12838,7 @@ async function loadFromSupabase() {
         workflows: workflowsForOp,
         audit_log: auditForOp,
         tags: tagsForOp,
-        phases_snapshots: snapshotsObj,
+        phases_history: phasesHistory,
       };
     });
 
@@ -13093,7 +13142,6 @@ async function saveOpToSupabase(op) {
       date_conv_loc: op.date_conv_loc,
       date_ca_axentia: op.date_ca_axentia,
       notes_libres: op.notes_libres,
-      phases_snapshots: op.phases_snapshots || {},
     };
     const opResponse = await fetch(`${SUPABASE_URL}/rest/v1/operations?id=eq.${supabaseId}`, {
       method: 'PATCH', headers, body: JSON.stringify(opPayload),
