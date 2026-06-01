@@ -5544,6 +5544,24 @@ function sumVol(t) {
   if (!t || !t.vol) return 0;
   return Object.values(t.vol).reduce((s, v) => s + (Number(v) || 0), 0);
 }
+// Prix de revient TTC d'une tranche = somme des postes du bilan (Option A : bilan = source de vérité)
+// Renvoie null si le bilan est entièrement vide (pas de poste saisi).
+function trancheBudgetTTC(t) {
+  if (!t) return null;
+  let total = 0;
+  let hasAny = false;
+  const sections = ['charge_fonciere', 'batiment', 'honoraires', 'frais_divers', 'frais_financiers'];
+  for (const sec of sections) {
+    const obj = t[sec];
+    if (obj && typeof obj === 'object') {
+      for (const v of Object.values(obj)) {
+        const n = Number(v);
+        if (!isNaN(n) && n !== 0) { total += n; hasAny = true; }
+      }
+    }
+  }
+  return hasAny ? total : null;
+}
 // Logements d'une tranche : saisie directe (champ logements stocké en DB)
 // La volumétrie T1-T5+ est un détail informatif qui ne court-circuite plus la saisie.
 function trancheLogements(t) {
@@ -5563,7 +5581,17 @@ function totalLgts(op) {
   }
   return hasAny ? total : null;
 }
-function totalBudget(op) { return sumTrancheField(op, 'budget_ttc'); }
+// Prix de revient TTC d'une op = somme des bilans des tranches (Option A)
+function totalBudget(op) {
+  if (!op?.tranches?.length) return null;
+  let total = 0;
+  let hasAny = false;
+  for (const t of op.tranches) {
+    const v = trancheBudgetTTC(t);
+    if (v !== null) { total += v; hasAny = true; }
+  }
+  return hasAny ? total : null;
+}
 
 // Best amount = most committed value (contract > LO > simulation)
 // Renvoie 0 si aucun montant (pour rester compatible avec les reduce)
@@ -6335,7 +6363,7 @@ function renderTrancheDetail() {
                   <span>${escapeHtml(trCode || t.id)}</span>
                 </div>
                 <div class="tranche-pill-title">${escapeHtml(displayName)}</div>
-                <div class="tranche-pill-stats">${trancheLogements(t) || '—'} logts · ${fmtMontant(t.budget_ttc)}</div>
+                <div class="tranche-pill-stats">${trancheLogements(t) || '—'} logts · ${fmtMontant(trancheBudgetTTC(t))}</div>
               </div>
             `;
           }).join('')
@@ -6400,10 +6428,8 @@ function renderTrancheDetail() {
           <div class="metric-label">Logements ${editMode ? '<span class="auto-tag">auto · somme volumétrie</span>' : ''}</div>
           <div class="metric-value" id="tranche-logements-live">${diffWrap(String(liveLogements || '—'), liveLogements, compareWithIdx != null ? trancheLogementsFromSnap(op, selectedTrancheIdx) : null)}</div>
         </div>
-        <div class="metric-card"><div class="metric-label">Budget TTC</div>
-          ${editMode
-            ? `<input type="number" min="0" class="editable-input" style="text-align:left;font-size:15px;font-weight:600;padding:2px 6px;width:100%;min-width:0;" data-edit-tranche-field="budget_ttc" value="${t.budget_ttc || ''}" placeholder="€">`
-            : `<div class="metric-value">${fmtMontant(t.budget_ttc)}</div>`}
+        <div class="metric-card"><div class="metric-label">Prix de revient TTC ${editMode ? '<span class="auto-tag">auto · somme bilan</span>' : ''}</div>
+          <div class="metric-value">${fmtMontant(trancheBudgetTTC(t))}</div>
         </div>
         <div class="metric-card"><div class="metric-label">Année prog.</div>
           ${editMode
@@ -10214,9 +10240,10 @@ function renderFinances() {
     opsByPhase[phase] = (opsByPhase[phase] || 0) + 1;
 
     (op.tranches || []).forEach(t => {
-      totalBudget += (parseFloat(t.budget_ttc) || 0);
+      const bttc = trancheBudgetTTC(t) || 0;
+      totalBudget += bttc;
       totalFP += (parseFloat(t.fonds_propres) || 0);
-      budgetByPhase[phase] = (budgetByPhase[phase] || 0) + (parseFloat(t.budget_ttc) || 0);
+      budgetByPhase[phase] = (budgetByPhase[phase] || 0) + bttc;
     });
 
     (op.prets || []).forEach(p => {
@@ -13352,7 +13379,7 @@ function buildTranchePayload(t, operationId) {
     logements: t.logements,
     m2: t.m2,
     m2_utiles: t.m2_utiles,
-    budget_ttc: t.budget_ttc,
+    budget_ttc: trancheBudgetTTC(t), // Option A : sync vers somme du bilan
     fonds_propres: t.fonds_propres,
     date_agrement: t.date_agrement || null,
     date_dfa: t.date_dfa || null,
