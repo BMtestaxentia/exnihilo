@@ -12480,22 +12480,32 @@ replaceTablerIcons(); // initial pass to handle topnav and dashboard
 async function loadFromSupabase() {
   try {
     console.log('Chargement depuis Supabase...');
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/operations?select=*`, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-      },
-    });
-    if (!response.ok) throw new Error('Status ' + response.status);
-    const rows = await response.json();
-    if (!Array.isArray(rows) || rows.length === 0) {
+    // 4 requêtes en parallèle pour gagner du temps
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+    };
+    const [opsRes, tranchesRes, pretsRes, garantiesRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/operations?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/tranches?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/prets?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/garanties?select=*`, { headers }),
+    ]);
+    if (!opsRes.ok) throw new Error('Operations: ' + opsRes.status);
+    const [opsRows, tranchesRows, pretsRows, garantiesRows] = await Promise.all([
+      opsRes.json(),
+      tranchesRes.ok ? tranchesRes.json() : [],
+      pretsRes.ok ? pretsRes.json() : [],
+      garantiesRes.ok ? garantiesRes.json() : [],
+    ]);
+    if (!Array.isArray(opsRows) || opsRows.length === 0) {
       console.warn('Supabase a renvoyé une liste vide, données démo conservées.');
       return;
     }
+    console.log(`Reçu : ${opsRows.length} ops, ${tranchesRows.length} tranches, ${pretsRows.length} prêts, ${garantiesRows.length} garanties`);
+
     // Template d'une op vide complète : on prend une op démo comme squelette et on vide les valeurs.
-    // C'est défensif : ça garantit que tous les champs attendus par le mockup existent (même vides).
     const opTemplate = DATA.length > 0 ? JSON.parse(JSON.stringify(DATA[0])) : {};
-    // Vider les valeurs spécifiques du template (mais garder la structure)
     const blankTemplate = {
       ...opTemplate,
       _uid: '',
@@ -12514,7 +12524,6 @@ async function loadFromSupabase() {
       charge_fin: '',
       latitude: null,
       longitude: null,
-      // Arrays vides
       tranches: [],
       prets: [],
       garanties: [],
@@ -12523,28 +12532,48 @@ async function loadFromSupabase() {
       comites: [],
       tags: [],
       audit_log: [],
-      // Phases / snapshots
       phases_snapshots: {},
     };
-    // Mapper les colonnes Supabase au format attendu par le mockup
-    DATA = rows.map(row => ({
-      ...blankTemplate,
-      _uid: 'op-supabase-' + row.id,
-      code: row.code || '?',
-      sheet: row.code || '?',
-      display_name: row.display_name || 'Opération sans nom',
-      phase_actuelle: row.phase_actuelle || 'Montage',
-      statut: row.phase_actuelle || 'Montage',
-      badge_dot: phaseBadgeColor(row.phase_actuelle),
-      commune: row.commune || '',
-      code_postal: row.code_postal || '',
-      region: row.region || '',
-      developpeur: row.developpeur || '',
-      resp_op: row.resp_op || '',
-      charge_fin: row.charge_fin || '',
-      latitude: row.latitude,
-      longitude: row.longitude,
-    }));
+
+    // Mapper les opérations
+    DATA = opsRows.map(row => {
+      // Récupérer les tranches liées (operation_id == row.id)
+      const tranchesForOp = tranchesRows
+        .filter(t => t.operation_id === row.id)
+        .map(t => mapTrancheFromSupabase(t));
+      // Récupérer les prêts liés
+      const pretsForOp = pretsRows
+        .filter(p => p.operation_id === row.id)
+        .map(p => mapPretFromSupabase(p));
+      // Récupérer les garanties liées
+      const garantiesForOp = garantiesRows
+        .filter(g => g.operation_id === row.id)
+        .map(g => mapGarantieFromSupabase(g));
+
+      return {
+        ...blankTemplate,
+        _uid: 'op-supabase-' + row.id,
+        _supabase_id: row.id,
+        code: row.code || '?',
+        sheet: row.code || '?',
+        display_name: row.display_name || 'Opération sans nom',
+        phase_actuelle: row.phase_actuelle || 'Montage',
+        statut: row.phase_actuelle || 'Montage',
+        badge_dot: phaseBadgeColor(row.phase_actuelle),
+        commune: row.commune || '',
+        code_postal: row.code_postal || '',
+        region: row.region || '',
+        developpeur: row.developpeur || '',
+        resp_op: row.resp_op || '',
+        charge_fin: row.charge_fin || '',
+        latitude: row.latitude,
+        longitude: row.longitude,
+        tranches: tranchesForOp,
+        prets: pretsForOp,
+        garanties: garantiesForOp,
+      };
+    });
+
     console.log('Chargé depuis Supabase :', DATA.length, 'opérations');
     // Réinitialiser la sélection sur la première op chargée
     selectedOpCode = DATA[0]?._uid || null;
@@ -12576,6 +12605,94 @@ function phaseBadgeColor(phase) {
   };
   return colors[phase] || '#94a3b8';
 }
+
+// ----- Mapping fonctions Supabase → format mockup -----
+function mapTrancheFromSupabase(t) {
+  return {
+    _supabase_id: t.id,
+    id: 'tr-supabase-' + t.id,
+    code_full: t.code_full || '',
+    financement: t.financement || '',
+    annee_prog: t.annee_prog,
+    logements: t.logements,
+    m2: t.m2,
+    m2_utiles: t.m2_utiles,
+    budget_ttc: t.budget_ttc,
+    fonds_propres: t.fonds_propres,
+    date_agrement: t.date_agrement || '',
+    date_dfa: t.date_dfa || '',
+    prix_revient_logt: t.prix_revient_logt,
+    statut_agrement: t.statut_agrement || '',
+    reservataire: t.reservataire || '',
+    type_logement: t.type_logement || '',
+    public_cible: t.public_cible || '',
+    nb_chambres: t.nb_chambres,
+    notes: t.notes || '',
+    // Volumétrie par typologie (T1, T2, etc.)
+    vol: {
+      'T1': t.t1,
+      'T2': t.t2,
+      'T3': t.t3,
+      'T4': t.t4,
+      'T5+': t.t5_plus,
+    },
+    // Champs vides pour ne pas crasher les sections non branchées
+    surfaces: {},
+    batiment: {},
+    charge_fonciere: {},
+    frais_divers: {},
+    frais_financiers: {},
+    honoraires: {},
+    accord_redevance: null,
+  };
+}
+
+function mapPretFromSupabase(p) {
+  return {
+    _supabase_id: p.id,
+    id: 'pr-supabase-' + p.id,
+    tranche_id: 'tr-supabase-' + p.tranche_id,
+    ligne: p.ligne || '',
+    financeur: p.financeur || '',
+    montant_sim: p.montant_sim,
+    date_lo: p.date_lo || '',
+    montant_lo: p.montant_lo,
+    date_contrat: p.date_contrat || '',
+    montant_contrat: p.montant_contrat,
+    duree: p.duree,
+    taux: p.taux,
+    index_taux: p.index_taux || '',
+    marge: p.marge,
+    statut: p.statut || '',
+    echeancier_recu: p.echeancier_recu || '',
+    date_premiere_echeance: p.date_premiere_echeance || '',
+    date_derniere_echeance: p.date_derniere_echeance || '',
+    fenetre_tirage: p.fenetre_tirage || '',
+    notes: p.notes || '',
+    // Champs vides pour les sections non branchées
+    date_demande: '',
+  };
+}
+
+function mapGarantieFromSupabase(g) {
+  return {
+    _supabase_id: g.id,
+    id: 'ga-supabase-' + g.id,
+    tranche_id: 'tr-supabase-' + g.tranche_id,
+    pret_lie: g.pret_id ? 'pr-supabase-' + g.pret_id : '',
+    garant: g.garant || '',
+    quotite: g.quotite,
+    montant_couvert: g.montant_couvert,
+    date_demande: g.date_demande || '',
+    date_ap: g.date_ap || '',
+    date_delib: g.date_delib || '',
+    date_conv: g.date_conv || '',
+    reference_delib: g.reference_delib || '',
+    statut: g.statut || '',
+    notes: g.notes || '',
+  };
+}
+// ----- Fin mapping -----
 
 // Envoie une op modifiée vers Supabase via PATCH
 async function saveOpToSupabase(op) {
