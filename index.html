@@ -12746,6 +12746,14 @@ function mapTrancheFromSupabase(t) {
     frais_divers: t.frais_divers || {},
     frais_financiers: t.frais_financiers || {},
     honoraires: t.honoraires || {},
+    // Wrapper "bilan" attendu par certaines fonctions du mockup
+    bilan: {
+      charge_fonciere: t.charge_fonciere || {},
+      batiment: t.batiment || {},
+      honoraires: t.honoraires || {},
+      frais_divers: t.frais_divers || {},
+      frais_financiers: t.frais_financiers || {},
+    },
   };
 }
 
