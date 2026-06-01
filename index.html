@@ -3938,7 +3938,7 @@
 <div class="view" id="view-dashboard">
   <div class="dashboard">
     <h1 class="dashboard-title">Synthèse globale</h1>
-    <p class="dashboard-sub">Vue consolidée des 48 opérations en portefeuille</p>
+    <p class="dashboard-sub">Vue consolidée des <span id="dashboardOpsCount">48</span> opérations en portefeuille</p>
 
     <div class="panel">
       <div class="panel-title"><i class="ti ti-table" style="color: var(--info-accent);"></i>Détail par opération <span style="color: var(--text-tertiary); font-weight: 400; font-size: 12px; margin-left: 8px;">(clic sur une ligne pour voir la fiche)</span></div>
@@ -8901,10 +8901,6 @@ function openPlanComiteModal(existingPlanningId) {
             <label>Date prévue</label>
             <input type="text" id="planFormDate" placeholder="JJ/MM/AAAA" value="${escapeHtml(existing ? existing.date : '')}" />
           </div>
-          <div class="wf-modal-field">
-            <label>Lieu (optionnel)</label>
-            <input type="text" id="planFormLieu" placeholder="Ex : AXENTIA Toulouse / Visio" value="${escapeHtml(existing ? existing.lieu : '')}" />
-          </div>
         </div>
 
         <div class="wf-modal-field">
@@ -8966,7 +8962,6 @@ function openPlanComiteModal(existingPlanningId) {
   backdrop.querySelector('#planFormSave').addEventListener('click', () => {
     const type = backdrop.querySelector('#planFormType').value;
     const date = backdrop.querySelector('#planFormDate').value.trim();
-    const lieu = backdrop.querySelector('#planFormLieu').value.trim();
     const notes = backdrop.querySelector('#planFormNotes').value.trim();
     if (!date) {
       showToast('Saisis une date pour le comité', 'alert-triangle');
@@ -8998,7 +8993,7 @@ function openPlanComiteModal(existingPlanningId) {
       // Add planned entry
       op.comites.push({
         id: 'com-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
-        type, date, lieu, notes,
+        type, date, lieu: '', notes,
         planning_id: planningId,
         statut: 'planifie',
         lien_sharepoint: '',
@@ -12659,6 +12654,7 @@ async function loadFromSupabase() {
         date_acte: row.date_acte_auth || '',
         date_depot_pc: row.date_depot_pc || '',
         date_obtention_pc: row.date_obtention_pc || '',
+        date_obt_pc: row.date_obtention_pc || '', // alias attendu par le Gantt
         date_os: row.date_os || '',
         date_livraison: row.date_livraison || '',
         date_conv_apl: row.date_conv_apl || '',
@@ -12681,6 +12677,11 @@ async function loadFromSupabase() {
     console.log('Chargé depuis Supabase :', DATA.length, 'opérations');
     selectedOpCode = DATA[0]?._uid || null;
     selectedTrancheIdx = 0;
+    // Mettre à jour le compteur dynamique dans la synthèse
+    const synthCount = document.getElementById('dashboardOpsCount');
+    if (synthCount) synthCount.textContent = DATA.length;
+    const sidebarCount = document.getElementById('sidebarCount');
+    if (sidebarCount) sidebarCount.textContent = DATA.length;
     renderAll();
     renderOpTable();
     renderAccueil();
