@@ -12541,14 +12541,23 @@ async function loadFromSupabase() {
       const tranchesForOp = tranchesRows
         .filter(t => t.operation_id === row.id)
         .map(t => mapTrancheFromSupabase(t));
+
+      // Construire un mapping tranche.id Supabase → suffixe du code (RSJA, FOYER, etc.)
+      // C'est ce que les prêts et garanties utilisent pour pointer vers la tranche dans le mockup
+      const trancheSuffixMap = {};
+      tranchesRows.filter(t => t.operation_id === row.id).forEach(t => {
+        const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : ('TR' + t.id);
+        trancheSuffixMap[t.id] = suffix;
+      });
+
       // Récupérer les prêts liés
       const pretsForOp = pretsRows
         .filter(p => p.operation_id === row.id)
-        .map(p => mapPretFromSupabase(p));
+        .map(p => mapPretFromSupabase(p, trancheSuffixMap));
       // Récupérer les garanties liées
       const garantiesForOp = garantiesRows
         .filter(g => g.operation_id === row.id)
-        .map(g => mapGarantieFromSupabase(g));
+        .map(g => mapGarantieFromSupabase(g, trancheSuffixMap));
 
       return {
         ...blankTemplate,
@@ -12647,10 +12656,11 @@ function mapTrancheFromSupabase(t) {
   };
 }
 
-function mapPretFromSupabase(p) {
+function mapPretFromSupabase(p, trancheSuffixMap) {
   return {
     _supabase_id: p.id,
     id: 'pr-supabase-' + p.id,
+    tranche: trancheSuffixMap[p.tranche_id] || '', // suffixe RSJA/FOYER/ETUD attendu par le mockup
     tranche_id: 'tr-supabase-' + p.tranche_id,
     ligne: p.ligne || '',
     financeur: p.financeur || '',
@@ -12660,6 +12670,7 @@ function mapPretFromSupabase(p) {
     date_contrat: p.date_contrat || '',
     montant_contrat: p.montant_contrat,
     duree: p.duree,
+    duree_emprunt: p.duree, // alias attendu par le mockup
     taux: p.taux,
     index_taux: p.index_taux || '',
     marge: p.marge,
@@ -12671,13 +12682,24 @@ function mapPretFromSupabase(p) {
     notes: p.notes || '',
     // Champs vides pour les sections non branchées
     date_demande: '',
+    date_comite_banque: '',
+    n_contrat: '',
+    duree_prefi: null,
+    revision: '',
+    contact: '',
+    non_garanti: false,
+    pieces_attendues: [],
+    source: p.statut || '',
+    lien_sp_lo: '',
+    lien_sp_contrat: '',
   };
 }
 
-function mapGarantieFromSupabase(g) {
+function mapGarantieFromSupabase(g, trancheSuffixMap) {
   return {
     _supabase_id: g.id,
     id: 'ga-supabase-' + g.id,
+    tranche: trancheSuffixMap[g.tranche_id] || '',
     tranche_id: 'tr-supabase-' + g.tranche_id,
     pret_lie: g.pret_id ? 'pr-supabase-' + g.pret_id : '',
     garant: g.garant || '',
