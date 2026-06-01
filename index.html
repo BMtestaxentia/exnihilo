@@ -1312,6 +1312,127 @@
     padding: 20px; text-align: center;
     color: var(--text-tertiary); font-style: italic; font-size: 12.5px;
   }
+
+  /* ===== Nouveaux éléments Finances enrichies ===== */
+  .finances-mini-kpis {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-bottom: 12px;
+  }
+  .finances-mini-kpi {
+    padding: 8px 10px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    text-align: center;
+  }
+  .finances-mini-kpi-num {
+    font-size: 18px; font-weight: 700;
+    color: var(--info-text); font-variant-numeric: tabular-nums;
+  }
+  .finances-mini-kpi-label {
+    font-size: 10.5px; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.3px;
+    margin-top: 2px;
+  }
+  .finances-panel-footnote {
+    margin-top: 8px;
+    font-size: 11px; color: var(--text-tertiary);
+    font-style: italic;
+  }
+  .finances-panel-warning {
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: var(--warning-bg, #faece7);
+    color: var(--warning-text, #993c1d);
+    border-left: 3px solid var(--warning-accent);
+    border-radius: 3px;
+    font-size: 11.5px;
+    display: flex; gap: 6px; align-items: center;
+  }
+  .finances-panel-badge {
+    margin-left: 8px;
+    padding: 1px 8px;
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  /* Indicateurs HLM */
+  .finances-kpi-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .finances-indicator {
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--info-accent);
+  }
+  .finances-indicator-label {
+    font-size: 10.5px; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.3px;
+    margin-bottom: 4px;
+  }
+  .finances-indicator-num {
+    font-size: 20px; font-weight: 700;
+    color: var(--text-primary); font-variant-numeric: tabular-nums;
+  }
+  .finances-indicator-sub {
+    font-size: 11px; color: var(--text-tertiary);
+    margin-top: 2px;
+  }
+  .finances-indicator-sub.good { color: var(--success-text); font-weight: 600; }
+  .finances-indicator-sub.warn { color: var(--warning-text); font-weight: 600; }
+  /* Tableau Plan de financement */
+  .finances-table-wrap {
+    max-height: 360px; overflow-y: auto;
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+  }
+  .finances-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 12px;
+  }
+  .finances-table thead {
+    position: sticky; top: 0; z-index: 1;
+    background: var(--bg-tertiary);
+  }
+  .finances-table thead th {
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .finances-table thead th.num { text-align: right; }
+  .finances-table tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+  .finances-table tbody td.num {
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .finances-table tbody tr:hover { background: var(--bg-tertiary); }
+  .finances-table-subtext {
+    font-size: 11px; color: var(--text-tertiary);
+    font-weight: normal;
+  }
+  .finances-table-link {
+    cursor: pointer; color: var(--info-accent);
+    display: inline-flex;
+  }
+  .finances-table-link:hover { color: var(--info-text); }
+  .equilibre-ok { color: var(--success-text); font-weight: 700; }
+  .equilibre-warn { color: var(--warning-text); font-weight: 600; }
+  .equilibre-bad { color: var(--error-text, #b91c1c); font-weight: 700; }
+  .phase-badge-mini {
+    padding: 2px 6px; border-radius: 3px;
+    font-size: 10.5px; font-weight: 500;
+    white-space: nowrap;
+  }
   .finances-disclaimer {
     display: flex; gap: 8px; align-items: flex-start;
     padding: 10px 14px; margin-top: 12px;
@@ -1423,6 +1544,148 @@
     font-variant-numeric: tabular-nums;
   }
   .treso-table td:first-child { font-variant-numeric: normal; }
+
+  /* ===== Nouveaux éléments Trésorerie enrichie ===== */
+  /* Variantes KPI couleur */
+  .treso-kpi-warning { border-top-color: var(--warning-accent); }
+  .treso-kpi-success { border-top-color: var(--success-accent); }
+  .treso-positive { color: var(--success-text); }
+  .treso-negative { color: var(--warning-text); }
+
+  /* Histogramme positif/négatif (encaissements/décaissements) */
+  .treso-chart-pn {
+    display: flex; align-items: stretch; gap: 4px;
+    height: 240px; padding: 10px 0;
+    position: relative;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .treso-chart-pn::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    border-top: 1px dashed var(--border-color);
+  }
+  .treso-month-pn {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; min-width: 0;
+    cursor: default; gap: 4px;
+  }
+  .treso-month-pn-positive {
+    flex: 1; width: 100%;
+    display: flex; flex-direction: column-reverse;
+    align-items: center;
+  }
+  .treso-month-pn-negative {
+    flex: 1; width: 100%;
+    display: flex; flex-direction: column;
+    align-items: center;
+  }
+  .treso-bar-in {
+    width: 100%; max-width: 30px;
+    background: var(--info-accent);
+    border-radius: 2px 2px 0 0;
+    min-height: 1px;
+    transition: height 0.3s;
+  }
+  .treso-bar-out {
+    width: 100%; max-width: 30px;
+    background: var(--warning-accent);
+    border-radius: 0 0 2px 2px;
+    min-height: 1px;
+    transition: height 0.3s;
+    opacity: 0.85;
+  }
+  .treso-legend-dot.in { background: var(--info-accent); }
+  .treso-legend-dot.out { background: var(--warning-accent); }
+
+  /* Courbe solde cumulé */
+  .treso-cumul-chart {
+    display: flex; align-items: stretch; gap: 3px;
+    height: 140px; padding: 10px 0;
+    position: relative;
+  }
+  .treso-cumul-chart::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    border-top: 1px dashed var(--border-color);
+  }
+  .treso-cumul-month {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; min-width: 0;
+    justify-content: center;
+    position: relative;
+  }
+  .treso-cumul-area {
+    width: 100%; max-width: 22px;
+    border-radius: 2px;
+    min-height: 2px;
+    opacity: 0.75;
+    transition: height 0.3s;
+  }
+
+  /* Tableau événements */
+  .treso-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 1100px) {
+    .treso-grid { grid-template-columns: 1fr; }
+  }
+  .treso-events {
+    display: flex; flex-direction: column; gap: 6px;
+    max-height: 320px; overflow-y: auto;
+  }
+  .treso-event {
+    display: grid; grid-template-columns: auto 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 8px 10px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--border-color);
+  }
+  .treso-event-icon {
+    font-size: 18px;
+    display: flex; align-items: center;
+  }
+  .treso-event-body { min-width: 0; }
+  .treso-event-label {
+    font-size: 12.5px;
+    color: var(--text-primary);
+    font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .treso-event-meta {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .treso-event-amount {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+  .treso-empty {
+    padding: 20px; text-align: center;
+    color: var(--text-tertiary); font-style: italic; font-size: 12.5px;
+  }
+
+  .treso-disclaimer {
+    display: flex; gap: 8px; align-items: flex-start;
+    padding: 10px 14px; margin-top: 12px;
+    background: var(--info-bg); color: var(--info-text);
+    border: 1px solid var(--info-accent);
+    border-radius: var(--radius-md);
+    font-size: 12px; line-height: 1.5;
+  }
+  .treso-disclaimer i, .treso-disclaimer .tabler-svg-icon {
+    flex-shrink: 0; margin-top: 2px;
+  }
 
   /* Print stylesheet for PDF export */
   @media print {
@@ -10431,26 +10694,44 @@ function renderFinances() {
 
   const ops = DATA.filter(o => !o.deleted);
 
-  // Aggregate across all ops
-  let totalPrets = { count: 0, sim: 0, lo: 0, contrat: 0 };
-  let totalGaranties = { count: 0, encours: 0, signed: 0 };
-  let totalSubv = { count: 0, demande: 0, notifie: 0 };
-  let totalFP = 0;
+  // ===== Agrégation =====
   let totalBudget = 0;
-  const pretsByLine = {};
-  const pretsByFinanceur = {};
+  let totalFP = 0;
+  let totalPrets = { count: 0, sim: 0, lo: 0, contrat: 0 };
+  let totalSubv = { count: 0, demande: 0, notifie: 0 };
+  let totalGaranties = { count: 0, signed_count: 0, signed_amount: 0, pending_count: 0, pending_amount: 0 };
+  let totalLgts = 0;
   const opsByPhase = {};
   const budgetByPhase = {};
+  // Encours par typologie de prêt
+  const encoursParLigne = {}; // {'PLAI bâti': 1234, 'PLAI foncier': 567, ...}
+  // Concentration risque financeur
+  const pretsByFinanceur = {};
+  // Concentration risque garant
+  const garantiesByGarant = {};
+  // Taux moyen pondéré
+  const tauxBuckets = { 'TLA': { sum: 0, count: 0 }, 'Livret A': { sum: 0, count: 0 }, 'Euribor': { sum: 0, count: 0 }, 'Fixe': { sum: 0, count: 0 } };
+  // Délais de garantie
+  const garantieDelais = []; // jours entre date_demande et date_conv
+  // Plan de financement par op (pour tableau consolidé)
+  const opsFinancement = [];
 
   ops.forEach(op => {
     const phase = op.phase_actuelle || 'Montage';
     opsByPhase[phase] = (opsByPhase[phase] || 0) + 1;
 
+    let opBudget = 0;
+    let opFP = 0;
+    let opPrets = 0;
+    let opSubv = 0;
+    let opLgts = 0;
+
     (op.tranches || []).forEach(t => {
       const bttc = trancheBudgetTTC(t) || 0;
-      totalBudget += bttc;
-      totalFP += (parseFloat(t.fonds_propres) || 0);
-      budgetByPhase[phase] = (budgetByPhase[phase] || 0) + bttc;
+      opBudget += bttc;
+      opFP += (parseFloat(t.fonds_propres) || 0);
+      const tLgts = trancheLogements(t);
+      if (tLgts !== null) opLgts += tLgts;
     });
 
     (op.prets || []).forEach(p => {
@@ -10458,62 +10739,328 @@ function renderFinances() {
       totalPrets.sim += (parseFloat(p.montant_sim) || 0);
       totalPrets.lo += (parseFloat(p.montant_lo) || 0);
       totalPrets.contrat += (parseFloat(p.montant_contrat) || 0);
-      if (p.ligne) pretsByLine[p.ligne] = (pretsByLine[p.ligne] || 0) + (parseFloat(p.montant_contrat) || parseFloat(p.montant_lo) || parseFloat(p.montant_sim) || 0);
-      if (p.financeur) pretsByFinanceur[p.financeur] = (pretsByFinanceur[p.financeur] || 0) + (parseFloat(p.montant_contrat) || parseFloat(p.montant_lo) || parseFloat(p.montant_sim) || 0);
-    });
-
-    (op.garanties || []).forEach(g => {
-      totalGaranties.count++;
-      const m = parseFloat(g.montant_couvert) || 0;
-      totalGaranties.encours += m;
-      if (g.date_conv || g.date_delib) totalGaranties.signed += m;
+      const best = bestPretAmount(p);
+      opPrets += best;
+      if (p.ligne) encoursParLigne[p.ligne] = (encoursParLigne[p.ligne] || 0) + best;
+      if (p.financeur) pretsByFinanceur[p.financeur] = (pretsByFinanceur[p.financeur] || 0) + best;
+      // Taux moyen pondéré
+      const tx = p.taux_texte || p.taux || '';
+      const m = tx.match(/^(TLA|Livret A|Euribor|Fixe)/i);
+      if (m && best > 0) {
+        const idx = m[1].toLowerCase().includes('tla') ? 'TLA'
+                  : m[1].toLowerCase().includes('livret') ? 'Livret A'
+                  : m[1].toLowerCase().includes('euribor') ? 'Euribor'
+                  : 'Fixe';
+        // Extraire le spread
+        const spreadMatch = tx.match(/([+-])\s*(\d+[,.]?\d*)\s*%/);
+        if (spreadMatch) {
+          const sign = spreadMatch[1] === '-' ? -1 : 1;
+          const spread = parseFloat(spreadMatch[2].replace(',', '.')) * sign;
+          tauxBuckets[idx].sum += spread * best;
+          tauxBuckets[idx].count += best;
+        }
+      }
     });
 
     (op.subventions || []).forEach(s => {
       totalSubv.count++;
       totalSubv.demande += (parseFloat(s.montant_demande) || 0);
-      totalSubv.notifie += (parseFloat(s.montant_notifie) || 0);
+      totalSubv.notifie += (parseFloat(s.montant_notifie || s.montant_notif) || 0);
+      opSubv += bestSubvAmount(s);
     });
+
+    (op.garanties || []).forEach(g => {
+      totalGaranties.count++;
+      const m = parseFloat(g.montant_couvert) || 0;
+      const isSigned = g.statut === 'Convention signée' || g.date_conv;
+      if (isSigned) {
+        totalGaranties.signed_count++;
+        totalGaranties.signed_amount += m;
+      } else {
+        totalGaranties.pending_count++;
+        totalGaranties.pending_amount += m;
+      }
+      if (g.garant) garantiesByGarant[g.garant] = (garantiesByGarant[g.garant] || 0) + m;
+      // Délai si dates présentes
+      if (g.date_demande && g.date_conv) {
+        const d1 = parseDateStr(g.date_demande);
+        const d2 = parseDateStr(g.date_conv);
+        if (d1 && d2) {
+          const days = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+          if (days >= 0 && days < 730) garantieDelais.push(days);
+        }
+      }
+    });
+
+    totalBudget += opBudget;
+    totalFP += opFP;
+    totalLgts += opLgts;
+    budgetByPhase[phase] = (budgetByPhase[phase] || 0) + opBudget;
+
+    // Pour le tableau consolidé : équilibre
+    if (opBudget > 0) {
+      const ecart = opBudget - opFP - opPrets - opSubv;
+      opsFinancement.push({
+        code: op.code,
+        name: op.display_name,
+        phase,
+        budget: opBudget,
+        fp: opFP,
+        prets: opPrets,
+        subv: opSubv,
+        ecart,
+        equilibre: Math.abs(ecart) < 1000, // tolérance 1k€
+      });
+    }
   });
 
-  // Sort top financeurs / lines
-  const topLines = Object.entries(pretsByLine).sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const topFinanceurs = Object.entries(pretsByFinanceur).sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const maxLine = topLines[0] ? topLines[0][1] : 1;
-  const maxFin = topFinanceurs[0] ? topFinanceurs[0][1] : 1;
+  // ===== Calculs dérivés =====
+  // Top financeurs/garants
+  const topFinanceurs = Object.entries(pretsByFinanceur).sort((a, b) => b[1] - a[1]);
+  const topGarants = Object.entries(garantiesByGarant).sort((a, b) => b[1] - a[1]);
+  // Concentration : part du top 1, top 3
+  const totalEncoursPrets = Object.values(pretsByFinanceur).reduce((s, v) => s + v, 0);
+  const totalGarMontant = Object.values(garantiesByGarant).reduce((s, v) => s + v, 0);
+  const concentTop1Fin = topFinanceurs[0] && totalEncoursPrets > 0 ? topFinanceurs[0][1] / totalEncoursPrets : 0;
+  const concentTop3Fin = totalEncoursPrets > 0 ? topFinanceurs.slice(0, 3).reduce((s, [_, v]) => s + v, 0) / totalEncoursPrets : 0;
+  const concentTop1Garant = topGarants[0] && totalGarMontant > 0 ? topGarants[0][1] / totalGarMontant : 0;
+  // Indicateurs HLM
+  const prixMoyenLogt = totalLgts > 0 ? totalBudget / totalLgts : 0;
+  const ratioFP = totalBudget > 0 ? totalFP / totalBudget : 0;
+  const ratioPrets = totalBudget > 0 ? totalPrets.contrat / totalBudget : 0;
+  // Délai moyen garantie
+  const delaiMoyenGarantie = garantieDelais.length > 0 ? Math.round(garantieDelais.reduce((s, v) => s + v, 0) / garantieDelais.length) : null;
+  // Encours par typologie agrégé PLAI/PLUS/PLS
+  const encoursParTypo = {};
+  Object.entries(encoursParLigne).forEach(([ligne, val]) => {
+    const m = ligne.match(/^(PLAI|PLUS|PLS|PAM|PLI|PHARE|CPLS|PEX)/i);
+    const key = m ? m[1].toUpperCase() : 'Autre';
+    encoursParTypo[key] = (encoursParTypo[key] || 0) + val;
+  });
+  const sortedTypos = Object.entries(encoursParTypo).sort((a, b) => b[1] - a[1]);
+  const totalEncoursTypo = sortedTypos.reduce((s, [_, v]) => s + v, 0);
+  // Couverture des garanties (en % de prêts signés)
+  const garantieCoverage = totalPrets.contrat > 0 ? totalGaranties.signed_amount / totalPrets.contrat : 0;
+  // Équilibre du portefeuille
+  const opsDesequilibrees = opsFinancement.filter(o => !o.equilibre).length;
+  // Subventions taux de transformation
+  const tauxNotifSubv = totalSubv.demande > 0 ? totalSubv.notifie / totalSubv.demande : 0;
+  // Prêts taux de transformation
+  const tauxContratPret = totalPrets.sim > 0 ? totalPrets.contrat / totalPrets.sim : 0;
+
+  // Couleurs des typologies
+  const TYPO_COLORS = { 'PLAI': '#185fa5', 'PLUS': '#1d9e75', 'PLS': '#ba7517', 'PAM': '#9333ea', 'PLI': '#d85a30', 'PHARE': '#0c447c', 'Autre': '#888780' };
 
   c.innerHTML = `
+    <!-- ===== KPI Headline ===== -->
     <div class="finances-kpis">
       <div class="finances-kpi finances-kpi-primary">
         <div class="finances-kpi-label">Budget total portefeuille</div>
         <div class="finances-kpi-num">${fmtEuros(totalBudget)}</div>
-        <div class="finances-kpi-sub">${ops.length} opérations</div>
+        <div class="finances-kpi-sub">${ops.length} opérations · ${totalLgts || '—'} logements</div>
       </div>
       <div class="finances-kpi finances-kpi-info">
-        <div class="finances-kpi-label">Encours prêts (contrats signés)</div>
+        <div class="finances-kpi-label">Encours prêts contractés</div>
         <div class="finances-kpi-num">${fmtEuros(totalPrets.contrat)}</div>
-        <div class="finances-kpi-sub">${totalPrets.count} prêts au total</div>
-      </div>
-      <div class="finances-kpi finances-kpi-warning">
-        <div class="finances-kpi-label">Garanties d'emprunt</div>
-        <div class="finances-kpi-num">${fmtEuros(totalGaranties.signed)}</div>
-        <div class="finances-kpi-sub">${totalGaranties.count} garanties, dont ${fmtEuros(totalGaranties.encours - totalGaranties.signed)} en cours</div>
+        <div class="finances-kpi-sub">${(ratioPrets * 100).toFixed(1)}% du budget · ${totalPrets.count} prêts</div>
       </div>
       <div class="finances-kpi finances-kpi-success">
         <div class="finances-kpi-label">Subventions notifiées</div>
         <div class="finances-kpi-num">${fmtEuros(totalSubv.notifie)}</div>
-        <div class="finances-kpi-sub">${totalSubv.count} demandes, ${fmtEuros(totalSubv.demande - totalSubv.notifie)} en attente</div>
+        <div class="finances-kpi-sub">Taux de transformation : ${(tauxNotifSubv * 100).toFixed(0)}%</div>
       </div>
       <div class="finances-kpi finances-kpi-purple">
         <div class="finances-kpi-label">Fonds propres engagés</div>
         <div class="finances-kpi-num">${fmtEuros(totalFP)}</div>
-        <div class="finances-kpi-sub">${totalBudget > 0 ? (totalFP / totalBudget * 100).toFixed(1) : 0}% du budget</div>
+        <div class="finances-kpi-sub">${(ratioFP * 100).toFixed(1)}% du budget</div>
+      </div>
+      <div class="finances-kpi finances-kpi-warning">
+        <div class="finances-kpi-label">Couverture garanties</div>
+        <div class="finances-kpi-num">${(garantieCoverage * 100).toFixed(0)}%</div>
+        <div class="finances-kpi-sub">${fmtEuros(totalGaranties.signed_amount)} couverts sur ${fmtEuros(totalPrets.contrat)}</div>
       </div>
     </div>
 
     <div class="finances-grid">
-      <!-- État d'avancement des prêts -->
+      <!-- ===== 1. ENCOURS PAR TYPOLOGIE ===== -->
+      <div class="finances-panel">
+        <h3 class="finances-panel-title"><i class="ti ti-chart-pie"></i>Encours par typologie de prêt</h3>
+        ${sortedTypos.length === 0 ? '<div class="finances-empty">Aucun prêt enregistré.</div>' : `
+        <div class="finances-bars">
+          ${sortedTypos.map(([typo, val]) => {
+            const pct = totalEncoursTypo > 0 ? (val / totalEncoursTypo * 100) : 0;
+            return `
+              <div class="finances-bar-row">
+                <span class="finances-bar-label" style="color:${TYPO_COLORS[typo] || '#888'};"><strong>${escapeHtml(typo)}</strong></span>
+                <div class="finances-bar-track">
+                  <div class="finances-bar-fill" style="width:${pct}%;background:${TYPO_COLORS[typo] || '#888'};"></div>
+                </div>
+                <span class="finances-bar-val">${fmtEuros(val)} <span class="finances-stage-pct">(${pct.toFixed(0)}%)</span></span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <div class="finances-panel-footnote">Encours = montant le plus engagé (contrat &gt; LO &gt; simulation)</div>
+        `}
+      </div>
+
+      <!-- ===== 2. CONCENTRATION DES RISQUES — Financeurs ===== -->
+      <div class="finances-panel">
+        <h3 class="finances-panel-title"><i class="ti ti-building-bank"></i>Concentration financeurs</h3>
+        ${topFinanceurs.length === 0 ? '<div class="finances-empty">Aucun prêt enregistré.</div>' : `
+        <div class="finances-mini-kpis">
+          <div class="finances-mini-kpi"><div class="finances-mini-kpi-num">${(concentTop1Fin * 100).toFixed(0)}%</div><div class="finances-mini-kpi-label">Top 1 financeur</div></div>
+          <div class="finances-mini-kpi"><div class="finances-mini-kpi-num">${(concentTop3Fin * 100).toFixed(0)}%</div><div class="finances-mini-kpi-label">Top 3 financeurs</div></div>
+          <div class="finances-mini-kpi"><div class="finances-mini-kpi-num">${topFinanceurs.length}</div><div class="finances-mini-kpi-label">Financeurs distincts</div></div>
+        </div>
+        <div class="finances-bars">
+          ${topFinanceurs.slice(0, 6).map(([name, val]) => {
+            const pct = totalEncoursPrets > 0 ? (val / totalEncoursPrets * 100) : 0;
+            const isHighConcent = pct > 40;
+            return `
+              <div class="finances-bar-row">
+                <span class="finances-bar-label">${escapeHtml(name)}</span>
+                <div class="finances-bar-track">
+                  <div class="finances-bar-fill" style="width:${pct}%;background:${isHighConcent ? 'var(--warning-accent)' : 'var(--info-accent)'};"></div>
+                </div>
+                <span class="finances-bar-val">${fmtEuros(val)} <span class="finances-stage-pct">(${pct.toFixed(0)}%)</span></span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        ${concentTop1Fin > 0.5 ? `<div class="finances-panel-warning"><i class="ti ti-alert-triangle"></i>Risque de concentration : un seul financeur représente plus de 50% de l'encours</div>` : ''}
+        `}
+      </div>
+
+      <!-- ===== 3. CONCENTRATION DES RISQUES — Garants ===== -->
+      <div class="finances-panel">
+        <h3 class="finances-panel-title"><i class="ti ti-shield-check"></i>Concentration garants</h3>
+        ${topGarants.length === 0 ? '<div class="finances-empty">Aucune garantie enregistrée.</div>' : `
+        <div class="finances-mini-kpis">
+          <div class="finances-mini-kpi"><div class="finances-mini-kpi-num">${(concentTop1Garant * 100).toFixed(0)}%</div><div class="finances-mini-kpi-label">Top 1 garant</div></div>
+          <div class="finances-mini-kpi"><div class="finances-mini-kpi-num">${topGarants.length}</div><div class="finances-mini-kpi-label">Garants distincts</div></div>
+          <div class="finances-mini-kpi"><div class="finances-mini-kpi-num">${delaiMoyenGarantie !== null ? delaiMoyenGarantie + ' j' : '—'}</div><div class="finances-mini-kpi-label">Délai demande → signature</div></div>
+        </div>
+        <div class="finances-bars">
+          ${topGarants.slice(0, 6).map(([name, val]) => {
+            const pct = totalGarMontant > 0 ? (val / totalGarMontant * 100) : 0;
+            return `
+              <div class="finances-bar-row">
+                <span class="finances-bar-label">${escapeHtml(name)}</span>
+                <div class="finances-bar-track">
+                  <div class="finances-bar-fill" style="width:${pct}%;background:var(--warning-accent);"></div>
+                </div>
+                <span class="finances-bar-val">${fmtEuros(val)} <span class="finances-stage-pct">(${pct.toFixed(0)}%)</span></span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        `}
+      </div>
+
+      <!-- ===== 4. INDICATEURS HLM CLÉS ===== -->
+      <div class="finances-panel">
+        <h3 class="finances-panel-title"><i class="ti ti-gauge"></i>Indicateurs HLM</h3>
+        <div class="finances-kpi-grid">
+          <div class="finances-indicator">
+            <div class="finances-indicator-label">Prix de revient moyen / logement</div>
+            <div class="finances-indicator-num">${prixMoyenLogt > 0 ? Math.round(prixMoyenLogt / 1000).toLocaleString('fr-FR').replace(/,/g, ' ') + ' k€' : '—'}</div>
+            <div class="finances-indicator-sub">Sur ${totalLgts || 0} logements</div>
+          </div>
+          <div class="finances-indicator">
+            <div class="finances-indicator-label">Ratio fonds propres</div>
+            <div class="finances-indicator-num">${(ratioFP * 100).toFixed(1)}%</div>
+            <div class="finances-indicator-sub ${ratioFP >= 0.05 ? 'good' : 'warn'}">${ratioFP >= 0.05 ? '✓ ≥ 5%' : '⚠ &lt; 5%'}</div>
+          </div>
+          <div class="finances-indicator">
+            <div class="finances-indicator-label">Ratio prêts / budget</div>
+            <div class="finances-indicator-num">${(ratioPrets * 100).toFixed(1)}%</div>
+            <div class="finances-indicator-sub">${fmtEuros(totalPrets.contrat)} sur ${fmtEuros(totalBudget)}</div>
+          </div>
+          <div class="finances-indicator">
+            <div class="finances-indicator-label">Taux de transformation prêts</div>
+            <div class="finances-indicator-num">${(tauxContratPret * 100).toFixed(0)}%</div>
+            <div class="finances-indicator-sub">Simulé → Contrat signé</div>
+          </div>
+          ${Object.entries(tauxBuckets).filter(([_, v]) => v.count > 0).map(([idx, v]) => {
+            const moy = v.count > 0 ? v.sum / v.count : 0;
+            const sign = moy >= 0 ? '+' : '';
+            return `
+              <div class="finances-indicator">
+                <div class="finances-indicator-label">Spread moyen sur ${idx}</div>
+                <div class="finances-indicator-num">${sign}${moy.toFixed(2)}%</div>
+                <div class="finances-indicator-sub">Pondéré par encours</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- ===== 5. PLAN DE FINANCEMENT CONSOLIDÉ ===== -->
       <div class="finances-panel finances-panel-wide">
+        <h3 class="finances-panel-title">
+          <i class="ti ti-table"></i>Plan de financement par opération
+          ${opsDesequilibrees > 0 ? `<span class="finances-panel-badge">${opsDesequilibrees} déséquilibrée${opsDesequilibrees > 1 ? 's' : ''}</span>` : ''}
+        </h3>
+        ${opsFinancement.length === 0 ? '<div class="finances-empty">Aucune opération budgétée.</div>' : `
+        <div class="finances-table-wrap">
+          <table class="finances-table">
+            <thead><tr>
+              <th>Op</th><th>Phase</th>
+              <th class="num">Budget</th>
+              <th class="num">Fonds propres</th>
+              <th class="num">Prêts</th>
+              <th class="num">Subv.</th>
+              <th class="num">Écart</th>
+              <th></th>
+            </tr></thead>
+            <tbody>
+              ${opsFinancement.sort((a, b) => b.budget - a.budget).map(o => {
+                const phaseConf = PHASE_COLORS[o.phase] || {};
+                const ecartPct = o.budget > 0 ? Math.abs(o.ecart) / o.budget * 100 : 0;
+                const ecartCls = o.equilibre ? 'equilibre-ok' : (ecartPct > 5 ? 'equilibre-bad' : 'equilibre-warn');
+                return `
+                  <tr>
+                    <td><strong>${escapeHtml(o.code)}</strong><br><span class="finances-table-subtext">${escapeHtml(o.name)}</span></td>
+                    <td><span class="phase-badge-mini" style="background:${phaseConf.bg};color:${phaseConf.text};">${escapeHtml(o.phase)}</span></td>
+                    <td class="num">${fmtEuros(o.budget)}</td>
+                    <td class="num">${fmtEuros(o.fp)}</td>
+                    <td class="num">${fmtEuros(o.prets)}</td>
+                    <td class="num">${fmtEuros(o.subv)}</td>
+                    <td class="num ${ecartCls}">${o.equilibre ? '✓' : (o.ecart > 0 ? '+' : '') + fmtEuros(o.ecart)}</td>
+                    <td><a class="finances-table-link" onclick="selectOpFromFinances('${escapeHtml(o.code)}')" title="Voir l'opération"><i class="ti ti-arrow-up-right"></i></a></td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        `}
+      </div>
+
+      <!-- ===== 6. RÉPARTITION PHASE + LIFECYCLE PRÊTS ===== -->
+      <div class="finances-panel">
+        <h3 class="finances-panel-title"><i class="ti ti-chart-bar"></i>Budget par phase</h3>
+        <div class="finances-bars">
+          ${Object.entries(opsByPhase).map(([phase, count]) => {
+            const conf = PHASE_COLORS[phase] || {};
+            const budget = budgetByPhase[phase] || 0;
+            const maxBudget = Math.max(...Object.values(budgetByPhase), 1);
+            const pct = (budget / maxBudget * 100);
+            return `
+              <div class="finances-bar-row">
+                <span class="finances-bar-label" style="color:${conf.text};"><strong>${escapeHtml(phase)}</strong> · ${count} op</span>
+                <div class="finances-bar-track">
+                  <div class="finances-bar-fill" style="width:${pct}%;background:${conf.text};"></div>
+                </div>
+                <span class="finances-bar-val">${fmtEuros(budget)}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="finances-panel">
         <h3 class="finances-panel-title"><i class="ti ti-chart-line"></i>Cycle de vie des prêts</h3>
         <div class="finances-stages">
           <div class="finances-stage">
@@ -10533,63 +11080,6 @@ function renderFinances() {
           </div>
         </div>
       </div>
-
-      <!-- Budget par phase -->
-      <div class="finances-panel">
-        <h3 class="finances-panel-title"><i class="ti ti-chart-bar"></i>Budget par phase</h3>
-        <div class="finances-bars">
-          ${Object.entries(opsByPhase).map(([phase, count]) => {
-            const conf = PHASE_COLORS[phase];
-            const budget = budgetByPhase[phase] || 0;
-            const maxBudget = Math.max(...Object.values(budgetByPhase), 1);
-            return `
-              <div class="finances-bar-row">
-                <span class="finances-bar-label" style="color:${conf.text};"><strong>${escapeHtml(phase)}</strong> · ${count} op</span>
-                <div class="finances-bar-track">
-                  <div class="finances-bar-fill" style="width:${budget / maxBudget * 100}%;background:${conf.text};"></div>
-                </div>
-                <span class="finances-bar-val">${fmtEuros(budget)}</span>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
-
-      <!-- Top financeurs -->
-      <div class="finances-panel">
-        <h3 class="finances-panel-title"><i class="ti ti-building-bank"></i>Top financeurs (encours)</h3>
-        ${topFinanceurs.length === 0 ? '<div class="finances-empty">Aucun prêt enregistré.</div>' : `
-        <div class="finances-bars">
-          ${topFinanceurs.map(([name, val]) => `
-            <div class="finances-bar-row">
-              <span class="finances-bar-label">${escapeHtml(name)}</span>
-              <div class="finances-bar-track">
-                <div class="finances-bar-fill" style="width:${val / maxFin * 100}%;background:var(--info-accent);"></div>
-              </div>
-              <span class="finances-bar-val">${fmtEuros(val)}</span>
-            </div>
-          `).join('')}
-        </div>
-        `}
-      </div>
-
-      <!-- Top lignes de financement -->
-      <div class="finances-panel">
-        <h3 class="finances-panel-title"><i class="ti ti-list-check"></i>Top lignes de financement</h3>
-        ${topLines.length === 0 ? '<div class="finances-empty">Aucun prêt enregistré.</div>' : `
-        <div class="finances-bars">
-          ${topLines.map(([name, val]) => `
-            <div class="finances-bar-row">
-              <span class="finances-bar-label">${escapeHtml(name)}</span>
-              <div class="finances-bar-track">
-                <div class="finances-bar-fill" style="width:${val / maxLine * 100}%;background:var(--purple-accent);"></div>
-              </div>
-              <span class="finances-bar-val">${fmtEuros(val)}</span>
-            </div>
-          `).join('')}
-        </div>
-        `}
-      </div>
     </div>
 
     <div class="finances-disclaimer">
@@ -10600,6 +11090,17 @@ function renderFinances() {
   replaceTablerIcons(c);
 }
 
+// Helper : sélectionner une op depuis la table Finances
+function selectOpFromFinances(code) {
+  const op = DATA.find(o => o.code === code);
+  if (op) {
+    selectedOpCode = op._uid;
+    selectedTrancheIdx = 0;
+    switchView('ops');
+    renderAll();
+  }
+}
+
 // ============== TRÉSORERIE PRÉVISIONNELLE ==============
 function renderTresorerie() {
   const c = document.getElementById('tresorerieContent');
@@ -10607,165 +11108,310 @@ function renderTresorerie() {
 
   const ops = DATA.filter(o => !o.deleted);
   const today = new Date(); today.setHours(0, 0, 0, 0);
+  // Premier du mois courant
+  const startMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
   // Build monthly bucket projections over the next 24 months
   const months = [];
   for (let i = 0; i < 24; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    const d = new Date(startMonth.getFullYear(), startMonth.getMonth() + i, 1);
     months.push({
       key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
       label: d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }),
       date: d,
-      pretsIn: 0,    // expected loan disbursements
-      subvIn: 0,     // expected subsidies notifications
-      pretsLO: 0,    // LO received this month
-      garanties: 0,  // upcoming garantie conventions
+      // Encaissements (flux entrants)
+      pret_tirage: 0,         // déblocages de prêts (premier tirage à l'OS, échelonnés...)
+      subv_versement: 0,      // versements de subventions
+      // Engagements (informations)
+      pret_lo: 0,             // lettres d'offre reçues
+      pret_contrat: 0,        // contrats signés
+      garantie_conv: 0,       // conventions de garantie signées
+      // Charge (sortants)
+      annuite_capital: 0,     // remboursement capital
+      annuite_interet: 0,     // intérêts
+      // Détail événements
+      events: [],
     });
   }
   const monthFor = (date) => {
+    if (!date) return null;
     const k = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     return months.find(m => m.key === k);
   };
 
-  let totalProjectedIn = 0;
-  let totalProjectedSubv = 0;
-  let signedGarantiesUpcoming = 0;
+  let totalDeblocages = 0;
+  let totalSubventions = 0;
+  let prefin = []; // préfinancements actifs
 
   ops.forEach(op => {
     (op.prets || []).forEach(p => {
-      // Use date_contrat if signed, else date_lo + 2 months as estimate
-      let d = p.date_contrat ? parseDateStr(p.date_contrat) : null;
-      if (!d && p.date_lo) {
-        const lo = parseDateStr(p.date_lo);
-        if (lo) { d = new Date(lo); d.setMonth(d.getMonth() + 2); }
-      }
-      const montant = parseFloat(p.montant_contrat) || parseFloat(p.montant_lo) || parseFloat(p.montant_sim) || 0;
-      if (d && montant > 0) {
-        const m = monthFor(d);
+      const montant = bestPretAmount(p);
+
+      // Premier tirage (= date_premier_tirage ou date_os ou date_contrat)
+      const dTirage = parseDateStr(p.date_premier_tirage) || parseDateStr(p.date_contrat);
+      if (dTirage && montant > 0) {
+        const m = monthFor(dTirage);
         if (m) {
-          m.pretsIn += montant;
-          totalProjectedIn += montant;
+          m.pret_tirage += montant;
+          totalDeblocages += montant;
+          m.events.push({
+            type: 'tirage',
+            op_code: op.code, op_name: op.display_name,
+            label: `Tirage ${p.ligne || 'prêt'} · ${p.financeur || ''}`,
+            montant: montant,
+          });
         }
       }
-      if (p.date_lo) {
-        const lo = parseDateStr(p.date_lo);
-        if (lo) {
-          const m = monthFor(lo);
-          if (m) m.pretsLO += (parseFloat(p.montant_lo) || 0);
+      // Lettre d'offre
+      const dLO = parseDateStr(p.date_lo);
+      if (dLO) {
+        const m = monthFor(dLO);
+        if (m) {
+          m.pret_lo += (parseFloat(p.montant_lo) || 0);
+          m.events.push({
+            type: 'lo',
+            op_code: op.code, op_name: op.display_name,
+            label: `LO ${p.ligne || ''} · ${p.financeur || ''}`,
+            montant: parseFloat(p.montant_lo) || 0,
+          });
         }
+      }
+      // Contrat signé
+      const dContrat = parseDateStr(p.date_contrat);
+      if (dContrat) {
+        const m = monthFor(dContrat);
+        if (m) {
+          m.pret_contrat += (parseFloat(p.montant_contrat) || 0);
+        }
+      }
+      // Amortissement (simulation simplifiée, A de Q2)
+      // Si mise en force définie ET montant contrat > 0 ET durée définie
+      const dMEF = parseDateStr(p.date_mise_en_force);
+      const duree = parseFloat(p.duree || p.duree_emprunt) || 0;
+      const mContrat = parseFloat(p.montant_contrat) || 0;
+      if (dMEF && duree > 0 && mContrat > 0) {
+        // Amortissement linéaire simplifié sur 'duree' années
+        const annuiteCapital = mContrat / duree;
+        // Taux 2% pour démo
+        const annuiteInterets = mContrat * 0.02; // approximation
+        // Mensualité (capital + intérêts) répartie sur 12 mois
+        const mensualiteCapital = annuiteCapital / 12;
+        const mensualiteInterets = annuiteInterets / 12;
+        // Ajouter à tous les mois de la fenêtre où l'amortissement est actif
+        months.forEach(mo => {
+          if (mo.date >= dMEF) {
+            // L'amortissement est en cours si on est dans la fenêtre [dMEF, dMEF + duree*12 mois]
+            const monthsSinceMEF = (mo.date.getFullYear() - dMEF.getFullYear()) * 12 + (mo.date.getMonth() - dMEF.getMonth());
+            if (monthsSinceMEF < duree * 12) {
+              mo.annuite_capital += mensualiteCapital;
+              mo.annuite_interet += mensualiteInterets;
+            }
+          }
+        });
       }
     });
+
     (op.subventions || []).forEach(s => {
-      const d = parseDateStr(s.date_notification) || parseDateStr(s.date_demande);
-      const montant = parseFloat(s.montant_notifie) || parseFloat(s.montant_demande) || 0;
-      if (d && montant > 0) {
-        const m = monthFor(d);
+      // Versement prévu (Q4 = A : date livraison)
+      const dVers = parseDateStr(s.date_versement_prevue) || parseDateStr(s.date_notif || s.date_notification);
+      const montant = parseFloat(s.montant_notif || s.montant_notifie) || parseFloat(s.montant_demande) || 0;
+      if (dVers && montant > 0) {
+        const m = monthFor(dVers);
         if (m) {
-          m.subvIn += montant;
-          totalProjectedSubv += montant;
+          m.subv_versement += montant;
+          totalSubventions += montant;
+          m.events.push({
+            type: 'subv',
+            op_code: op.code, op_name: op.display_name,
+            label: `Versement subv. ${s.financeur || ''}`,
+            montant: montant,
+          });
         }
       }
     });
+
     (op.garanties || []).forEach(g => {
-      const d = parseDateStr(g.date_conv) || parseDateStr(g.date_delib);
+      const d = parseDateStr(g.date_conv);
       const montant = parseFloat(g.montant_couvert) || 0;
       if (d && montant > 0) {
         const m = monthFor(d);
         if (m) {
-          m.garanties += montant;
-          signedGarantiesUpcoming += montant;
+          m.garantie_conv += montant;
         }
+      }
+    });
+
+    // Préfinancements actifs
+    (op.prefinancements || op.prefin || []).forEach(pf => {
+      if (pf.statut === 'En cours') {
+        prefin.push({
+          op_code: op.code, op_name: op.display_name,
+          financeur: pf.financeur, montant_couvert: parseFloat(pf.montant_couvert) || 0,
+          montant_tire: parseFloat(pf.montant_tire) || 0,
+          date_fin: pf.date_fin,
+        });
       }
     });
   });
 
-  // Compute cumulative for the chart
+  // Cumul des flux nets (entrants - charge d'amortissement)
   let cumul = 0;
   months.forEach(m => {
-    m.total = m.pretsIn + m.subvIn;
-    cumul += m.total;
+    m.flux_entrant = m.pret_tirage + m.subv_versement;
+    m.flux_sortant = m.annuite_capital + m.annuite_interet;
+    m.flux_net = m.flux_entrant - m.flux_sortant;
+    cumul += m.flux_net;
     m.cumul = cumul;
   });
 
-  const maxMonth = Math.max(...months.map(m => m.total), 1);
-  const maxCumul = Math.max(...months.map(m => m.cumul), 1);
+  // Pics : mois avec plus gros flux entrant
+  const sortedByFlux = [...months].sort((a, b) => b.flux_entrant - a.flux_entrant);
+  const picEncaissement = sortedByFlux[0];
+  const picBesoin = [...months].sort((a, b) => b.flux_sortant - a.flux_sortant)[0];
 
-  // Next 6 months key events
-  const next6Months = months.slice(0, 6).filter(m => m.total > 0 || m.pretsLO > 0 || m.garanties > 0);
+  // Max pour mise à l'échelle des barres
+  const maxFlux = Math.max(...months.map(m => Math.max(m.flux_entrant, m.flux_sortant)), 1);
+  const maxCumul = Math.max(...months.map(m => Math.abs(m.cumul)), 1);
+
+  // Événements à venir (3 mois)
+  const upcomingEvents = months.slice(0, 3).flatMap(m =>
+    m.events.map(e => ({ ...e, month_label: m.label, month_date: m.date }))
+  ).sort((a, b) => a.month_date - b.month_date);
+
+  // Annuités totales sur 24 mois
+  const totalAnnuites = months.reduce((s, m) => s + m.flux_sortant, 0);
 
   c.innerHTML = `
+    <!-- ===== KPI Trésorerie ===== -->
     <div class="treso-kpis">
       <div class="treso-kpi">
-        <div class="treso-kpi-label">Flux entrants projetés (24 mois)</div>
-        <div class="treso-kpi-num">${fmtEuros(totalProjectedIn + totalProjectedSubv)}</div>
-        <div class="treso-kpi-detail">${fmtEuros(totalProjectedIn)} prêts · ${fmtEuros(totalProjectedSubv)} subv</div>
+        <div class="treso-kpi-label">Flux entrants 24 mois</div>
+        <div class="treso-kpi-num">${fmtEuros(totalDeblocages + totalSubventions)}</div>
+        <div class="treso-kpi-detail">${fmtEuros(totalDeblocages)} déblocages · ${fmtEuros(totalSubventions)} subv</div>
+      </div>
+      <div class="treso-kpi treso-kpi-warning">
+        <div class="treso-kpi-label">Annuités à payer 24 mois</div>
+        <div class="treso-kpi-num">${fmtEuros(totalAnnuites)}</div>
+        <div class="treso-kpi-detail">Capital + intérêts</div>
+      </div>
+      <div class="treso-kpi treso-kpi-success">
+        <div class="treso-kpi-label">Flux net cumulé sur 24 mois</div>
+        <div class="treso-kpi-num ${cumul >= 0 ? 'treso-positive' : 'treso-negative'}">${cumul >= 0 ? '+' : ''}${fmtEuros(cumul)}</div>
+        <div class="treso-kpi-detail">${cumul >= 0 ? 'Solde positif' : 'Besoin de financement'}</div>
       </div>
       <div class="treso-kpi">
-        <div class="treso-kpi-label">Garanties à venir (à signer)</div>
-        <div class="treso-kpi-num">${fmtEuros(signedGarantiesUpcoming)}</div>
-        <div class="treso-kpi-detail">conventions à formaliser</div>
+        <div class="treso-kpi-label">Pic encaissement</div>
+        <div class="treso-kpi-num">${picEncaissement ? fmtEuros(picEncaissement.flux_entrant) : '—'}</div>
+        <div class="treso-kpi-detail">${picEncaissement && picEncaissement.flux_entrant > 0 ? picEncaissement.label : '—'}</div>
       </div>
       <div class="treso-kpi">
-        <div class="treso-kpi-label">6 prochains mois</div>
-        <div class="treso-kpi-num">${fmtEuros(months.slice(0, 6).reduce((s, m) => s + m.total, 0))}</div>
-        <div class="treso-kpi-detail">flux entrants à court terme</div>
+        <div class="treso-kpi-label">Préfinancements actifs</div>
+        <div class="treso-kpi-num">${prefin.length}</div>
+        <div class="treso-kpi-detail">${fmtEuros(prefin.reduce((s, p) => s + p.montant_couvert, 0))} mobilisés</div>
       </div>
     </div>
 
+    <!-- ===== Histogramme principal : flux entrants vs sortants ===== -->
     <div class="treso-panel">
-      <h3 class="treso-panel-title"><i class="ti ti-chart-bar"></i>Projection des flux entrants sur 24 mois</h3>
-      <div class="treso-chart">
-        ${months.map(m => `
-          <div class="treso-month" title="${m.label} : ${fmtEuros(m.total)} (prêts ${fmtEuros(m.pretsIn)} + subv ${fmtEuros(m.subvIn)})">
-            <div class="treso-month-bars">
-              <div class="treso-bar treso-bar-pret" style="height:${m.pretsIn / maxMonth * 100}%;"></div>
-              <div class="treso-bar treso-bar-subv" style="height:${m.subvIn / maxMonth * 100}%;"></div>
+      <h3 class="treso-panel-title"><i class="ti ti-chart-bar"></i>Flux trésorerie mensuels sur 24 mois</h3>
+      <div class="treso-chart-pn">
+        ${months.map(m => {
+          const inPct = m.flux_entrant / maxFlux * 100;
+          const outPct = m.flux_sortant / maxFlux * 100;
+          const tooltip = `${m.label} :
+Flux entrants : ${fmtEuros(m.flux_entrant)} (déblocages ${fmtEuros(m.pret_tirage)} + subv ${fmtEuros(m.subv_versement)})
+Annuités : ${fmtEuros(m.flux_sortant)}
+Net : ${m.flux_net >= 0 ? '+' : ''}${fmtEuros(m.flux_net)}`;
+          return `
+            <div class="treso-month-pn" title="${escapeHtml(tooltip)}">
+              <div class="treso-month-pn-positive">
+                <div class="treso-bar-in" style="height:${inPct}%;"></div>
+              </div>
+              <div class="treso-month-pn-negative">
+                <div class="treso-bar-out" style="height:${outPct}%;"></div>
+              </div>
+              <div class="treso-month-label">${m.label}</div>
             </div>
-            <div class="treso-month-label">${escapeHtml(m.label)}</div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
       <div class="treso-legend">
-        <span class="treso-legend-item"><span class="treso-legend-dot" style="background:var(--info-accent);"></span>Prêts (déblocages prévus)</span>
-        <span class="treso-legend-item"><span class="treso-legend-dot" style="background:var(--success-accent);"></span>Subventions notifiées</span>
+        <span class="treso-legend-item"><span class="treso-legend-dot in"></span>Encaissements (déblocages prêts + subventions)</span>
+        <span class="treso-legend-item"><span class="treso-legend-dot out"></span>Décaissements (annuités d'emprunt)</span>
       </div>
     </div>
 
+    <!-- ===== Solde cumulé (courbe) ===== -->
     <div class="treso-panel">
-      <h3 class="treso-panel-title"><i class="ti ti-calendar"></i>Événements financiers à venir (6 mois)</h3>
-      ${next6Months.length === 0 ? `
-        <div class="finances-empty">Aucun événement financier projeté sur les 6 prochains mois.</div>
-      ` : `
-        <table class="treso-table">
-          <thead>
-            <tr>
-              <th>Mois</th>
-              <th>Prêts (déblocage)</th>
-              <th>Lettres d'offre attendues</th>
-              <th>Subventions notifiées</th>
-              <th>Garanties à signer</th>
-              <th>Total mensuel</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${next6Months.map(m => `
-              <tr>
-                <td><strong>${escapeHtml(m.label)}</strong></td>
-                <td>${m.pretsIn > 0 ? fmtEuros(m.pretsIn) : '—'}</td>
-                <td>${m.pretsLO > 0 ? fmtEuros(m.pretsLO) : '—'}</td>
-                <td>${m.subvIn > 0 ? fmtEuros(m.subvIn) : '—'}</td>
-                <td>${m.garanties > 0 ? fmtEuros(m.garanties) : '—'}</td>
-                <td><strong>${fmtEuros(m.total)}</strong></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `}
+      <h3 class="treso-panel-title"><i class="ti ti-chart-line"></i>Solde net cumulé</h3>
+      <div class="treso-cumul-chart">
+        ${months.map((m, idx) => {
+          const ratio = Math.abs(m.cumul) / maxCumul;
+          const isPositive = m.cumul >= 0;
+          const height = ratio * 80;
+          return `
+            <div class="treso-cumul-month" title="${m.label} : ${m.cumul >= 0 ? '+' : ''}${fmtEuros(m.cumul)}">
+              <div class="treso-cumul-area" style="height:${height}%;background:${isPositive ? 'var(--success-accent)' : 'var(--warning-accent)'};${isPositive ? 'align-self:flex-end;' : 'align-self:flex-start;'}"></div>
+              <div class="treso-month-label">${m.label}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
     </div>
 
-    <div class="finances-disclaimer">
+    <!-- ===== Tableau événements 3 mois ===== -->
+    <div class="treso-grid">
+      <div class="treso-panel">
+        <h3 class="treso-panel-title"><i class="ti ti-calendar-event"></i>Événements financiers 3 prochains mois</h3>
+        ${upcomingEvents.length === 0 ? '<div class="treso-empty">Aucun événement financier projeté sur les 3 prochains mois.</div>' : `
+        <div class="treso-events">
+          ${upcomingEvents.map(e => {
+            const typeIcons = { 'tirage': 'arrow-down-circle', 'subv': 'gift', 'lo': 'mail' };
+            const typeColors = { 'tirage': 'var(--info-accent)', 'subv': 'var(--success-accent)', 'lo': 'var(--warning-accent)' };
+            return `
+              <div class="treso-event">
+                <div class="treso-event-icon" style="color:${typeColors[e.type]};"><i class="ti ti-${typeIcons[e.type]}"></i></div>
+                <div class="treso-event-body">
+                  <div class="treso-event-label">${escapeHtml(e.label)}</div>
+                  <div class="treso-event-meta">${escapeHtml(e.op_code)} · ${escapeHtml(e.op_name)} · ${escapeHtml(e.month_label)}</div>
+                </div>
+                <div class="treso-event-amount">${fmtEuros(e.montant)}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        `}
+      </div>
+
+      <!-- ===== Préfinancements ===== -->
+      <div class="treso-panel">
+        <h3 class="treso-panel-title"><i class="ti ti-clock-bolt"></i>Préfinancements actifs</h3>
+        ${prefin.length === 0 ? '<div class="treso-empty">Aucun préfinancement actif.</div>' : `
+        <div class="treso-events">
+          ${prefin.map(p => {
+            const pctTire = p.montant_couvert > 0 ? (p.montant_tire / p.montant_couvert * 100) : 0;
+            return `
+              <div class="treso-event">
+                <div class="treso-event-icon" style="color:var(--purple-accent);"><i class="ti ti-clock-bolt"></i></div>
+                <div class="treso-event-body">
+                  <div class="treso-event-label">${escapeHtml(p.financeur || '?')}</div>
+                  <div class="treso-event-meta">${escapeHtml(p.op_code)} · ${pctTire.toFixed(0)}% tiré · fin ${escapeHtml(p.date_fin || '—')}</div>
+                </div>
+                <div class="treso-event-amount">${fmtEuros(p.montant_tire)} / ${fmtEuros(p.montant_couvert)}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        `}
+      </div>
+    </div>
+
+    <div class="treso-disclaimer">
       <i class="ti ti-info-circle"></i>
-      <span>Projection construite à partir des dates de contrat (ou LO + 2 mois si non signé), des dates de notification de subvention, et des dates de convention de garantie. Hypothèse simplificatrice pour la démo — en production, une logique d'échéancier plus fine pourrait être branchée.</span>
+      <span>
+        Projection construite à partir des dates contractuelles : déblocages à la date OS / 1er tirage, subventions versées à la livraison, annuités d'amortissement linéaire (simulation simplifiée, taux d'intérêt fixé à 2% pour la démo).
+        En production, le profil réel CDC (différé, progressif, etc.) serait intégré.
+      </span>
     </div>
   `;
   replaceTablerIcons(c);
