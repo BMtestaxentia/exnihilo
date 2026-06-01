@@ -12480,31 +12480,39 @@ replaceTablerIcons(); // initial pass to handle topnav and dashboard
 async function loadFromSupabase() {
   try {
     console.log('Chargement depuis Supabase...');
-    // 4 requêtes en parallèle pour gagner du temps
     const headers = {
       'apikey': SUPABASE_KEY,
       'Authorization': `Bearer ${SUPABASE_KEY}`,
     };
-    const [opsRes, tranchesRes, pretsRes, garantiesRes] = await Promise.all([
+    // 11 requêtes en parallèle (toutes les tables)
+    const fetches = [
       fetch(`${SUPABASE_URL}/rest/v1/operations?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/tranches?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/prets?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/garanties?select=*`, { headers }),
-    ]);
-    if (!opsRes.ok) throw new Error('Operations: ' + opsRes.status);
-    const [opsRows, tranchesRows, pretsRows, garantiesRows] = await Promise.all([
-      opsRes.json(),
-      tranchesRes.ok ? tranchesRes.json() : [],
-      pretsRes.ok ? pretsRes.json() : [],
-      garantiesRes.ok ? garantiesRes.json() : [],
-    ]);
+      fetch(`${SUPABASE_URL}/rest/v1/subventions?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/reservataires?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/comites?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/workflows?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/workflow_recipients?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/audit_log?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/tags?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/phase_snapshots?select=*`, { headers }),
+    ];
+    const responses = await Promise.all(fetches);
+    if (!responses[0].ok) throw new Error('Operations: ' + responses[0].status);
+
+    const [opsRows, tranchesRows, pretsRows, garantiesRows, subvRows, reservRows, comitesRows, wfRows, wfRecipRows, auditRows, tagsRows, snapsRows] = await Promise.all(
+      responses.map(async (r, i) => r.ok ? await r.json() : [])
+    );
+
     if (!Array.isArray(opsRows) || opsRows.length === 0) {
       console.warn('Supabase a renvoyé une liste vide, données démo conservées.');
       return;
     }
-    console.log(`Reçu : ${opsRows.length} ops, ${tranchesRows.length} tranches, ${pretsRows.length} prêts, ${garantiesRows.length} garanties`);
+    console.log(`Reçu : ${opsRows.length} ops, ${tranchesRows.length} tranches, ${pretsRows.length} prêts, ${garantiesRows.length} garanties, ${subvRows.length} subv, ${reservRows.length} resv, ${comitesRows.length} comités, ${wfRows.length} workflows, ${auditRows.length} audit, ${tagsRows.length} tags, ${snapsRows.length} snapshots`);
 
-    // Template d'une op vide complète : on prend une op démo comme squelette et on vide les valeurs.
+    // Template d'une op vide complète
     const opTemplate = DATA.length > 0 ? JSON.parse(JSON.stringify(DATA[0])) : {};
     const blankTemplate = {
       ...opTemplate,
@@ -12530,41 +12538,87 @@ async function loadFromSupabase() {
       subventions: [],
       reservataires: [],
       comites: [],
+      workflows: [],
       tags: [],
       audit_log: [],
       phases_snapshots: {},
     };
 
+    // Indexer workflow_recipients par workflow_id pour les rattacher
+    const wfRecipsByWf = {};
+    wfRecipRows.forEach(r => {
+      if (!wfRecipsByWf[r.workflow_id]) wfRecipsByWf[r.workflow_id] = [];
+      wfRecipsByWf[r.workflow_id].push(r);
+    });
+
     // Mapper les opérations
     DATA = opsRows.map(row => {
-      // Récupérer les tranches liées (operation_id == row.id)
+      // Tranches
       const tranchesForOp = tranchesRows
         .filter(t => t.operation_id === row.id)
         .map(t => mapTrancheFromSupabase(t));
 
-      // Construire un mapping tranche.id Supabase → suffixe du code (RSJA, FOYER, etc.)
-      // C'est ce que les prêts et garanties utilisent pour pointer vers la tranche dans le mockup
+      // Mappings d'aide pour relations
       const trancheSuffixMap = {};
       tranchesRows.filter(t => t.operation_id === row.id).forEach(t => {
         const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : ('TR' + t.id);
         trancheSuffixMap[t.id] = suffix;
       });
 
-      // Mapping pret.id Supabase → pret.ligne (ex: 1 → "PLAI bâti")
-      // Le mockup utilise la ligne du prêt comme identifiant dans pret_lie
       const pretLigneMap = {};
       pretsRows.filter(p => p.operation_id === row.id).forEach(p => {
         pretLigneMap[p.id] = p.ligne || '';
       });
 
-      // Récupérer les prêts liés
+      // Prêts
       const pretsForOp = pretsRows
         .filter(p => p.operation_id === row.id)
         .map(p => mapPretFromSupabase(p, trancheSuffixMap));
-      // Récupérer les garanties liées
+
+      // Garanties
       const garantiesForOp = garantiesRows
         .filter(g => g.operation_id === row.id)
         .map(g => mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap));
+
+      // Subventions
+      const subventionsForOp = subvRows
+        .filter(s => s.operation_id === row.id)
+        .map(s => mapSubventionFromSupabase(s, trancheSuffixMap));
+
+      // Réservataires
+      const reservataresForOp = reservRows
+        .filter(r => r.operation_id === row.id)
+        .map(r => mapReservataireFromSupabase(r, trancheSuffixMap));
+
+      // Comités
+      const comitesForOp = comitesRows
+        .filter(c => c.operation_id === row.id)
+        .map(c => mapComiteFromSupabase(c, wfRecipsByWf));
+
+      // Workflows
+      const workflowsForOp = wfRows
+        .filter(w => w.operation_id === row.id)
+        .map(w => mapWorkflowFromSupabase(w, wfRecipsByWf));
+
+      // Audit log
+      const auditForOp = auditRows
+        .filter(a => a.operation_id === row.id)
+        .map(a => mapAuditFromSupabase(a));
+
+      // Tags
+      const tagsForOp = tagsRows
+        .filter(tg => tg.operation_id === row.id)
+        .map(tg => tg.tag_name);
+
+      // Phase snapshots
+      const snapshotsObj = {};
+      snapsRows.filter(s => s.operation_id === row.id).forEach(s => {
+        snapshotsObj[s.phase] = {
+          _supabase_id: s.id,
+          date_figeage: s.date_figeage,
+          snapshot: s.snapshot || {},
+        };
+      });
 
       return {
         ...blankTemplate,
@@ -12579,27 +12633,58 @@ async function loadFromSupabase() {
         commune: row.commune || '',
         code_postal: row.code_postal || '',
         region: row.region || '',
+        departement: row.departement || '',
+        adresse: row.adresse || '',
+        zone_abc: row.zone_abc || '',
+        zone_123: row.zone_123 || '',
+        lien_sharepoint: row.lien_sharepoint || '',
+        promoteur: row.promoteur || '',
         developpeur: row.developpeur || '',
         resp_op: row.resp_op || '',
         charge_fin: row.charge_fin || '',
         latitude: row.latitude,
         longitude: row.longitude,
+        vefa_mod: row.vefa_mod || '',
+        type_travaux: row.type_travaux || '',
+        maitrise_fonciere: row.maitrise_fonciere || '',
+        anru: row.anru || '',
+        label_certif: row.label_certif || '',
+        mode_constructif: row.mode_constructif || '',
+        mode_chauffage: row.mode_chauffage || '',
+        nb_batiments: row.nb_batiments,
+        perf_seuil: row.perf_seuil || '',
+        perf_certif: row.perf_certif || '',
+        date_promesse: row.date_promesse || '',
+        date_acte_auth: row.date_acte_auth || '',
+        date_acte: row.date_acte_auth || '',
+        date_depot_pc: row.date_depot_pc || '',
+        date_obtention_pc: row.date_obtention_pc || '',
+        date_os: row.date_os || '',
+        date_livraison: row.date_livraison || '',
+        date_conv_apl: row.date_conv_apl || '',
+        date_conv_loc: row.date_conv_loc || '',
+        date_ca_axentia: row.date_ca_axentia || '',
+        notes_libres: row.notes_libres || '',
         tranches: tranchesForOp,
         prets: pretsForOp,
         garanties: garantiesForOp,
+        subventions: subventionsForOp,
+        reservataires: reservataresForOp,
+        comites: comitesForOp,
+        workflows: workflowsForOp,
+        audit_log: auditForOp,
+        tags: tagsForOp,
+        phases_snapshots: snapshotsObj,
       };
     });
 
     console.log('Chargé depuis Supabase :', DATA.length, 'opérations');
-    // Réinitialiser la sélection sur la première op chargée
     selectedOpCode = DATA[0]?._uid || null;
     selectedTrancheIdx = 0;
-    // Re-render avec les nouvelles données
     renderAll();
     renderOpTable();
     renderAccueil();
     replaceTablerIcons();
-    // Toast visible pour confirmer le branchement
     if (typeof showToast === 'function') {
       showToast(`${DATA.length} opérations chargées depuis Supabase`, 'check');
     }
@@ -12644,6 +12729,7 @@ function mapTrancheFromSupabase(t) {
     public_cible: t.public_cible || '',
     nb_chambres: t.nb_chambres,
     notes: t.notes || '',
+    accord_redevance: t.accord_redevance,
     // Volumétrie par typologie (T1, T2, etc.)
     vol: {
       'T1': t.t1,
@@ -12652,14 +12738,102 @@ function mapTrancheFromSupabase(t) {
       'T4': t.t4,
       'T5+': t.t5_plus,
     },
-    // Champs vides pour ne pas crasher les sections non branchées
-    surfaces: {},
-    batiment: {},
-    charge_fonciere: {},
-    frais_divers: {},
-    frais_financiers: {},
-    honoraires: {},
-    accord_redevance: null,
+    // Sous-sections JSONB (bilan d'opération, surfaces)
+    surfaces: t.surfaces || {},
+    batiment: t.batiment || {},
+    charge_fonciere: t.charge_fonciere || {},
+    frais_divers: t.frais_divers || {},
+    frais_financiers: t.frais_financiers || {},
+    honoraires: t.honoraires || {},
+  };
+}
+
+function mapSubventionFromSupabase(s, trancheSuffixMap) {
+  return {
+    _supabase_id: s.id,
+    id: 'sv-supabase-' + s.id,
+    tranche: s.tranche_id ? (trancheSuffixMap[s.tranche_id] || '') : '',
+    tranche_id_raw: s.tranche_id,
+    type: s.type || '',
+    financeur: s.financeur || '',
+    montant_demande: s.montant_demande,
+    date_demande: s.date_demande || '',
+    date_notif: s.date_notif || '',
+    montant_notif: s.montant_notif,
+    date_conv_signature: s.date_conv_signature || '',
+    montant_verse: s.montant_verse,
+    statut: s.statut || '',
+    notes: s.notes || '',
+    lien_sp_conv: s.lien_sp_conv || '',
+  };
+}
+
+function mapReservataireFromSupabase(r, trancheSuffixMap) {
+  return {
+    _supabase_id: r.id,
+    id: 'rv-supabase-' + r.id,
+    tranche: r.tranche_id ? (trancheSuffixMap[r.tranche_id] || '') : '',
+    tranche_id_raw: r.tranche_id,
+    entite: r.entite || '',
+    nb_logements_reserves: r.nb_logements_reserves,
+    type_reservation: r.type_reservation || '',
+    statut: r.statut || '',
+    date_demande: r.date_demande || '',
+    date_conv: r.date_conv || '',
+    contact: r.contact || '',
+    notes: r.notes || '',
+  };
+}
+
+function mapComiteFromSupabase(c, wfRecipsByWf) {
+  return {
+    _supabase_id: c.id,
+    id: 'com-supabase-' + c.id,
+    type: c.type || '',
+    date: c.date || '',
+    lieu: c.lieu || '',
+    statut: c.statut || 'realise',
+    planning_id: c.planning_id || '',
+    notes: c.notes || '',
+    doc_name: c.doc_name || null,
+    doc_size: c.doc_size || null,
+    doc_data_url: c.doc_data_url || null,
+    lien_sharepoint: c.lien_sharepoint || '',
+  };
+}
+
+function mapWorkflowFromSupabase(w, wfRecipsByWf) {
+  const recipients = (wfRecipsByWf[w.id] || []).map(r => ({
+    _supabase_id: r.id,
+    name: r.recipient_name || '',
+    status: r.status || 'pending',
+    responded_at: r.responded_at || null,
+    refused_reason: r.refused_reason || null,
+  }));
+  return {
+    _supabase_id: w.id,
+    id: 'wf-supabase-' + w.id,
+    doc_name: w.doc_name || '',
+    doc_size: w.doc_size || null,
+    doc_data_url: w.doc_data_url || null,
+    type: w.type || '',
+    status: w.status || 'pending',
+    notes: w.notes || '',
+    recipients: recipients,
+    created_at: w.created_at || null,
+  };
+}
+
+function mapAuditFromSupabase(a) {
+  return {
+    _supabase_id: a.id,
+    timestamp: a.timestamp || '',
+    user: a.user_name || '',
+    action: a.action || '',
+    scope: a.scope || '',
+    field: a.field || '',
+    old_value: a.old_value || '',
+    new_value: a.new_value || '',
   };
 }
 
@@ -12678,7 +12852,8 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     montant_contrat: p.montant_contrat,
     duree: p.duree,
     duree_emprunt: p.duree, // alias attendu par le mockup
-    taux: p.taux,
+    taux: (typeof p.taux === 'number' && p.taux !== null) ? p.taux : (p.taux_texte || ''),
+    taux_texte: p.taux_texte || '',
     index_taux: p.index_taux || '',
     marge: p.marge,
     statut: p.statut || '',
@@ -12687,18 +12862,18 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     date_derniere_echeance: p.date_derniere_echeance || '',
     fenetre_tirage: p.fenetre_tirage || '',
     notes: p.notes || '',
-    // Champs vides pour les sections non branchées
-    date_demande: '',
-    date_comite_banque: '',
-    n_contrat: '',
-    duree_prefi: null,
-    revision: '',
-    contact: '',
-    non_garanti: false,
-    pieces_attendues: [],
-    source: p.statut || '',
-    lien_sp_lo: '',
-    lien_sp_contrat: '',
+    // Champs enrichis depuis Supabase
+    date_demande: p.date_demande || '',
+    date_comite_banque: p.date_comite_banque || '',
+    n_contrat: p.n_contrat || '',
+    duree_prefi: p.duree_prefi,
+    revision: p.revision || '',
+    contact: p.contact || '',
+    non_garanti: p.non_garanti || false,
+    pieces_attendues: p.pieces_attendues || [],
+    source: p.source || p.statut || '',
+    lien_sp_lo: p.lien_sp_lo || '',
+    lien_sp_contrat: p.lien_sp_contrat || '',
   };
 }
 
@@ -12724,6 +12899,11 @@ function mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap) {
     reference_delib: g.reference_delib || '',
     statut: g.statut || '',
     notes: g.notes || '',
+    contact: g.contact || '',
+    caution_relais: g.caution_relais || false,
+    commission: g.commission,
+    lien_sp_accord: g.lien_sp_accord || '',
+    lien_sp_delib: g.lien_sp_delib || '',
   };
 }
 // ----- Fin mapping -----
@@ -12743,7 +12923,7 @@ async function saveOpToSupabase(op) {
     'Prefer': 'return=representation',
   };
   try {
-    // 1. Sauvegarder les champs de l'op
+    // 1. Sauvegarder les champs de l'op (tous les champs Supabase)
     const opPayload = {
       code: op.code,
       display_name: op.display_name,
@@ -12751,18 +12931,45 @@ async function saveOpToSupabase(op) {
       commune: op.commune,
       code_postal: op.code_postal,
       region: op.region,
+      departement: op.departement,
+      adresse: op.adresse,
+      zone_abc: op.zone_abc,
+      zone_123: op.zone_123,
+      lien_sharepoint: op.lien_sharepoint,
+      promoteur: op.promoteur,
       developpeur: op.developpeur,
       resp_op: op.resp_op,
       charge_fin: op.charge_fin,
       latitude: op.latitude,
       longitude: op.longitude,
+      vefa_mod: op.vefa_mod,
+      type_travaux: op.type_travaux,
+      maitrise_fonciere: op.maitrise_fonciere,
+      anru: op.anru,
+      label_certif: op.label_certif,
+      mode_constructif: op.mode_constructif,
+      mode_chauffage: op.mode_chauffage,
+      nb_batiments: op.nb_batiments,
+      perf_seuil: op.perf_seuil,
+      perf_certif: op.perf_certif,
+      date_promesse: op.date_promesse,
+      date_acte_auth: op.date_acte_auth || op.date_acte,
+      date_depot_pc: op.date_depot_pc,
+      date_obtention_pc: op.date_obtention_pc,
+      date_os: op.date_os,
+      date_livraison: op.date_livraison,
+      date_conv_apl: op.date_conv_apl,
+      date_conv_loc: op.date_conv_loc,
+      date_ca_axentia: op.date_ca_axentia,
+      notes_libres: op.notes_libres,
+      phases_snapshots: op.phases_snapshots || {},
     };
     const opResponse = await fetch(`${SUPABASE_URL}/rest/v1/operations?id=eq.${supabaseId}`, {
       method: 'PATCH', headers, body: JSON.stringify(opPayload),
     });
     if (!opResponse.ok) throw new Error('Op: ' + opResponse.status + ' — ' + await opResponse.text());
 
-    // 2. Synchroniser tranches / prêts / garanties (UPSERT + DELETE)
+    // 2. Synchroniser tranches / prêts / garanties / subventions / réservataires / comités / workflows / tags
     await syncEntitiesToSupabase(op, supabaseId);
 
     console.log('Sauvegardé dans Supabase : op', supabaseId, 'et entités liées');
@@ -12913,6 +13120,122 @@ async function syncEntitiesToSupabase(op, operationId) {
       });
     }
   }
+
+  // === SUBVENTIONS ===
+  await syncSimpleEntity({
+    op, operationId, headers,
+    tableName: 'subventions',
+    localItems: op.subventions || [],
+    buildPayload: (s) => ({
+      operation_id: operationId,
+      tranche_id: findTrancheSupabaseIdFromSuffix(op, s.tranche),
+      type: s.type || '',
+      financeur: s.financeur || '',
+      montant_demande: s.montant_demande,
+      date_demande: s.date_demande || null,
+      date_notif: s.date_notif || null,
+      montant_notif: s.montant_notif,
+      date_conv_signature: s.date_conv_signature || null,
+      montant_verse: s.montant_verse,
+      statut: s.statut || '',
+      notes: s.notes || '',
+      lien_sp_conv: s.lien_sp_conv || '',
+    }),
+  });
+
+  // === RÉSERVATAIRES ===
+  await syncSimpleEntity({
+    op, operationId, headers,
+    tableName: 'reservataires',
+    localItems: op.reservataires || [],
+    buildPayload: (r) => ({
+      operation_id: operationId,
+      tranche_id: findTrancheSupabaseIdFromSuffix(op, r.tranche),
+      entite: r.entite || '',
+      nb_logements_reserves: r.nb_logements_reserves,
+      type_reservation: r.type_reservation || '',
+      statut: r.statut || '',
+      date_demande: r.date_demande || null,
+      date_conv: r.date_conv || null,
+      contact: r.contact || '',
+      notes: r.notes || '',
+    }),
+  });
+
+  // === COMITÉS ===
+  await syncSimpleEntity({
+    op, operationId, headers,
+    tableName: 'comites',
+    localItems: op.comites || [],
+    buildPayload: (c) => ({
+      operation_id: operationId,
+      type: c.type || '',
+      date: c.date || null,
+      lieu: c.lieu || '',
+      statut: c.statut || 'realise',
+      planning_id: c.planning_id || null,
+      notes: c.notes || '',
+      doc_name: c.doc_name || null,
+      doc_size: c.doc_size || null,
+      doc_data_url: c.doc_data_url || null,
+      lien_sharepoint: c.lien_sharepoint || '',
+    }),
+  });
+
+  // === TAGS === (modèle particulier : on ne stocke que le nom du tag)
+  // On commence par supprimer tous les tags actuels pour cette op, puis on réinsère
+  await fetch(`${SUPABASE_URL}/rest/v1/tags?operation_id=eq.${operationId}`, {
+    method: 'DELETE', headers,
+  });
+  const tagNames = (op.tags || []).filter(t => t);
+  if (tagNames.length > 0) {
+    await fetch(`${SUPABASE_URL}/rest/v1/tags`, {
+      method: 'POST', headers,
+      body: JSON.stringify(tagNames.map(name => ({ operation_id: operationId, tag_name: name }))),
+    });
+  }
+}
+
+// Helper générique pour synchroniser une entité simple (1 table, pas de sous-relations)
+async function syncSimpleEntity({ op, operationId, headers, tableName, localItems, buildPayload }) {
+  // Récupérer les remote ids
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?operation_id=eq.${operationId}&select=id`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  const remote = res.ok ? await res.json() : [];
+  const remoteIds = new Set(remote.map(r => r.id));
+  const localIds = new Set();
+
+  for (const item of localItems) {
+    const payload = buildPayload(item);
+    if (item._supabase_id) {
+      await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?id=eq.${item._supabase_id}`, {
+        method: 'PATCH', headers, body: JSON.stringify(payload),
+      });
+      localIds.add(item._supabase_id);
+    } else {
+      const ins = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}`, {
+        method: 'POST', headers, body: JSON.stringify(payload),
+      });
+      if (ins.ok) {
+        const created = await ins.json();
+        const newId = Array.isArray(created) ? created[0]?.id : created.id;
+        if (newId) {
+          item._supabase_id = newId;
+          localIds.add(newId);
+        }
+      }
+    }
+  }
+
+  // DELETE remote items absent en local
+  for (const remoteId of remoteIds) {
+    if (!localIds.has(remoteId)) {
+      await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?id=eq.${remoteId}`, {
+        method: 'DELETE', headers,
+      });
+    }
+  }
 }
 
 // Construit le payload Supabase pour une tranche
@@ -12941,6 +13264,13 @@ function buildTranchePayload(t, operationId) {
     t4: t.vol?.['T4'] || null,
     t5_plus: t.vol?.['T5+'] || null,
     notes: t.notes || '',
+    surfaces: t.surfaces || {},
+    batiment: t.batiment || {},
+    charge_fonciere: t.charge_fonciere || {},
+    frais_divers: t.frais_divers || {},
+    frais_financiers: t.frais_financiers || {},
+    honoraires: t.honoraires || {},
+    accord_redevance: t.accord_redevance,
   };
 }
 
@@ -12956,7 +13286,8 @@ function buildPretPayload(p, operationId, trancheId) {
     date_contrat: p.date_contrat || null,
     montant_contrat: p.montant_contrat,
     duree: p.duree || p.duree_emprunt,
-    taux: typeof p.taux === 'number' ? p.taux : null, // ignore taux textuels
+    taux: typeof p.taux === 'number' ? p.taux : null,
+    taux_texte: typeof p.taux === 'string' ? p.taux : (p.taux_texte || ''),
     index_taux: p.index_taux || '',
     marge: p.marge,
     statut: p.statut || '',
@@ -12965,6 +13296,17 @@ function buildPretPayload(p, operationId, trancheId) {
     date_derniere_echeance: p.date_derniere_echeance || null,
     fenetre_tirage: p.fenetre_tirage || '',
     notes: p.notes || '',
+    date_demande: p.date_demande || null,
+    date_comite_banque: p.date_comite_banque || null,
+    n_contrat: p.n_contrat || '',
+    duree_prefi: p.duree_prefi,
+    revision: p.revision || '',
+    contact: p.contact || '',
+    non_garanti: p.non_garanti || false,
+    pieces_attendues: p.pieces_attendues || [],
+    source: p.source || '',
+    lien_sp_lo: p.lien_sp_lo || '',
+    lien_sp_contrat: p.lien_sp_contrat || '',
   };
 }
 
@@ -12988,6 +13330,11 @@ function buildGarantiePayload(g, operationId, trancheId, pretId) {
     reference_delib: g.reference_delib || '',
     statut: g.statut || '',
     notes: g.notes || '',
+    contact: g.contact || '',
+    caution_relais: g.caution_relais || false,
+    commission: g.commission,
+    lien_sp_accord: g.lien_sp_accord || '',
+    lien_sp_delib: g.lien_sp_delib || '',
   };
 }
 
