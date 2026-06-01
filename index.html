@@ -13120,6 +13120,15 @@ async function loadFromSupabase() {
     });
 
     console.log('Chargé depuis Supabase :', DATA.length, 'opérations');
+
+    // Remplir WORKFLOWS global (utilisé par l'onglet Validations, compteurs, etc.)
+    WORKFLOWS.length = 0; // clear
+    wfRows.forEach(w => {
+      const mapped = mapWorkflowFromSupabase(w, wfRecipsByWf);
+      WORKFLOWS.push(mapped);
+    });
+    console.log('WORKFLOWS chargés :', WORKFLOWS.length);
+
     selectedOpCode = DATA[0]?._uid || null;
     selectedTrancheIdx = 0;
     // Mettre à jour le compteur dynamique dans la synthèse
