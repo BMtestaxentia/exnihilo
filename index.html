@@ -13877,6 +13877,8 @@ function mapSubventionFromSupabase(s, trancheSuffixMap) {
     statut: s.statut || '',
     notes: s.notes || '',
     lien_sp_conv: s.lien_sp_conv || '',
+    // Nouveau champ temporel (Livrable 1)
+    date_versement_prevue: s.date_versement_prevue || '',
   };
 }
 
@@ -13992,6 +13994,9 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     source: p.source || p.statut || '',
     lien_sp_lo: p.lien_sp_lo || '',
     lien_sp_contrat: p.lien_sp_contrat || '',
+    // Nouveaux champs temporels (Livrable 1)
+    date_premier_tirage: p.date_premier_tirage || '',
+    date_mise_en_force: p.date_mise_en_force || '',
   };
 }
 
