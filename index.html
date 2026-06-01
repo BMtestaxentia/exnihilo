@@ -12728,50 +12728,277 @@ function mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap) {
 }
 // ----- Fin mapping -----
 
-// Envoie une op modifiée vers Supabase via PATCH
+// Envoie une op modifiée vers Supabase via PATCH, ainsi que ses entités liées
 async function saveOpToSupabase(op) {
   // Extraire l'id Supabase depuis le _uid (format : "op-supabase-1" → 1)
-  const supabaseId = op._uid.replace('op-supabase-', '');
-  if (!supabaseId || isNaN(parseInt(supabaseId))) {
+  const supabaseId = op._supabase_id || (op._uid ? parseInt(op._uid.replace('op-supabase-', '')) : null);
+  if (!supabaseId || isNaN(supabaseId)) {
     console.warn('UID non Supabase, sauvegarde locale uniquement:', op._uid);
     return;
   }
-  // Construire le payload : uniquement les champs scalaires connus de la table Supabase
-  const payload = {
-    code: op.code,
-    display_name: op.display_name,
-    phase_actuelle: op.phase_actuelle,
-    commune: op.commune,
-    code_postal: op.code_postal,
-    region: op.region,
-    developpeur: op.developpeur,
-    resp_op: op.resp_op,
-    charge_fin: op.charge_fin,
-    latitude: op.latitude,
-    longitude: op.longitude,
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation',
   };
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/operations?id=eq.${supabaseId}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
-      },
-      body: JSON.stringify(payload),
+    // 1. Sauvegarder les champs de l'op
+    const opPayload = {
+      code: op.code,
+      display_name: op.display_name,
+      phase_actuelle: op.phase_actuelle,
+      commune: op.commune,
+      code_postal: op.code_postal,
+      region: op.region,
+      developpeur: op.developpeur,
+      resp_op: op.resp_op,
+      charge_fin: op.charge_fin,
+      latitude: op.latitude,
+      longitude: op.longitude,
+    };
+    const opResponse = await fetch(`${SUPABASE_URL}/rest/v1/operations?id=eq.${supabaseId}`, {
+      method: 'PATCH', headers, body: JSON.stringify(opPayload),
     });
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Status ${response.status} — ${errText}`);
-    }
-    const updated = await response.json();
-    console.log('Sauvegardé dans Supabase :', updated);
+    if (!opResponse.ok) throw new Error('Op: ' + opResponse.status + ' — ' + await opResponse.text());
+
+    // 2. Synchroniser tranches / prêts / garanties (UPSERT + DELETE)
+    await syncEntitiesToSupabase(op, supabaseId);
+
+    console.log('Sauvegardé dans Supabase : op', supabaseId, 'et entités liées');
     showToast('Modifications enregistrées dans Supabase', 'check');
   } catch (err) {
     console.error('Erreur sauvegarde Supabase :', err);
-    showToast('Erreur Supabase : modifs locales seulement', 'alert-triangle');
+    showToast('Erreur Supabase : ' + err.message, 'alert-triangle');
   }
+}
+
+// Synchronise les tranches / prêts / garanties d'une op vers Supabase
+// Stratégie : pour chaque entité locale, INSERT si pas d'_supabase_id, sinon PATCH
+// Pour les entités présentes sur Supabase mais absentes en mémoire, DELETE
+async function syncEntitiesToSupabase(op, operationId) {
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation',
+  };
+
+  // === TRANCHES ===
+  // 1. Récupérer les tranches actuelles sur Supabase pour cette op
+  const trRes = await fetch(`${SUPABASE_URL}/rest/v1/tranches?operation_id=eq.${operationId}&select=id`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  const remoteTranches = trRes.ok ? await trRes.json() : [];
+  const remoteTrIds = new Set(remoteTranches.map(t => t.id));
+
+  // 2. Pour chaque tranche locale, UPDATE ou INSERT
+  const localTrIds = new Set();
+  const trancheIdMap = {}; // ancien id local → nouvel id Supabase (pour resync prêts/garanties)
+
+  for (const t of (op.tranches || [])) {
+    const trPayload = buildTranchePayload(t, operationId);
+    if (t._supabase_id) {
+      // UPDATE
+      await fetch(`${SUPABASE_URL}/rest/v1/tranches?id=eq.${t._supabase_id}`, {
+        method: 'PATCH', headers, body: JSON.stringify(trPayload),
+      });
+      localTrIds.add(t._supabase_id);
+      trancheIdMap[t.id] = t._supabase_id;
+    } else {
+      // INSERT
+      const ins = await fetch(`${SUPABASE_URL}/rest/v1/tranches`, {
+        method: 'POST', headers, body: JSON.stringify(trPayload),
+      });
+      if (ins.ok) {
+        const created = await ins.json();
+        const newId = Array.isArray(created) ? created[0]?.id : created.id;
+        if (newId) {
+          t._supabase_id = newId;
+          localTrIds.add(newId);
+          trancheIdMap[t.id] = newId;
+        }
+      }
+    }
+  }
+
+  // 3. DELETE les tranches supprimées localement (présentes remote mais pas local)
+  for (const remoteId of remoteTrIds) {
+    if (!localTrIds.has(remoteId)) {
+      await fetch(`${SUPABASE_URL}/rest/v1/tranches?id=eq.${remoteId}`, {
+        method: 'DELETE', headers,
+      });
+    }
+  }
+
+  // === PRÊTS ===
+  const prRes = await fetch(`${SUPABASE_URL}/rest/v1/prets?operation_id=eq.${operationId}&select=id`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  const remotePrets = prRes.ok ? await prRes.json() : [];
+  const remotePrIds = new Set(remotePrets.map(p => p.id));
+  const localPrIds = new Set();
+  const pretLigneToSupabaseId = {}; // pour les garanties qui pointent vers une ligne de prêt
+
+  for (const p of (op.prets || [])) {
+    // Retrouver le tranche_id Supabase à partir du suffixe local (RSJA, etc.)
+    const trancheSupabaseId = findTrancheSupabaseIdFromSuffix(op, p.tranche);
+    const prPayload = buildPretPayload(p, operationId, trancheSupabaseId);
+    if (p._supabase_id) {
+      await fetch(`${SUPABASE_URL}/rest/v1/prets?id=eq.${p._supabase_id}`, {
+        method: 'PATCH', headers, body: JSON.stringify(prPayload),
+      });
+      localPrIds.add(p._supabase_id);
+      pretLigneToSupabaseId[p.ligne] = p._supabase_id;
+    } else {
+      const ins = await fetch(`${SUPABASE_URL}/rest/v1/prets`, {
+        method: 'POST', headers, body: JSON.stringify(prPayload),
+      });
+      if (ins.ok) {
+        const created = await ins.json();
+        const newId = Array.isArray(created) ? created[0]?.id : created.id;
+        if (newId) {
+          p._supabase_id = newId;
+          localPrIds.add(newId);
+          pretLigneToSupabaseId[p.ligne] = newId;
+        }
+      }
+    }
+  }
+
+  for (const remoteId of remotePrIds) {
+    if (!localPrIds.has(remoteId)) {
+      await fetch(`${SUPABASE_URL}/rest/v1/prets?id=eq.${remoteId}`, {
+        method: 'DELETE', headers,
+      });
+    }
+  }
+
+  // === GARANTIES ===
+  const gaRes = await fetch(`${SUPABASE_URL}/rest/v1/garanties?operation_id=eq.${operationId}&select=id`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  const remoteGaranties = gaRes.ok ? await gaRes.json() : [];
+  const remoteGaIds = new Set(remoteGaranties.map(g => g.id));
+  const localGaIds = new Set();
+
+  for (const g of (op.garanties || [])) {
+    const trancheSupabaseId = findTrancheSupabaseIdFromSuffix(op, g.tranche);
+    const pretSupabaseId = pretLigneToSupabaseId[g.pret_lie] || null;
+    const gaPayload = buildGarantiePayload(g, operationId, trancheSupabaseId, pretSupabaseId);
+    if (g._supabase_id) {
+      await fetch(`${SUPABASE_URL}/rest/v1/garanties?id=eq.${g._supabase_id}`, {
+        method: 'PATCH', headers, body: JSON.stringify(gaPayload),
+      });
+      localGaIds.add(g._supabase_id);
+    } else {
+      const ins = await fetch(`${SUPABASE_URL}/rest/v1/garanties`, {
+        method: 'POST', headers, body: JSON.stringify(gaPayload),
+      });
+      if (ins.ok) {
+        const created = await ins.json();
+        const newId = Array.isArray(created) ? created[0]?.id : created.id;
+        if (newId) {
+          g._supabase_id = newId;
+          localGaIds.add(newId);
+        }
+      }
+    }
+  }
+
+  for (const remoteId of remoteGaIds) {
+    if (!localGaIds.has(remoteId)) {
+      await fetch(`${SUPABASE_URL}/rest/v1/garanties?id=eq.${remoteId}`, {
+        method: 'DELETE', headers,
+      });
+    }
+  }
+}
+
+// Construit le payload Supabase pour une tranche
+function buildTranchePayload(t, operationId) {
+  return {
+    operation_id: operationId,
+    code_full: t.code_full || '',
+    financement: t.financement || '',
+    annee_prog: t.annee_prog,
+    logements: t.logements,
+    m2: t.m2,
+    m2_utiles: t.m2_utiles,
+    budget_ttc: t.budget_ttc,
+    fonds_propres: t.fonds_propres,
+    date_agrement: t.date_agrement || null,
+    date_dfa: t.date_dfa || null,
+    prix_revient_logt: t.prix_revient_logt,
+    statut_agrement: t.statut_agrement || '',
+    reservataire: t.reservataire || '',
+    type_logement: t.type_logement || '',
+    public_cible: t.public_cible || '',
+    nb_chambres: t.nb_chambres,
+    t1: t.vol?.['T1'] || null,
+    t2: t.vol?.['T2'] || null,
+    t3: t.vol?.['T3'] || null,
+    t4: t.vol?.['T4'] || null,
+    t5_plus: t.vol?.['T5+'] || null,
+    notes: t.notes || '',
+  };
+}
+
+function buildPretPayload(p, operationId, trancheId) {
+  return {
+    operation_id: operationId,
+    tranche_id: trancheId,
+    ligne: p.ligne || '',
+    financeur: p.financeur || '',
+    montant_sim: p.montant_sim,
+    date_lo: p.date_lo || null,
+    montant_lo: p.montant_lo,
+    date_contrat: p.date_contrat || null,
+    montant_contrat: p.montant_contrat,
+    duree: p.duree || p.duree_emprunt,
+    taux: typeof p.taux === 'number' ? p.taux : null, // ignore taux textuels
+    index_taux: p.index_taux || '',
+    marge: p.marge,
+    statut: p.statut || '',
+    echeancier_recu: p.echeancier_recu || '',
+    date_premiere_echeance: p.date_premiere_echeance || null,
+    date_derniere_echeance: p.date_derniere_echeance || null,
+    fenetre_tirage: p.fenetre_tirage || '',
+    notes: p.notes || '',
+  };
+}
+
+function buildGarantiePayload(g, operationId, trancheId, pretId) {
+  let quotite = g.quotite;
+  // Si la quotite est en pourcentage (50, 100), la convertir en décimal (0.5, 1.0)
+  if (quotite != null && quotite > 1) {
+    quotite = quotite / 100;
+  }
+  return {
+    operation_id: operationId,
+    tranche_id: trancheId,
+    pret_id: pretId,
+    garant: g.garant || '',
+    quotite: quotite,
+    montant_couvert: g.montant_couvert,
+    date_demande: g.date_demande || null,
+    date_ap: g.date_ap || null,
+    date_delib: g.date_delib || null,
+    date_conv: g.date_conv || null,
+    reference_delib: g.reference_delib || '',
+    statut: g.statut || '',
+    notes: g.notes || '',
+  };
+}
+
+// Helper: retrouver le _supabase_id d'une tranche à partir de son suffixe (RSJA, etc.)
+function findTrancheSupabaseIdFromSuffix(op, suffix) {
+  if (!suffix) return null;
+  const t = (op.tranches || []).find(tr => {
+    const trSuffix = tr.code_full ? tr.code_full.split('-').slice(1).join('-') : '';
+    return trSuffix === suffix;
+  });
+  return t?._supabase_id || null;
 }
 
 // Démarrer le chargement Supabase
