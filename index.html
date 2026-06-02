@@ -9704,7 +9704,7 @@ function addComite(opUid) {
   const op = DATA.find(o => o._uid === opUid);
   if (!op) return;
   if (!Array.isArray(op.comites)) op.comites = [];
-  op.comites.push({
+  const newComite = {
     id: 'com-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
     type: 'CA',
     date: '',
@@ -9713,7 +9713,10 @@ function addComite(opUid) {
     doc_data_url: null,
     doc_size: null,
     notes: '',
-  });
+    statut: 'realise',
+  };
+  op.comites.push(newComite);
+  persistNewComite(newComite, op);
   renderOpDetail();
   replaceTablerIcons();
 }
@@ -9722,6 +9725,8 @@ function removeComite(opUid, comiteId) {
   const op = DATA.find(o => o._uid === opUid);
   if (!op || !Array.isArray(op.comites)) return;
   if (!confirm('Supprimer ce comité ?')) return;
+  const toDelete = op.comites.find(c => c.id === comiteId);
+  if (toDelete) persistComiteDelete(toDelete);
   op.comites = op.comites.filter(c => c.id !== comiteId);
   renderOpDetail();
   replaceTablerIcons();
@@ -9743,6 +9748,7 @@ function attachComiteFile(event, opUid, comiteId) {
     c.doc_name = file.name;
     c.doc_size = file.size;
     c.doc_data_url = e.target.result;
+    persistComiteChange(c, op);
     showToast(`Document « ${file.name} » joint`, 'check');
     renderOpDetail();
     replaceTablerIcons();
@@ -9765,6 +9771,7 @@ function bindComiteEditInputs() {
       let value = el.value;
       if (el.type === 'date' && value) value = isoToFr(value);
       found.comite[field] = value;
+      persistComiteChange(found.comite, found.op);
     };
     el.addEventListener('change', saveValue);
     el.addEventListener('blur', saveValue);
@@ -9882,8 +9889,12 @@ function openWfModalForComite(comite, op) {
       comite_id: comite.id,
     };
     WORKFLOWS.push(wf);
-    persistNewWorkflow(wf);
-    comite.submitted_wf_id = wfId;
+    // On crée d'abord le workflow en DB pour avoir son _supabase_id, puis on lie le comité
+    persistNewWorkflow(wf).then(() => {
+      comite.submitted_wf_id = wfId;
+      persistComiteChange(comite, op);
+    });
+    comite.submitted_wf_id = wfId; // mémoire locale immédiate
     const recipientLabel = recipientNames.length === 1
       ? recipientNames[0]
       : `${recipientNames.length} validateurs`;
@@ -10026,11 +10037,14 @@ function openPlanComiteModal(existingPlanningId) {
     if (existing) {
       DATA.forEach(op => {
         if (!Array.isArray(op.comites)) return;
+        const toDelete = op.comites.filter(c => c.planning_id === planningId && isComitePlanifie(c));
+        toDelete.forEach(c => persistComiteDelete(c));
         op.comites = op.comites.filter(c => !(c.planning_id === planningId && isComitePlanifie(c)));
       });
     }
 
     // Create/update entries on each selected op
+    const newComites = []; // [{ comite, op }] pour persistance
     selectedSet.forEach(uid => {
       const op = DATA.find(o => o._uid === uid);
       if (!op) return;
@@ -10039,7 +10053,7 @@ function openPlanComiteModal(existingPlanningId) {
       const existingRealized = op.comites.find(c => c.planning_id === planningId && !isComitePlanifie(c));
       if (existingRealized) return;
       // Add planned entry
-      op.comites.push({
+      const newComite = {
         id: 'com-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
         type, date, lieu: '', notes,
         planning_id: planningId,
@@ -10048,8 +10062,12 @@ function openPlanComiteModal(existingPlanningId) {
         doc_name: null,
         doc_data_url: null,
         doc_size: null,
-      });
+      };
+      op.comites.push(newComite);
+      newComites.push({ comite: newComite, op });
     });
+    // Persistance asynchrone (non bloquant pour l'UI)
+    newComites.forEach(({ comite, op }) => persistNewComite(comite, op));
 
     showToast(existing ? 'Planification mise à jour' : `Comité ${type} planifié sur ${selectedSet.size} opération${selectedSet.size > 1 ? 's' : ''}`, 'check');
     close();
@@ -10063,9 +10081,10 @@ function cancelPlannedComite(planningId) {
   let count = 0;
   DATA.forEach(op => {
     if (!Array.isArray(op.comites)) return;
-    const before = op.comites.length;
+    const toDelete = op.comites.filter(c => c.planning_id === planningId && isComitePlanifie(c));
+    toDelete.forEach(c => persistComiteDelete(c));
     op.comites = op.comites.filter(c => !(c.planning_id === planningId && isComitePlanifie(c)));
-    count += (before - op.comites.length);
+    count += toDelete.length;
   });
   showToast(`${count} planification${count > 1 ? 's' : ''} annulée${count > 1 ? 's' : ''}`, 'trash');
   renderComitesList();
@@ -10093,6 +10112,7 @@ function attachPvToComite(comiteId) {
       comite.doc_size = file.size;
       comite.doc_data_url = ev.target.result;
       comite.statut = 'realise'; // clôture la planification pour cette op
+      persistComiteChange(comite, found.op);
       showToast(`PV joint, comité clôturé pour cette opération`, 'check');
       renderComitesList();
       if (selectedOpCode === found.op._uid) {
@@ -10865,6 +10885,7 @@ Cette action enregistre une signature électronique simulée.`)) return;
               c.doc_data_url = wf.doc_data_url || wf.doc_url;
               c.doc_name = c.doc_name || wf.doc_name;
             }
+            persistComiteChange(c, op);
           }
         });
       });
@@ -11054,6 +11075,101 @@ async function persistWorkflowDelete(wf) {
     return true;
   } catch (err) {
     console.error('persistWorkflowDelete error:', err);
+    return false;
+  }
+}
+
+// ===== Persistance comités vers Supabase =====
+// Construit le payload Supabase à partir d'un objet comité mockup
+function comitePayloadFromMockup(comite, opSupabaseId) {
+  // Si le comité a un workflow lié, on récupère l'id Supabase du workflow
+  let pvWfId = null;
+  if (comite.submitted_wf_id) {
+    const wf = (typeof WORKFLOWS !== 'undefined') ? WORKFLOWS.find(w => w.id === comite.submitted_wf_id) : null;
+    if (wf && wf._supabase_id) pvWfId = wf._supabase_id;
+  }
+  return {
+    operation_id: opSupabaseId,
+    type: comite.type || null,
+    date: comite.date || null,
+    lieu: comite.lieu || null,
+    statut: comite.statut || 'planifie',
+    planning_id: comite.planning_id || null,
+    notes: comite.notes || null,
+    doc_name: comite.doc_name || null,
+    doc_size: comite.doc_size || null,
+    doc_data_url: comite.doc_data_url || null,
+    lien_sharepoint: comite.lien_sharepoint || null,
+    pv_workflow_id: pvWfId,
+  };
+}
+
+async function persistNewComite(comite, op) {
+  if (!op || !op._supabase_id) {
+    console.warn('persistNewComite: op without _supabase_id, skipping');
+    return null;
+  }
+  try {
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+    };
+    const payload = comitePayloadFromMockup(comite, op._supabase_id);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/comites`, {
+      method: 'POST', headers, body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const created = await res.json();
+    const id = Array.isArray(created) ? created[0]?.id : created.id;
+    comite._supabase_id = id;
+    return id;
+  } catch (err) {
+    console.error('persistNewComite error:', err);
+    showToast('Erreur sauvegarde comité : ' + err.message, 'alert-triangle');
+    return null;
+  }
+}
+
+async function persistComiteChange(comite, op) {
+  if (!comite._supabase_id) {
+    // Pas encore en DB : créer
+    return persistNewComite(comite, op);
+  }
+  if (!op || !op._supabase_id) return null;
+  try {
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+    };
+    const payload = comitePayloadFromMockup(comite, op._supabase_id);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/comites?id=eq.${comite._supabase_id}`, {
+      method: 'PATCH', headers, body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    return true;
+  } catch (err) {
+    console.error('persistComiteChange error:', err);
+    return false;
+  }
+}
+
+async function persistComiteDelete(comite) {
+  if (!comite._supabase_id) return true; // Pas en DB, rien à supprimer
+  try {
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+    };
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/comites?id=eq.${comite._supabase_id}`, {
+      method: 'DELETE', headers,
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    return true;
+  } catch (err) {
+    console.error('persistComiteDelete error:', err);
     return false;
   }
 }
@@ -14731,6 +14847,8 @@ function mapReservataireFromSupabase(r, trancheSuffixMap) {
 }
 
 function mapComiteFromSupabase(c, wfRecipsByWf) {
+  // Si pv_workflow_id présent, on reconstitue le submitted_wf_id côté mockup (id avec préfixe)
+  const submittedWfId = c.pv_workflow_id ? ('wf-supabase-' + c.pv_workflow_id) : null;
   return {
     _supabase_id: c.id,
     id: 'com-supabase-' + c.id,
@@ -14744,6 +14862,7 @@ function mapComiteFromSupabase(c, wfRecipsByWf) {
     doc_size: c.doc_size || null,
     doc_data_url: c.doc_data_url || null,
     lien_sharepoint: c.lien_sharepoint || '',
+    submitted_wf_id: submittedWfId,
   };
 }
 
