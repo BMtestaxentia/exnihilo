@@ -2241,6 +2241,91 @@
     cursor: pointer;
   }
   .map-popup-open:hover { background: var(--info-text); }
+
+  /* === Pop-up enrichi (map-popup-rich) === */
+  .map-popup-rich { min-width: 260px; max-width: 290px; }
+  .map-popup-header { padding-bottom: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 8px; }
+  .map-popup-loc { color: var(--text-secondary); }
+  .map-popup-stats {
+    display: flex; flex-direction: column; gap: 5px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-primary);
+  }
+  .map-popup-stat {
+    display: flex; align-items: center; gap: 7px;
+  }
+  .map-popup-stat i, .map-popup-stat .tabler-svg-icon {
+    color: var(--info-accent);
+    font-size: 14px;
+    width: 16px; flex-shrink: 0;
+  }
+  .map-popup-stat strong {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .map-popup-alerts {
+    padding: 6px 8px;
+    background: var(--warning-bg);
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .map-popup-alerts-head {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--warning-text);
+    font-size: 11.5px; font-weight: 700;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .map-popup-alerts-head i, .map-popup-alerts-head .tabler-svg-icon { font-size: 13px; }
+  .map-popup-alert {
+    padding: 4px 7px;
+    border-left: 3px solid var(--warning-accent);
+    background: var(--bg-primary);
+    border-radius: 2px;
+    font-size: 11px;
+    color: var(--text-primary);
+    margin-bottom: 3px;
+    line-height: 1.35;
+  }
+  .map-popup-alert:last-child { margin-bottom: 0; }
+  .map-popup-alert-more {
+    font-size: 10.5px;
+    color: var(--text-tertiary);
+    font-style: italic;
+    margin-top: 4px;
+    text-align: right;
+  }
+  .map-popup-people {
+    display: flex; align-items: center; gap: 7px;
+    padding: 6px 8px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    font-size: 11.5px;
+    margin-bottom: 8px;
+  }
+  .map-popup-people i, .map-popup-people .tabler-svg-icon {
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+  .map-popup-role {
+    color: var(--text-tertiary);
+    font-size: 10.5px;
+  }
+  .map-popup-rich .map-popup-addr {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+  }
+  .map-popup-rich .map-popup-addr i, .map-popup-rich .map-popup-addr .tabler-svg-icon { font-size: 12px; }
+  .map-popup-rich .map-popup-open {
+    display: flex; align-items: center; justify-content: center;
+    gap: 4px;
+  }
+  .map-popup-rich .map-popup-open i, .map-popup-rich .map-popup-open .tabler-svg-icon { font-size: 14px; }
   /* Override Leaflet default popup styling to match our theme */
   .leaflet-popup-content-wrapper {
     background: var(--bg-primary) !important;
@@ -12081,16 +12166,118 @@ function renderMap() {
     const color = PHASE_MARKER_COLORS[phase] || '#666';
     const icon = buildMarkerIcon(color);
     const marker = L.marker([op.latitude, op.longitude], icon ? { icon } : {});
+
+    // === Calculs pour pop-up enrichi ===
+    // Budget total + nb tranches + nb logements
+    let opBudget = 0;
+    let opLgts = 0;
+    const tranches = Array.isArray(op.tranches) ? op.tranches : [];
+    tranches.forEach(t => {
+      const b = trancheBudgetTTC(t);
+      if (b !== null) opBudget += b;
+      const l = trancheLogements(t);
+      if (l !== null) opLgts += l;
+    });
+
+    // Prochaine échéance clé selon phase
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    let nextEvent = null;
+    if (op.date_livraison) {
+      const d = parseDateStr(op.date_livraison);
+      if (d) {
+        const days = Math.floor((d - today) / 86400000);
+        if (days >= -90) {
+          const label = days < 0 ? `livrée il y a ${-days}j` : days === 0 ? "livraison aujourd'hui" : `livraison dans ${days}j`;
+          nextEvent = { icon: 'calendar-event', label, date: op.date_livraison };
+        }
+      }
+    }
+    // Fallback : prochain comité programmé
+    if (!nextEvent && Array.isArray(op.comites)) {
+      const upcoming = op.comites
+        .map(c => ({ c, d: parseDateStr(c.date) }))
+        .filter(x => x.d && (x.d - today) >= -7 * 86400000)
+        .sort((a, b) => a.d - b.d)[0];
+      if (upcoming) {
+        const days = Math.floor((upcoming.d - today) / 86400000);
+        const lab = days < 0 ? `passé il y a ${-days}j` : days === 0 ? "aujourd'hui" : `dans ${days}j`;
+        nextEvent = { icon: 'users', label: `${upcoming.c.type || 'Comité'} ${lab}`, date: upcoming.c.date };
+      }
+    }
+
+    // Top 2 alertes (les plus urgentes)
+    const alertsForOp = computeAlerts(op);
+    alertsForOp.sort((a, b) => a.days - b.days);
+    const topAlerts = alertsForOp.slice(0, 2);
+    const alertColors = { 'expired': '#dc2626', 'critical': '#ea580c', 'warning': '#d97706', 'info': '#64748b' };
+
+    // Responsable principal : préférer charge_fin, puis resp_op, puis developpeur
+    const responsable = op.charge_fin || op.resp_op || op.developpeur || null;
+    const roleLabel = op.charge_fin ? 'chargé de financement' : (op.resp_op ? 'responsable op.' : 'développeur');
+
+    // Département depuis le code postal de l'adresse, ou champ explicite
+    const dept = op.departement || op.dept || '';
+
     const popupHtml = `
-      <div class="map-popup">
-        <div class="map-popup-code">${escapeHtml(op.code || op.sheet || '—')}</div>
-        <div class="map-popup-name">${escapeHtml(op.display_name || '')}</div>
-        <div class="map-popup-meta">
-          <span class="map-popup-phase" style="background:${color};color:white;">${escapeHtml(phase)}</span>
-          ${op.commune ? `<span>${escapeHtml(op.commune)}</span>` : ''}
+      <div class="map-popup map-popup-rich">
+        <div class="map-popup-header">
+          <div class="map-popup-code">${escapeHtml(op.code || op.sheet || '—')}</div>
+          <div class="map-popup-name">${escapeHtml(op.display_name || '')}</div>
+          <div class="map-popup-meta">
+            <span class="map-popup-phase" style="background:${color};color:white;">${escapeHtml(phase)}</span>
+            ${op.commune ? `<span class="map-popup-loc">${escapeHtml(op.commune)}${dept ? ` (${escapeHtml(dept)})` : ''}</span>` : ''}
+          </div>
         </div>
-        ${op.adresse ? `<div class="map-popup-addr">${escapeHtml(op.adresse)}</div>` : ''}
-        <button class="map-popup-open" data-op-uid="${escapeHtml(op._uid)}">Ouvrir la fiche →</button>
+
+        <div class="map-popup-stats">
+          ${opLgts > 0 ? `
+            <div class="map-popup-stat">
+              <i class="ti ti-home"></i>
+              <span><strong>${opLgts}</strong> logement${opLgts > 1 ? 's' : ''}${tranches.length > 1 ? ` · ${tranches.length} tranches` : ''}</span>
+            </div>
+          ` : tranches.length > 1 ? `
+            <div class="map-popup-stat">
+              <i class="ti ti-stack-2"></i>
+              <span><strong>${tranches.length}</strong> tranches</span>
+            </div>
+          ` : ''}
+          ${opBudget > 0 ? `
+            <div class="map-popup-stat">
+              <i class="ti ti-cash"></i>
+              <span><strong>${fmtEuros(opBudget)}</strong> TTC</span>
+            </div>
+          ` : ''}
+          ${nextEvent ? `
+            <div class="map-popup-stat">
+              <i class="ti ti-${nextEvent.icon}"></i>
+              <span>${escapeHtml(nextEvent.label)}</span>
+            </div>
+          ` : ''}
+        </div>
+
+        ${topAlerts.length > 0 ? `
+          <div class="map-popup-alerts">
+            <div class="map-popup-alerts-head">
+              <i class="ti ti-alert-triangle"></i>
+              <span>${alertsForOp.length} alerte${alertsForOp.length > 1 ? 's' : ''}</span>
+            </div>
+            ${topAlerts.map(a => `
+              <div class="map-popup-alert" style="border-left-color:${alertColors[a.level] || '#888'};">${escapeHtml(a.msg)}</div>
+            `).join('')}
+            ${alertsForOp.length > 2 ? `<div class="map-popup-alert-more">+ ${alertsForOp.length - 2} autre${alertsForOp.length - 2 > 1 ? 's' : ''}</div>` : ''}
+          </div>
+        ` : ''}
+
+        ${responsable ? `
+          <div class="map-popup-people">
+            <i class="ti ti-user"></i>
+            <span>${escapeHtml(responsable)} <span class="map-popup-role">· ${escapeHtml(roleLabel)}</span></span>
+          </div>
+        ` : ''}
+
+        ${op.adresse ? `<div class="map-popup-addr"><i class="ti ti-map-pin"></i> ${escapeHtml(op.adresse)}</div>` : ''}
+
+        <button class="map-popup-open" data-op-uid="${escapeHtml(op._uid)}">Ouvrir la fiche <i class="ti ti-arrow-right"></i></button>
       </div>
     `;
     marker.bindPopup(popupHtml);
@@ -12116,6 +12303,10 @@ function renderMap() {
 
   // Wire popup buttons (delegated on the map container)
   mapInstance.off('popupopen').on('popupopen', (e) => {
+    // Remplacer les icônes Tabler dans le popup juste après ouverture
+    if (e.popup._contentNode) {
+      replaceTablerIcons(e.popup._contentNode);
+    }
     const btn = e.popup._contentNode.querySelector('.map-popup-open');
     if (btn) {
       btn.addEventListener('click', () => {
