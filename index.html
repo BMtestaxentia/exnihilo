@@ -126,6 +126,21 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .comite-doc-empty { color: var(--text-tertiary); font-style: italic; }
+  /* State pills for comites: Planifié / PV signé */
+  .comite-state-pill {
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 10px;
+    font-size: 11.5px; font-weight: 600;
+    border: 1px solid;
+  }
+  .comite-state-pill.planned {
+    background: var(--warning-bg); color: var(--warning-text); border-color: rgba(186, 117, 23, 0.3);
+  }
+  .comite-state-pill.signed {
+    background: var(--success-bg); color: var(--success-text); border-color: rgba(29, 158, 117, 0.3);
+  }
+  .comite-state-pill i, .comite-state-pill .tabler-svg-icon { font-size: 12px; }
   .comite-card-actions {
     display: flex; gap: 4px; flex-shrink: 0;
   }
@@ -3210,6 +3225,7 @@
   .section-label.agr     { background: var(--success-bg); color: var(--success-text); border-color: rgba(29, 158, 117, 0.25); }
   .section-label.sim     { background: var(--info-bg); color: var(--info-text); border-color: rgba(24, 95, 165, 0.25); }
   .section-label.loyer   { background: var(--warning-bg); color: var(--warning-text); border-color: rgba(186, 117, 23, 0.25); }
+  .section-label.conv-loc { background: var(--success-bg); color: var(--success-text); border-color: rgba(29, 158, 117, 0.25); }
   .section-label.montage { background: rgba(216, 90, 48, 0.10); color: var(--coral-text); border-color: rgba(216, 90, 48, 0.25); }
   .section-label.notes   { background: var(--bg-secondary); color: var(--text-secondary); }
   .section-label.batiment { background: rgba(147, 51, 234, 0.10); color: var(--purple-text); border-color: rgba(147, 51, 234, 0.25); }
@@ -4836,6 +4852,7 @@ const REFERENTIELS = {
 
   // Loyer
   type_redevance: { label: 'Types de redevance', items: [] },
+  grilles_loyer: { label: 'Grilles de loyer', items: [] },
 
   // Pièces contrat
   pieces_contrat: { label: 'Pièces attendues pour émission contrat', items: [] },
@@ -7141,6 +7158,14 @@ function renderTrancheDetail() {
         ${editableKV('Date accord redevance', t.date_accord_redev, 'date_accord_redev', 'text', 'tranche-field')}
       </div>` : ''}
 
+      ${(t.conv_loc_signee !== undefined && t.conv_loc_signee !== null || t.conv_loc_montant_loyer || t.conv_loc_date_valeur || t.conv_loc_grille || editMode) ? `<div class="section">
+        <div class="section-label conv-loc"><i class="ti ti-file-text"></i>Convention de location</div>
+        ${editableSelect('Convention signée', t.conv_loc_signee === true ? 'Oui' : (t.conv_loc_signee === false ? 'Non' : ''), 'conv_loc_signee', ['Oui', 'Non'], 'tranche-field')}
+        ${editableKV('Montant de loyer (€/m²)', t.conv_loc_montant_loyer, 'conv_loc_montant_loyer', 'number', 'tranche-field')}
+        ${editableKV('Date valeur loyer', t.conv_loc_date_valeur, 'conv_loc_date_valeur', 'text', 'tranche-field')}
+        ${editableSelect('Grille', t.conv_loc_grille, 'conv_loc_grille', getRef('grilles_loyer'), 'tranche-field')}
+      </div>` : ''}
+
       ${renderSubvSection(subv, op)}
       ${renderPretsSection(prets, op)}
       ${renderGarantiesSection(garanties, op)}
@@ -7975,24 +8000,40 @@ function renderSubvSection(items, op) {
 }
 
 function renderSubvCard(i) {
+  // Build jalons timeline (3 étapes : Simulation → Demande → Notification)
+  const jalons = [
+    { label: 'Simulation', date: i.date_simule, montant: i.montant_simule },
+    { label: 'Demande', date: i.date_demande, montant: i.montant_demande },
+    { label: 'Notification', date: i.date_notification || i.date_notif, montant: i.montant_notifie || i.montant_notif, sp_link: i.lien_sp_notif || i.lien_sharepoint, sp_label: 'Ouvrir la notification' },
+  ];
+  const jalonsHtml = jalons.map(j => {
+    if (!j.date && !j.montant) {
+      return `<div class="jalon jalon-empty"><div class="jalon-label">${j.label}</div><div class="jalon-date">—</div></div>`;
+    }
+    const spBtn = j.sp_link
+      ? `<a class="jalon-sp-link" href="${escapeHtml(j.sp_link)}" target="_blank" rel="noopener" title="${escapeHtml(j.sp_label || 'Ouvrir document')}" onclick="event.stopPropagation();"><i class="ti ti-file-text"></i></a>`
+      : '';
+    return `
+      <div class="jalon">
+        <div class="jalon-label">${j.label}${spBtn}</div>
+        <div class="jalon-date">${escapeHtml(j.date || '—')}</div>
+        ${j.montant ? `<div class="jalon-montant">${fmtMontant(j.montant)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
   return `
     <div class="entity-card${diffEntityClass('subventions', i)}" data-section="subventions" data-row-idx="${i._originalIdx}">
       <div class="entity-card-head">
         <div>
           <div class="entity-card-title">${escapeHtml(i.financeur || '—')}${i.financement ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.financement)}</span>` : ''}</div>
+          ${i.type ? `<div class="entity-card-sub">${escapeHtml(i.type)}</div>` : ''}
         </div>
-        <div style="display:flex;align-items:center;gap:6px;">${sharepointIcons([
-          { lien: i.lien_sp_notif || i.lien_sharepoint, label: 'Notification', icon: 'file-text' },
-        ])}${statusBadge(i.statut)}</div>
+        ${statusBadge(i.statut)}
       </div>
-      <div class="entity-card-stats">
-        <div class="entity-card-stat"><span class="stat-label">Demandé</span><span class="stat-val">${fmtMontant(i.montant_demande)}</span></div>
-        <div class="entity-card-stat"><span class="stat-label">Notifié</span><span class="stat-val">${fmtMontant(i.montant_notifie)}</span></div>
-        <div class="entity-card-stat"><span class="stat-label">Date demande</span><span class="stat-val muted">${i.date_demande || '—'}</span></div>
-        <div class="entity-card-stat"><span class="stat-label">Date notif</span><span class="stat-val muted">${i.date_notification || '—'}</span></div>
-      </div>
+      <div class="jalons-timeline">${jalonsHtml}</div>
       ${i.contact ? `<div class="entity-card-meta"><span><i class="ti ti-user"></i>${escapeHtml(i.contact)}</span></div>` : ''}
-      ${i.commentaires ? `<div class="entity-card-notes">${escapeHtml(i.commentaires)}</div>` : ''}
+      ${i.commentaires || i.notes ? `<div class="entity-card-notes">${escapeHtml(i.commentaires || i.notes)}</div>` : ''}
     </div>
   `;
 }
@@ -8010,14 +8051,16 @@ function renderSubvCardEdit(i, op) {
         <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
         <div class="card-edit-field"><label>Financeur</label><input class="card-input" data-field="financeur" value="${escapeHtml(i.financeur || '')}"></div>
         <div class="card-edit-field"><label>Financement</label><input class="card-input" data-field="financement" value="${escapeHtml(i.financement || '')}"></div>
-        <div class="card-edit-field"><label>Montant demandé (€)</label><input type="number" min="0" class="card-input" data-field="montant_demande" value="${i.montant_demande || ''}"></div>
-        <div class="card-edit-field"><label>Date demande</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA"></div>
         <div class="card-edit-field"><label>Statut</label>
           <select class="card-input" data-field="statut">
             <option value=""></option>
             ${getRef('statuts_subv').map(s => `<option value="${s}"${i.statut===s?' selected':''}>${s}</option>`).join('')}
           </select>
         </div>
+        <div class="card-edit-field"><label>Montant simulé (€)</label><input type="number" min="0" class="card-input" data-field="montant_simule" value="${i.montant_simule || ''}"></div>
+        <div class="card-edit-field"><label>Date simulation</label><input class="card-input" data-field="date_simule" value="${escapeHtml(i.date_simule || '')}" placeholder="JJ/MM/AAAA"></div>
+        <div class="card-edit-field"><label>Montant demandé (€)</label><input type="number" min="0" class="card-input" data-field="montant_demande" value="${i.montant_demande || ''}"></div>
+        <div class="card-edit-field"><label>Date demande</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA"></div>
         <div class="card-edit-field"><label>Montant notifié (€)</label><input type="number" min="0" class="card-input" data-field="montant_notifie" value="${i.montant_notifie || ''}"></div>
         <div class="card-edit-field"><label>Date notification</label><input class="card-input" data-field="date_notification" value="${escapeHtml(i.date_notification || '')}" placeholder="JJ/MM/AAAA"></div>
         <div class="card-edit-field"><label>Contact</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
@@ -9228,6 +9271,24 @@ function fmtDateStr(d) {
   return `${day}/${month}/${d.getFullYear()}`;
 }
 
+// Convertit DD/MM/YYYY (français) → YYYY-MM-DD (ISO, pour input type=date)
+function frToIso(frStr) {
+  if (!frStr) return '';
+  const m = String(frStr).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  // Si déjà au format ISO
+  if (/^\d{4}-\d{2}-\d{2}/.test(frStr)) return String(frStr).slice(0, 10);
+  return '';
+}
+
+// Convertit YYYY-MM-DD (ISO) → DD/MM/YYYY (français)
+function isoToFr(isoStr) {
+  if (!isoStr) return '';
+  const m = String(isoStr).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[3].padStart(2, '0')}/${m[2].padStart(2, '0')}/${m[1]}`;
+  return '';
+}
+
 function computeGanttRange() {
   // Hard floor: January 2023 (no need to go earlier per user request)
   const min = new Date(2023, 0, 1);
@@ -9558,7 +9619,7 @@ function renderComiteCard(c, op, isEditMode) {
           </div>
           <div class="comite-edit-field">
             <label>Date</label>
-            <input type="text" class="comite-edit-input" data-comite-field="date" data-comite-id="${escapeHtml(c.id)}" value="${escapeHtml(c.date || '')}" placeholder="JJ/MM/AAAA" />
+            <input type="date" class="comite-edit-input" data-comite-field="date" data-comite-id="${escapeHtml(c.id)}" value="${escapeHtml(frToIso(c.date))}" />
           </div>
           <div class="comite-edit-field comite-edit-field-wide">
             <label>Lien SharePoint</label>
@@ -9582,28 +9643,48 @@ function renderComiteCard(c, op, isEditMode) {
   }
 
   // Read mode
+  const isPlanned = isComitePlanifie(c);
+  const wfApproved = wf && computeWfOverallStatus(wf) === 'approved';
+  // Récupérer la date de signature du PV (date du dernier recipient approved du workflow)
+  let pvSignedDate = null;
+  let pvDocUrl = null;
+  if (wfApproved && wf) {
+    const recipients = getWfRecipients(wf);
+    const approvedRecipients = recipients.filter(r => r.status === 'approved' && r.responded_at);
+    if (approvedRecipients.length > 0) {
+      // Dernière signature
+      const latest = approvedRecipients.sort((a, b) => new Date(b.responded_at) - new Date(a.responded_at))[0];
+      const d = new Date(latest.responded_at);
+      if (!isNaN(d.getTime())) {
+        pvSignedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+      }
+    }
+    pvDocUrl = wf.doc_url || wf.doc_data_url;
+  }
+
   return `
-    <div class="comite-card comite-card-${conf.color}" data-comite-id="${escapeHtml(c.id)}">
+    <div class="comite-card comite-card-${conf.color}${isPlanned ? ' comite-card-planned' : ''}" data-comite-id="${escapeHtml(c.id)}">
       <div class="comite-card-row">
         <span class="comite-type-pill" style="background:${conf.bg};color:${conf.txt};border-color:${conf.accent};" title="${escapeHtml(conf.full)}">${escapeHtml(conf.label)}</span>
         <span class="comite-date"><i class="ti ti-calendar"></i>${escapeHtml(formatComDate(c.date))}</span>
-        ${c.doc_name ? `<span class="comite-doc-name">${escapeHtml(c.doc_name)}</span>` : '<span class="comite-doc-name comite-doc-empty">Aucun document joint</span>'}
+        ${isPlanned ? `<span class="comite-state-pill planned"><i class="ti ti-clock"></i>Planifié</span>` : ''}
+        ${pvSignedDate ? `<span class="comite-state-pill signed"><i class="ti ti-check"></i>PV signé le ${escapeHtml(pvSignedDate)}</span>` : ''}
+        ${!isPlanned && !pvSignedDate && c.doc_name ? `<span class="comite-doc-name">${escapeHtml(c.doc_name)}</span>` : ''}
+        ${!isPlanned && !pvSignedDate && !c.doc_name ? '<span class="comite-doc-name comite-doc-empty">Aucun document joint</span>' : ''}
         <div class="comite-card-actions">
-          ${c.doc_data_url ? `<button class="comite-action-btn" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'document.pdf')}', findComite('${escapeHtml(c.id)}').comite.doc_data_url)" title="Prévisualiser"><i class="ti ti-eye"></i></button>` : ''}
+          ${pvDocUrl ? `<button class="comite-action-btn" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'PV.pdf')}', ${JSON.stringify(pvDocUrl)})" title="Voir le PV signé"><i class="ti ti-eye"></i></button>` : (c.doc_data_url ? `<button class="comite-action-btn" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'document.pdf')}', findComite('${escapeHtml(c.id)}').comite.doc_data_url)" title="Prévisualiser"><i class="ti ti-eye"></i></button>` : '')}
           ${c.lien_sharepoint ? `<a class="comite-action-btn" href="${escapeHtml(c.lien_sharepoint)}" target="_blank" rel="noopener" title="Ouvrir sur SharePoint"><i class="ti ti-cloud"></i></a>` : ''}
           ${!wf && c.doc_data_url ? `<button class="comite-action-btn comite-submit-btn" onclick="submitComiteForValidation('${escapeHtml(c.id)}')" title="Soumettre pour validation"><i class="ti ti-file-certificate"></i></button>` : ''}
         </div>
       </div>
-      ${wf ? (() => {
+      ${wf && !wfApproved ? (() => {
         const overall = computeWfOverallStatus(wf);
         const ovConf = wfStatusConfig(overall);
         const recipients = getWfRecipients(wf);
         const total = recipients.length;
         const approved = recipients.filter(r => r.status === 'approved').length;
         let detailNames = '';
-        if (overall === 'approved') {
-          detailNames = recipients.map(r => escapeHtml(r.name)).join(' · ');
-        } else if (overall === 'refused') {
+        if (overall === 'refused') {
           const refusers = recipients.filter(r => r.status === 'refused');
           detailNames = refusers.map(r => `${escapeHtml(r.name)}${r.refused_reason ? ` (« ${escapeHtml(r.refused_reason)} »)` : ''}`).join(' · ');
         } else {
@@ -9675,22 +9756,18 @@ function bindComiteEditInputs() {
   document.querySelectorAll('[data-comite-field]').forEach(el => {
     if (el.dataset.wired) return;
     el.dataset.wired = '1';
-    el.addEventListener('change', () => {
+    const saveValue = () => {
       const cid = el.dataset.comiteId;
       const field = el.dataset.comiteField;
       const found = findComite(cid);
-      if (found) {
-        found.comite[field] = el.value;
-      }
-    });
-    el.addEventListener('blur', () => {
-      const cid = el.dataset.comiteId;
-      const field = el.dataset.comiteField;
-      const found = findComite(cid);
-      if (found) {
-        found.comite[field] = el.value;
-      }
-    });
+      if (!found) return;
+      // Si c'est un input type=date, on convertit en DD/MM/YYYY pour stockage
+      let value = el.value;
+      if (el.type === 'date' && value) value = isoToFr(value);
+      found.comite[field] = value;
+    };
+    el.addEventListener('change', saveValue);
+    el.addEventListener('blur', saveValue);
   });
 }
 
@@ -9865,7 +9942,7 @@ function openPlanComiteModal(existingPlanningId) {
           </div>
           <div class="wf-modal-field">
             <label>Date prévue</label>
-            <input type="text" id="planFormDate" placeholder="JJ/MM/AAAA" value="${escapeHtml(existing ? existing.date : '')}" />
+            <input type="date" id="planFormDate" value="${escapeHtml(existing ? frToIso(existing.date) : '')}" />
           </div>
         </div>
 
@@ -9927,7 +10004,8 @@ function openPlanComiteModal(existingPlanningId) {
 
   backdrop.querySelector('#planFormSave').addEventListener('click', () => {
     const type = backdrop.querySelector('#planFormType').value;
-    const date = backdrop.querySelector('#planFormDate').value.trim();
+    const isoDate = backdrop.querySelector('#planFormDate').value.trim();
+    const date = isoToFr(isoDate); // converti en DD/MM/YYYY pour stockage
     const notes = backdrop.querySelector('#planFormNotes').value.trim();
     if (!date) {
       showToast('Saisis une date pour le comité', 'alert-triangle');
@@ -14552,6 +14630,11 @@ function mapTrancheFromSupabase(t) {
     nb_chambres: t.nb_chambres,
     notes: t.notes || '',
     accord_redevance: t.accord_redevance,
+    // Convention de location (Batch 2)
+    conv_loc_signee: t.conv_loc_signee,
+    conv_loc_montant_loyer: t.conv_loc_montant_loyer,
+    conv_loc_date_valeur: t.conv_loc_date_valeur || '',
+    conv_loc_grille: t.conv_loc_grille || '',
     // Volumétrie par typologie (T1, T2, etc.)
     vol: {
       'T1': t.t1,
@@ -14586,10 +14669,14 @@ function mapSubventionFromSupabase(s, trancheSuffixMap) {
     tranche_id_raw: s.tranche_id,
     type: s.type || '',
     financeur: s.financeur || '',
+    montant_simule: s.montant_simule,
+    date_simule: s.date_simule || '',
     montant_demande: s.montant_demande,
     date_demande: s.date_demande || '',
     date_notif: s.date_notif || '',
+    date_notification: s.date_notif || '',  // alias pour compat front
     montant_notif: s.montant_notif,
+    montant_notifie: s.montant_notif,  // alias pour compat front
     date_conv_signature: s.date_conv_signature || '',
     montant_verse: s.montant_verse,
     statut: s.statut || '',
