@@ -2573,6 +2573,66 @@
     border-bottom-color: var(--text-tertiary);
     opacity: 1;
   }
+
+  /* === Dropdown Admin (hover) === */
+  .topnav-dropdown { position: relative; }
+  .topnav-dropdown-trigger {
+    cursor: pointer; padding: 8px 12px;
+    display: flex; align-items: center; gap: 4px;
+    color: var(--text-secondary);
+    font-size: 13px; font-weight: 500;
+    border-radius: var(--radius-md);
+    transition: background 0.15s, color 0.15s;
+  }
+  .topnav-dropdown-trigger:hover {
+    background: var(--bg-secondary); color: var(--text-primary);
+  }
+  .topnav-dropdown-chevron {
+    font-size: 12px !important; transition: transform 0.2s;
+  }
+  .topnav-dropdown:hover .topnav-dropdown-chevron { transform: rotate(180deg); }
+  .topnav-dropdown-menu {
+    position: absolute; top: 100%; right: 0;
+    min-width: 180px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    padding: 4px;
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    z-index: 110;
+    margin-top: 2px;
+  }
+  /* Pont invisible pour éviter que le hover se perde entre trigger et menu */
+  .topnav-dropdown::after {
+    content: ''; position: absolute;
+    top: 100%; left: 0; right: 0; height: 8px;
+    display: none;
+  }
+  .topnav-dropdown:hover .topnav-dropdown-menu,
+  .topnav-dropdown:focus-within .topnav-dropdown-menu { display: flex; }
+  .topnav-dropdown:hover::after { display: block; }
+  .topnav-dropdown-menu .topnav-tab {
+    width: 100%;
+    padding: 8px 12px;
+    border-bottom: none !important;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    opacity: 1 !important;
+  }
+  .topnav-dropdown-menu .topnav-tab:hover {
+    background: var(--bg-secondary);
+  }
+  .topnav-dropdown-menu .topnav-tab.active {
+    background: var(--info-bg); color: var(--info-text);
+  }
+  /* Trigger marqué actif si une des sous-options est active */
+  .topnav-dropdown:has(.topnav-tab.active) .topnav-dropdown-trigger {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+  }
   .topnav-user { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-secondary); }
   .topnav-user-avatar {
     width: 32px; height: 32px; border-radius: 50%;
@@ -4298,9 +4358,15 @@
       <div class="topnav-tab" data-view="tresorerie"><i class="ti ti-wallet"></i>Trésorerie</div>
     </div>
     <div class="topnav-spacer"></div>
-    <div class="topnav-group topnav-group-admin">
-      <div class="topnav-tab" data-view="referentiels"><i class="ti ti-settings"></i>Référentiels</div>
-      <div class="topnav-tab" data-view="trash"><i class="ti ti-trash"></i>Corbeille</div>
+    <div class="topnav-group topnav-group-admin topnav-dropdown" id="adminDropdown">
+      <div class="topnav-tab topnav-dropdown-trigger">
+        <i class="ti ti-settings"></i>Admin
+        <i class="ti ti-chevron-down topnav-dropdown-chevron"></i>
+      </div>
+      <div class="topnav-dropdown-menu">
+        <div class="topnav-tab" data-view="referentiels"><i class="ti ti-list"></i>Référentiels</div>
+        <div class="topnav-tab" data-view="trash"><i class="ti ti-trash"></i>Corbeille</div>
+      </div>
     </div>
   </div>
   <div class="topnav-user">
@@ -4812,6 +4878,11 @@ function computeAlerts(op) {
   const today = new Date(); today.setHours(0,0,0,0);
   const alerts = [];
 
+  // Phase context : certaines alertes ne s'appliquent pas si l'op est livrée
+  const phaseIdx = PHASES.indexOf(op.phase_actuelle || 'Montage');
+  const isDelivered = phaseIdx >= PHASES.indexOf('Livraison'); // Livraison ou GPA
+  const isGpa = (op.phase_actuelle === 'GPA');
+
   const addMonths = (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + n); return r; };
   const daysBetween = (a, b) => Math.floor((b.getTime() - a.getTime()) / 86400000);
   const fmt = (d) => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
@@ -4825,45 +4896,52 @@ function computeAlerts(op) {
   };
 
   // === Rule 1: Lettre d'offre CDC — validité 4 mois ===
-  (op.prets || []).forEach(p => {
-    if (p.date_lo && !p.date_contrat) {
-      const d = parseDateStr(p.date_lo);
-      if (d) {
-        const deadline = addMonths(d, 4);
-        const days = daysBetween(today, deadline);
-        if (days < 120) {
-          const level = classify(days);
-          alerts.push({
-            level, days, deadline,
-            section: 'prets',
-            msg: `Lettre d'offre ${p.ligne || ''} ${p.financeur || ''} : validité ${days < 0 ? `dépassée depuis ${-days}j (depuis le ${fmt(deadline)})` : `expire dans ${days}j (le ${fmt(deadline)})`} — contrat non signé`
-          });
+  // Skip si op livrée : si LO sans contrat sur op livrée, c'est qu'on est passé directement à autre chose
+  if (!isDelivered) {
+    (op.prets || []).forEach(p => {
+      if (p.date_lo && !p.date_contrat) {
+        const d = parseDateStr(p.date_lo);
+        if (d) {
+          const deadline = addMonths(d, 4);
+          const days = daysBetween(today, deadline);
+          if (days < 120) {
+            const level = classify(days);
+            alerts.push({
+              level, days, deadline,
+              section: 'prets',
+              msg: `Lettre d'offre ${p.ligne || ''} ${p.financeur || ''} : validité ${days < 0 ? `dépassée depuis ${-days}j (depuis le ${fmt(deadline)})` : `expire dans ${days}j (le ${fmt(deadline)})`} — contrat non signé`
+            });
+          }
         }
       }
-    }
-  });
+    });
+  }
 
   // === Rule 2: Garantie — accord de principe (validité ≈ 6 mois) ===
-  (op.garanties || []).forEach(g => {
-    if (g.date_ap && !g.date_conv && !g.date_delib) {
-      const d = parseDateStr(g.date_ap);
-      if (d) {
-        const deadline = addMonths(d, 6);
-        const days = daysBetween(today, deadline);
-        if (days < 90) {
-          const level = classify(days, 21);
-          alerts.push({
-            level, days, deadline,
-            section: 'garanties',
-            msg: `Garantie ${g.garant || ''} : accord de principe ${days < 0 ? `caduc depuis ${-days}j` : `expire dans ${days}j (le ${fmt(deadline)})`} — pas de délib/convention`
-          });
+  // Skip si op livrée : la garantie aurait du être signée bien avant
+  if (!isDelivered) {
+    (op.garanties || []).forEach(g => {
+      if (g.date_ap && !g.date_conv && !g.date_delib) {
+        const d = parseDateStr(g.date_ap);
+        if (d) {
+          const deadline = addMonths(d, 6);
+          const days = daysBetween(today, deadline);
+          if (days < 90) {
+            const level = classify(days, 21);
+            alerts.push({
+              level, days, deadline,
+              section: 'garanties',
+              msg: `Garantie ${g.garant || ''} : accord de principe ${days < 0 ? `caduc depuis ${-days}j` : `expire dans ${days}j (le ${fmt(deadline)})`} — pas de délib/convention`
+            });
+          }
         }
       }
-    }
-  });
+    });
+  }
 
   // === Rule 3: PC obtenu mais pas d'OS — validité du PC (2 ans) ===
-  if (op.date_obt_pc && !op.date_os) {
+  // Skip si op livrée : OS forcément passé
+  if (!isDelivered && op.date_obt_pc && !op.date_os) {
     const d = parseDateStr(op.date_obt_pc);
     if (d) {
       const deadline = addMonths(d, 24);
@@ -4880,7 +4958,8 @@ function computeAlerts(op) {
   }
 
   // === Rule 4: DROC à déposer (90 jours après OS) ===
-  if (op.date_os && !op.date_droc) {
+  // Skip si op livrée : DROC obligatoirement traitée
+  if (!isDelivered && op.date_os && !op.date_droc) {
     const d = parseDateStr(op.date_os);
     if (d) {
       const deadline = addMonths(d, 3);
@@ -4897,46 +4976,88 @@ function computeAlerts(op) {
   }
 
   // === Rule 5: Tranche — agrément non obtenu et année prog en cours ou passée ===
-  (op.tranches || []).forEach(t => {
-    if (t.statut_agrement && !['Obtenu', 'DFA signée'].includes(t.statut_agrement) && t.annee_prog) {
-      const progYear = parseInt(t.annee_prog, 10);
-      if (!isNaN(progYear)) {
-        const currentYear = today.getFullYear();
-        if (progYear <= currentYear) {
-          const deadline = new Date(progYear, 11, 31); // 31 décembre de l'année de prog
+  // Skip si op livrée : agrément forcément acquis pour livrer
+  if (!isDelivered) {
+    (op.tranches || []).forEach(t => {
+      if (t.statut_agrement && !['Obtenu', 'DFA signée', 'Agréé'].includes(t.statut_agrement) && t.annee_prog) {
+        const progYear = parseInt(t.annee_prog, 10);
+        if (!isNaN(progYear)) {
+          const currentYear = today.getFullYear();
+          if (progYear <= currentYear) {
+            const deadline = new Date(progYear, 11, 31); // 31 décembre de l'année de prog
+            const days = daysBetween(today, deadline);
+            // Ne signaler que les choses récentes (< 90 jours dépassées) ou à venir
+            if (days < 120 && days > -90) {
+              const level = classify(days, 30, 90);
+              const trCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
+              alerts.push({
+                level, days, deadline,
+                section: 'tranche',
+                msg: `Tranche ${trCode} : agrément ${progYear} en "${t.statut_agrement}" — ${days < 0 ? `année prog terminée depuis ${-days}j` : `fin d'année prog dans ${days}j`}`
+              });
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // === Rule 6: Subvention demandée mais sans réponse depuis longtemps (> 6 mois) ===
+  // Skip si op livrée
+  if (!isDelivered) {
+    (op.subventions || []).forEach(s => {
+      if (s.date_demande && s.statut === 'Demandée' && !s.montant_notifie) {
+        const d = parseDateStr(s.date_demande);
+        if (d) {
+          const deadline = addMonths(d, 6); // butoir indicatif de relance
           const days = daysBetween(today, deadline);
-          if (days < 120) {
-            const level = classify(days, 30, 90);
-            const trCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
+          if (days < 60) {
+            const level = classify(days, 0, 30);
             alerts.push({
               level, days, deadline,
-              section: 'tranche',
-              msg: `Tranche ${trCode} : agrément ${progYear} en "${t.statut_agrement}" — ${days < 0 ? `année prog terminée depuis ${-days}j` : `fin d'année prog dans ${days}j`}`
+              section: 'subventions',
+              msg: `Subvention ${s.financeur || ''} : demandée le ${s.date_demande}${days < 0 ? `, sans réponse depuis ${-days}j (à relancer)` : `, butoir indicatif de relance dans ${days}j`}`
             });
           }
         }
       }
-    }
-  });
+    });
+  }
 
-  // === Rule 6: Subvention demandée mais sans réponse depuis longtemps (> 6 mois) ===
-  (op.subventions || []).forEach(s => {
-    if (s.date_demande && s.statut === 'Demandée' && !s.montant_notifie) {
-      const d = parseDateStr(s.date_demande);
-      if (d) {
-        const deadline = addMonths(d, 6); // butoir indicatif de relance
-        const days = daysBetween(today, deadline);
-        if (days < 60) {
-          const level = classify(days, 0, 30);
-          alerts.push({
-            level, days, deadline,
-            section: 'subventions',
-            msg: `Subvention ${s.financeur || ''} : demandée le ${s.date_demande}${days < 0 ? `, sans réponse depuis ${-days}j (à relancer)` : `, butoir indicatif de relance dans ${days}j`}`
-          });
-        }
+  // === Rule 7 (NEW) : Op livrée mais pas de convention APL ===
+  // Pertinent uniquement pour les ops récemment livrées
+  if (isDelivered && op.date_livraison && !op.date_conv_apl) {
+    const d = parseDateStr(op.date_livraison);
+    if (d) {
+      const days = daysBetween(d, today);
+      // Alerte si livré depuis 1-12 mois et toujours pas de convention APL
+      if (days >= 30 && days <= 365) {
+        alerts.push({
+          level: 'warning', days: -days, deadline: d,
+          section: 'op',
+          msg: `Op livrée depuis ${days}j mais pas de convention APL signée`
+        });
       }
     }
-  });
+  }
+
+  // === Rule 8 (NEW) : GPA — vérifier date de fin GPA approche (10 ans après livraison) ===
+  if (isGpa && op.date_livraison) {
+    const d = parseDateStr(op.date_livraison);
+    if (d) {
+      const finGpa = new Date(d); finGpa.setFullYear(finGpa.getFullYear() + 10);
+      const days = daysBetween(today, finGpa);
+      // Si GPA finit dans les 6 mois ou déjà passée < 1 an
+      if (days < 180 && days > -365) {
+        const level = days < 0 ? 'expired' : (days < 30 ? 'critical' : 'warning');
+        alerts.push({
+          level, days, deadline: finGpa,
+          section: 'op',
+          msg: `Fin de GPA (garantie de parfait achèvement) ${days < 0 ? `dépassée depuis ${-days}j` : `dans ${days}j`} (le ${fmt(finGpa)})`
+        });
+      }
+    }
+  }
 
   // Sort: most urgent first (lowest days, expired first)
   alerts.sort((a, b) => a.days - b.days);
@@ -6559,7 +6680,7 @@ function renderOpDetail() {
     `;
   }).join('');
 
-  const nextPhaseBtn = (!isViewingSnapshot && phaseIdx < PHASES.length - 1)
+  const nextPhaseBtn = (effectiveEditMode && !isViewingSnapshot && phaseIdx < PHASES.length - 1)
     ? `<button class="btn-edit primary stepper-advance" onclick="advanceToNextPhase()" title="Figer la phase actuelle et passer à la suivante">
         <span class="stepper-advance-text">
           <span class="stepper-advance-l1">Figer et passer à</span>
@@ -12736,7 +12857,17 @@ let synthActiveTab = storageGet('synthTab') || 'identite';
 let synthFilter = '';
 let synthFilters = { phase: '', region: '', equipe: '', type_travaux: '' };
 let synthSort = { tabId: null, colIdx: null, direction: null };
-let synthSavedViews = []; // [{ id, name, filters, ctxFilters, tab }]
+let synthSavedViews = (() => {
+  try {
+    const raw = storageGet('synthSavedViews');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return [];
+})(); // [{ id, name, filters, ctxFilters, tab }]
+
+function persistSavedViews() {
+  try { storageSet('synthSavedViews', JSON.stringify(synthSavedViews)); } catch (e) {}
+}
 let synthActiveViewId = null;
 
 // Contextual filters by synth tab (in addition to the common ones)
@@ -13234,6 +13365,7 @@ function saveCurrentView() {
     filters: { ...synthFilters },
   });
   synthActiveViewId = id;
+  persistSavedViews();
   renderSavedViews();
   showToast(`Vue « ${name.trim()} » sauvegardée`, 'bookmark');
 }
@@ -13267,6 +13399,7 @@ function deleteSavedView(id) {
   if (!confirm(`Supprimer la vue « ${v.name} » ?`)) return;
   synthSavedViews = synthSavedViews.filter(x => x.id !== id);
   if (synthActiveViewId === id) synthActiveViewId = null;
+  persistSavedViews();
   renderSavedViews();
   showToast('Vue supprimée', 'trash');
 }
