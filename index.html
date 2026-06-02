@@ -2577,14 +2577,16 @@
   /* === Dropdown Admin (hover) === */
   .topnav-dropdown { position: relative; }
   .topnav-dropdown-trigger {
-    cursor: pointer; padding: 8px 12px;
-    display: flex; align-items: center; gap: 4px;
+    cursor: default;
+    padding: 8px 12px;
+    display: flex; align-items: center; gap: 6px;
     color: var(--text-secondary);
     font-size: 13px; font-weight: 500;
     border-radius: var(--radius-md);
     transition: background 0.15s, color 0.15s;
+    user-select: none;
   }
-  .topnav-dropdown-trigger:hover {
+  .topnav-dropdown:hover .topnav-dropdown-trigger {
     background: var(--bg-secondary); color: var(--text-primary);
   }
   .topnav-dropdown-chevron {
@@ -2592,7 +2594,7 @@
   }
   .topnav-dropdown:hover .topnav-dropdown-chevron { transform: rotate(180deg); }
   .topnav-dropdown-menu {
-    position: absolute; top: 100%; right: 0;
+    position: absolute; top: calc(100% + 6px); right: 0;
     min-width: 180px;
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
@@ -2603,17 +2605,15 @@
     flex-direction: column;
     gap: 1px;
     z-index: 110;
-    margin-top: 2px;
   }
   /* Pont invisible pour éviter que le hover se perde entre trigger et menu */
   .topnav-dropdown::after {
-    content: ''; position: absolute;
-    top: 100%; left: 0; right: 0; height: 8px;
-    display: none;
+    content: '';
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    height: 10px;
   }
-  .topnav-dropdown:hover .topnav-dropdown-menu,
-  .topnav-dropdown:focus-within .topnav-dropdown-menu { display: flex; }
-  .topnav-dropdown:hover::after { display: block; }
+  .topnav-dropdown:hover .topnav-dropdown-menu { display: flex; }
   .topnav-dropdown-menu .topnav-tab {
     width: 100%;
     padding: 8px 12px;
@@ -2621,6 +2621,7 @@
     border-radius: var(--radius-md);
     font-size: 13px;
     opacity: 1 !important;
+    cursor: pointer;
   }
   .topnav-dropdown-menu .topnav-tab:hover {
     background: var(--bg-secondary);
@@ -4359,7 +4360,7 @@
     </div>
     <div class="topnav-spacer"></div>
     <div class="topnav-group topnav-group-admin topnav-dropdown" id="adminDropdown">
-      <div class="topnav-tab topnav-dropdown-trigger">
+      <div class="topnav-dropdown-trigger">
         <i class="ti ti-settings"></i>Admin
         <i class="ti ti-chevron-down topnav-dropdown-chevron"></i>
       </div>
