@@ -3914,6 +3914,36 @@
 
   .gantt-empty { padding: 40px; text-align: center; color: var(--text-tertiary); font-style: italic; }
   .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+
+  /* === Dashboard bar-list (Vue d'ensemble) === */
+  .bar-list { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
+  .bar-row {
+    display: grid;
+    grid-template-columns: minmax(80px, 120px) 1fr auto;
+    gap: 10px; align-items: center;
+  }
+  .bar-row-label {
+    font-size: 12px; color: var(--text-secondary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .bar-row-track {
+    height: 8px; background: var(--bg-secondary);
+    border-radius: 4px; overflow: hidden;
+  }
+  .bar-row-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+  .bar-row-value {
+    font-size: 12px; font-weight: 600;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    text-align: right; min-width: 50px;
+  }
+  .empty-state-mini {
+    padding: 16px; text-align: center;
+    color: var(--text-tertiary); font-style: italic; font-size: 12px;
+  }
   .kpi-card { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 18px 20px; }
   .kpi-label { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
   .kpi-value { font-size: 28px; font-weight: 600; color: var(--text-primary); }
@@ -4351,6 +4381,26 @@
   .btn-edit:hover { background: var(--bg-secondary); }
   .btn-edit.primary { background: var(--info-accent); color: white; border-color: var(--info-accent); }
   .btn-edit.primary:hover { background: var(--info-text); }
+  .btn-edit.danger {
+    background: var(--bg-primary);
+    color: var(--danger-text);
+    border-color: var(--danger-bg);
+  }
+  .btn-edit.danger:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger-accent);
+    color: var(--danger-text);
+  }
+  /* Sépare le bouton supprimer des actions principales (Annuler/Enregistrer) */
+  .edit-toolbar .btn-bar .btn-edit.danger {
+    margin-right: 14px;
+    border-right: 1px solid transparent; /* visual placeholder for separation */
+  }
+  .edit-toolbar .btn-bar .btn-edit.danger::after {
+    content: '';
+    position: absolute;
+    /* fallback if needed in future */
+  }
   .icon-btn.active { background: var(--info-bg); color: var(--info-accent); border-color: var(--info-accent); }
 
   .editable-input {
@@ -4528,7 +4578,7 @@
 
     <h2 class="dashboard-section-title">Vue d'ensemble du portefeuille</h2>
 
-    <div class="kpi-grid">
+    <div class="kpi-grid" id="dashboardKpiGrid">
       <div class="kpi-card">
         <div class="kpi-label"><i class="ti ti-building-community"></i>Opérations</div>
         <div class="kpi-value">1</div>
@@ -4550,51 +4600,51 @@
     <div class="dashboard-grid">
       <div class="panel">
         <div class="panel-title"><i class="ti ti-chart-pie" style="color: var(--info-accent);"></i>Répartition par statut</div>
-        <div class="stat-bar-row"><div class="stat-bar-label">Travaux</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%; background: #D85A30;"></div></div><div class="stat-bar-count">1</div></div>
-
+        <div id="dashboardStatutBars">        <div class="stat-bar-row"><div class="stat-bar-label">Travaux</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%; background: #D85A30;"></div></div><div class="stat-bar-count">1</div></div>
+</div>
       </div>
       <div class="panel">
         <div class="panel-title"><i class="ti ti-map-pin" style="color: var(--success-accent);"></i>Répartition par région</div>
-        <div class="stat-bar-row"><div class="stat-bar-label">Occitanie</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%; background: var(--info-accent);"></div></div><div class="stat-bar-count">1</div></div>
-
+        <div id="dashboardRegionBars">        <div class="stat-bar-row"><div class="stat-bar-label">Occitanie</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%; background: var(--info-accent);"></div></div><div class="stat-bar-count">1</div></div>
+</div>
       </div>
     </div>
 
     <div class="dashboard-grid">
       <div class="panel">
         <div class="panel-title"><i class="ti ti-home" style="color: var(--purple-accent);"></i>Logements par type de financement</div>
-        <div class="stat-bar-row"><div class="stat-bar-label">PLAI</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 73%; background: #1d9e75;"></div></div><div class="stat-bar-count">79</div></div>
+        <div id="dashboardFinancementBars">        <div class="stat-bar-row"><div class="stat-bar-label">PLAI</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 73%; background: #1d9e75;"></div></div><div class="stat-bar-count">79</div></div>
         <div class="stat-bar-row"><div class="stat-bar-label">PLS</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 20%; background: #9333ea;"></div></div><div class="stat-bar-count">22</div></div>
         <div class="stat-bar-row"><div class="stat-bar-label">PLUS</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 5%; background: #185fa5;"></div></div><div class="stat-bar-count">6</div></div>
-
+</div>
       </div>
       <div class="panel">
         <div class="panel-title"><i class="ti ti-shield-check" style="color: var(--success-accent);"></i>Avancement des agréments (par tranche)</div>
-        <div class="stat-bar-row"><div class="stat-bar-label">DFA signée</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 66%; background: #1d9e75;"></div></div><div class="stat-bar-count">2</div></div>
+        <div id="dashboardAgrementBars">        <div class="stat-bar-row"><div class="stat-bar-label">DFA signée</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 66%; background: #1d9e75;"></div></div><div class="stat-bar-count">2</div></div>
         <div class="stat-bar-row"><div class="stat-bar-label">Obtenu</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 33%; background: #1d9e75;"></div></div><div class="stat-bar-count">1</div></div>
-
+</div>
       </div>
     </div>
 
     <div class="dashboard-grid">
       <div class="panel">
         <div class="panel-title"><i class="ti ti-clock" style="color: var(--warning-accent);"></i>Livraisons prévues par année</div>
-        <div class="stat-bar-row"><div class="stat-bar-label">2026</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%; background: #ba7517;"></div></div><div class="stat-bar-count">1</div></div>
-
+        <div id="dashboardLivraisonBars">        <div class="stat-bar-row"><div class="stat-bar-label">2026</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%; background: #ba7517;"></div></div><div class="stat-bar-count">1</div></div>
+</div>
       </div>
       <div class="panel">
         <div class="panel-title"><i class="ti ti-coin" style="color: var(--info-accent);"></i>Répartition du financement global</div>
-        <div class="stat-bar-row"><div class="stat-bar-label">Prêts</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 85%; background: #185fa5;"></div></div><div class="stat-bar-count">8 180 k€ <span style="color:var(--text-tertiary);font-weight:400;">(85 %)</span></div></div>
+        <div id="dashboardFinanceBars">        <div class="stat-bar-row"><div class="stat-bar-label">Prêts</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 85%; background: #185fa5;"></div></div><div class="stat-bar-count">8 180 k€ <span style="color:var(--text-tertiary);font-weight:400;">(85 %)</span></div></div>
         <div class="stat-bar-row"><div class="stat-bar-label">Subventions</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 7%; background: #1d9e75;"></div></div><div class="stat-bar-count">728 k€ <span style="color:var(--text-tertiary);font-weight:400;">(7 %)</span></div></div>
         <div class="stat-bar-row"><div class="stat-bar-label">Fonds propres</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 7%; background: #d85a30;"></div></div><div class="stat-bar-count">708 k€ <span style="color:var(--text-tertiary);font-weight:400;">(7 %)</span></div></div>
-
+</div>
       </div>
     </div>
 
     <div class="panel">
       <div class="panel-title"><i class="ti ti-map-pin" style="color: var(--coral-accent);"></i>Répartition par zone géographique ABC</div>
-        <div class="stat-bar-row"><div class="stat-bar-label">Zone B2</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%; background: #185fa5;"></div></div><div class="stat-bar-count">1</div></div>
-
+      <div id="dashboardZoneBars">        <div class="stat-bar-row"><div class="stat-bar-label">Zone B2</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width: 100%; background: #185fa5;"></div></div><div class="stat-bar-count">1</div></div>
+</div>
     </div>
 
   </div>
@@ -6778,6 +6828,7 @@ function renderOpDetail() {
       <i class="ti ti-pencil"></i>
       <span>Mode édition · les modifications sont locales (mockup)</span>
       <div class="btn-bar">
+        <button class="btn-edit danger" onclick="deleteOp()"><i class="ti ti-trash"></i>Supprimer</button>
         <button class="btn-edit" onclick="cancelOpEdits()"><i class="ti ti-x"></i>Annuler</button>
         <button class="btn-edit primary" onclick="saveOpEdits()"><i class="ti ti-check"></i>Enregistrer</button>
       </div>
@@ -6818,7 +6869,6 @@ function renderOpDetail() {
         </div>
       </div>
       <div style="display: flex; gap: 8px; align-self: center; flex-shrink: 0;">
-        ${effectiveEditMode ? `<button class="icon-btn danger-btn" onclick="deleteOp()" title="Supprimer l'opération"><i class="ti ti-trash"></i></button>` : ''}
         ${!effectiveEditMode ? `<button class="icon-btn" onclick="exportOpPdf()" title="Exporter en PDF"><i class="ti ti-file-text"></i></button>` : ''}
         ${!effectiveEditMode ? `<button class="icon-btn" onclick="showOpHistory()" title="Historique des modifications"><i class="ti ti-history"></i></button>` : ''}
         ${op.lien_sharepoint && !effectiveEditMode ? `<a href="${escapeHtml(op.lien_sharepoint)}" target="_blank" class="icon-btn sharepoint-btn" title="Ouvrir dans SharePoint">
@@ -8973,6 +9023,167 @@ function refreshNavBadges() {
   } else {
     badge.style.display = 'none';
   }
+}
+
+// === Rebuild dashboard KPI tiles + bars dynamically from current DATA ===
+function refreshDashboardKpis() {
+  const ops = DATA.filter(o => !o.deleted);
+  if (ops.length === 0) return;
+
+  // Helper: render bar list HTML
+  const renderBars = (rows) => {
+    if (!rows || rows.length === 0) return '<div class="empty-state-mini">Aucune donnée</div>';
+    const max = Math.max(...rows.map(r => r.value), 1);
+    return '<div class="bar-list">' + rows.map(r => `
+      <div class="bar-row">
+        <div class="bar-row-label">${escapeHtml(r.label)}</div>
+        <div class="bar-row-track">
+          <div class="bar-row-fill" style="width:${(r.value / max * 100).toFixed(1)}%;background:${r.color || 'var(--info-accent)'};"></div>
+        </div>
+        <div class="bar-row-value">${escapeHtml(String(r.display ?? r.value))}</div>
+      </div>
+    `).join('') + '</div>';
+  };
+
+  // 1) KPI grid (4 tiles)
+  let totalLgts = 0, totalBudget = 0;
+  const regions = new Set();
+  ops.forEach(op => {
+    const tLgts = (typeof totalLgtsOp === 'function') ? totalLgtsOp(op) : null;
+    if (tLgts !== null && tLgts !== undefined) totalLgts += (tLgts || 0);
+    else (op.tranches || []).forEach(t => { const l = trancheLogements(t); if (l !== null) totalLgts += l; });
+    const tBudget = totalBudget && (typeof totalBudget === 'function') ? null : null;
+    (op.tranches || []).forEach(t => {
+      const b = trancheBudgetTTC(t);
+      if (b !== null) totalBudget += b;
+    });
+    if (op.region) regions.add(op.region);
+  });
+  const kpiGrid = document.getElementById('dashboardKpiGrid');
+  if (kpiGrid) {
+    kpiGrid.innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-label"><i class="ti ti-building-community"></i>Opérations</div>
+        <div class="kpi-value">${ops.length}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label"><i class="ti ti-home"></i>Logements totaux</div>
+        <div class="kpi-value">${totalLgts || '—'}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label"><i class="ti ti-cash"></i>Budget consolidé</div>
+        <div class="kpi-value">${fmtEuros(totalBudget)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label"><i class="ti ti-map-pin"></i>Régions</div>
+        <div class="kpi-value">${regions.size}</div>
+      </div>
+    `;
+  }
+
+  // 2) Statut bars (par phase)
+  const phaseCount = {};
+  ops.forEach(op => {
+    const p = op.phase_actuelle || 'Montage';
+    phaseCount[p] = (phaseCount[p] || 0) + 1;
+  });
+  const phaseOrder = ['Montage', 'Validation CA', 'Travaux', 'Livraison', 'GPA'];
+  const statutBars = phaseOrder
+    .filter(p => phaseCount[p])
+    .map(p => ({
+      label: p,
+      value: phaseCount[p],
+      display: phaseCount[p],
+      color: (PHASE_COLORS[p] && PHASE_COLORS[p].text) || 'var(--info-accent)'
+    }));
+  const statutEl = document.getElementById('dashboardStatutBars');
+  if (statutEl) statutEl.innerHTML = renderBars(statutBars);
+
+  // 3) Régions
+  const regionCount = {};
+  ops.forEach(op => {
+    if (op.region) regionCount[op.region] = (regionCount[op.region] || 0) + 1;
+  });
+  const regionBars = Object.entries(regionCount)
+    .sort((a, b) => b[1] - a[1])
+    .map(([region, n]) => ({ label: region, value: n, display: n, color: 'var(--success-accent)' }));
+  const regionEl = document.getElementById('dashboardRegionBars');
+  if (regionEl) regionEl.innerHTML = renderBars(regionBars);
+
+  // 4) Logements par type de financement (PLAI/PLUS/PLS/PLI/Libre/Autre)
+  const finTypes = { 'PLAI': 0, 'PLUS': 0, 'PLS': 0, 'PLI': 0, 'LIBRE': 0, 'AUTRE': 0 };
+  ops.forEach(op => {
+    (op.tranches || []).forEach(t => {
+      ['plai', 'plus', 'pls', 'pli', 'libre', 'autre'].forEach(k => {
+        const v = (t.vol && Number(t.vol[k])) || 0;
+        if (v > 0) finTypes[k.toUpperCase()] += v;
+      });
+    });
+  });
+  const finBars = Object.entries(finTypes)
+    .filter(([_, v]) => v > 0)
+    .map(([type, v]) => ({ label: type, value: v, display: v, color: 'var(--purple-accent)' }));
+  const finEl = document.getElementById('dashboardFinancementBars');
+  if (finEl) finEl.innerHTML = renderBars(finBars);
+
+  // 5) Avancement agréments (par statut)
+  const agrCount = {};
+  ops.forEach(op => {
+    (op.tranches || []).forEach(t => {
+      const s = t.statut_agrement || 'Non défini';
+      agrCount[s] = (agrCount[s] || 0) + 1;
+    });
+  });
+  const agrBars = Object.entries(agrCount)
+    .sort((a, b) => b[1] - a[1])
+    .map(([s, n]) => ({ label: s, value: n, display: n, color: 'var(--success-accent)' }));
+  const agrEl = document.getElementById('dashboardAgrementBars');
+  if (agrEl) agrEl.innerHTML = renderBars(agrBars);
+
+  // 6) Livraisons par année
+  const livCount = {};
+  ops.forEach(op => {
+    if (op.date_livraison) {
+      const d = parseDateStr(op.date_livraison);
+      if (d) {
+        const y = d.getFullYear();
+        livCount[y] = (livCount[y] || 0) + 1;
+      }
+    }
+  });
+  const livBars = Object.entries(livCount)
+    .sort((a, b) => a[0] - b[0])
+    .map(([y, n]) => ({ label: y, value: n, display: n, color: 'var(--warning-accent)' }));
+  const livEl = document.getElementById('dashboardLivraisonBars');
+  if (livEl) livEl.innerHTML = renderBars(livBars);
+
+  // 7) Répartition financement global (FP / Prêts / Subv)
+  let fp = 0, prets = 0, subv = 0;
+  ops.forEach(op => {
+    (op.tranches || []).forEach(t => { fp += (parseFloat(t.fonds_propres) || 0); });
+    (op.prets || []).forEach(p => { prets += bestPretAmount(p); });
+    (op.subventions || []).forEach(s => { subv += bestSubvAmount(s); });
+  });
+  const finFmt = (v) => fmtEuros(v);
+  const finGlobalBars = [
+    { label: 'Fonds propres', value: fp, display: finFmt(fp), color: 'var(--purple-accent)' },
+    { label: 'Prêts', value: prets, display: finFmt(prets), color: 'var(--info-accent)' },
+    { label: 'Subventions', value: subv, display: finFmt(subv), color: 'var(--success-accent)' },
+  ].filter(b => b.value > 0);
+  const finGlobalEl = document.getElementById('dashboardFinanceBars');
+  if (finGlobalEl) finGlobalEl.innerHTML = renderBars(finGlobalBars);
+
+  // 8) Zone ABC
+  const zoneCount = {};
+  ops.forEach(op => {
+    const z = op.zone_abc || 'Non définie';
+    zoneCount[z] = (zoneCount[z] || 0) + 1;
+  });
+  const zoneBars = Object.entries(zoneCount)
+    .sort((a, b) => b[1] - a[1])
+    .map(([z, n]) => ({ label: 'Zone ' + z, value: n, display: n, color: 'var(--coral-accent)' }));
+  const zoneEl = document.getElementById('dashboardZoneBars');
+  if (zoneEl) zoneEl.innerHTML = renderBars(zoneBars);
 }
 
 // ============== GANTT VIEW ==============
@@ -11270,7 +11481,7 @@ function renderFinances() {
             `;
           }).join('')}
         </div>
-        ${concentTop1Fin > 0.5 ? `<div class="finances-panel-warning"><i class="ti ti-alert-triangle"></i>Risque de concentration : un seul financeur représente plus de 50% de l'encours</div>` : ''}
+        ${''}
         `}
       </div>
 
@@ -11422,11 +11633,6 @@ function renderFinances() {
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="finances-disclaimer">
-      <i class="ti ti-info-circle"></i>
-      <span>Données agrégées en temps réel à partir des ${ops.length} opérations actives du portefeuille. Cette vue ne tient pas compte des opérations en corbeille.</span>
     </div>
   `;
   replaceTablerIcons(c);
@@ -14271,6 +14477,7 @@ async function loadFromSupabase() {
     renderAll();
     renderOpTable();
     renderAccueil();
+    refreshDashboardKpis();
     replaceTablerIcons();
 
     // Restaurer la vue active si on en a une sauvegardée (mais seulement si elle est valide)
