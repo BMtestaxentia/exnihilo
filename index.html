@@ -7158,13 +7158,13 @@ function renderTrancheDetail() {
         ${editableKV('Date accord redevance', t.date_accord_redev, 'date_accord_redev', 'text', 'tranche-field')}
       </div>` : ''}
 
-      ${(t.conv_loc_signee !== undefined && t.conv_loc_signee !== null || t.conv_loc_montant_loyer || t.conv_loc_date_valeur || t.conv_loc_grille || editMode) ? `<div class="section">
+      <div class="section">
         <div class="section-label conv-loc"><i class="ti ti-file-text"></i>Convention de location</div>
         ${editableSelect('Convention signée', t.conv_loc_signee === true ? 'Oui' : (t.conv_loc_signee === false ? 'Non' : ''), 'conv_loc_signee', ['Oui', 'Non'], 'tranche-field')}
         ${editableKV('Montant de loyer (€/m²)', t.conv_loc_montant_loyer, 'conv_loc_montant_loyer', 'number', 'tranche-field')}
         ${editableKV('Date valeur loyer', t.conv_loc_date_valeur, 'conv_loc_date_valeur', 'text', 'tranche-field')}
         ${editableSelect('Grille', t.conv_loc_grille, 'conv_loc_grille', getRef('grilles_loyer'), 'tranche-field')}
-      </div>` : ''}
+      </div>
 
       ${renderSubvSection(subv, op)}
       ${renderPretsSection(prets, op)}
@@ -9920,7 +9920,11 @@ function openPlanComiteModal(existingPlanningId) {
     }
   }
 
-  const ops = DATA.filter(o => !o.deleted);
+  const ops = DATA.filter(o => !o.deleted).sort((a, b) => {
+    const na = (a.display_name || a.code || '').toLowerCase();
+    const nb = (b.display_name || b.code || '').toLowerCase();
+    return na.localeCompare(nb, 'fr');
+  });
   const selectedSet = new Set(existing ? existing.opUids : []);
 
   const backdrop = document.createElement('div');
@@ -10849,6 +10853,22 @@ Cette action enregistre une signature électronique simulée.`)) return;
       wf.validated_at = now;
     }
     persistWorkflowChange(wf);
+    // Si le workflow est entièrement approuvé ET concerne un comité, on le clôture en "réalisé"
+    if (wf.status === 'approved') {
+      DATA.forEach(op => {
+        if (!Array.isArray(op.comites)) return;
+        op.comites.forEach(c => {
+          if (c.submitted_wf_id === wf.id) {
+            c.statut = 'realise';
+            // Si pas encore de doc_data_url sur le comité, on récupère celui du workflow
+            if (!c.doc_data_url && (wf.doc_data_url || wf.doc_url)) {
+              c.doc_data_url = wf.doc_data_url || wf.doc_url;
+              c.doc_name = c.doc_name || wf.doc_name;
+            }
+          }
+        });
+      });
+    }
     showToast(recipientName ? `Validé par ${recipientName}` : 'Document validé', 'check');
   }
   else if (action === 'refuse') {
@@ -10891,6 +10911,12 @@ Il sera définitivement supprimé.`)) return;
   }
   renderValidations();
   refreshNavBadges();
+  // Si on a modifié un comité (passage à "realise"), rafraîchir aussi les listes concernées
+  if (action === 'approve' && wf.status === 'approved') {
+    if (typeof renderComitesList === 'function') renderComitesList();
+    if (typeof renderOpDetail === 'function') renderOpDetail();
+    if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
+  }
 }
 
 // ===== Persistance workflows vers Supabase =====
