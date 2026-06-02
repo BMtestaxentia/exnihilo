@@ -91,6 +91,351 @@
     font-style: italic;
   }
 
+  /* ============== BILAN PRINT (aperçu PDF) ============== */
+  /* Overlay plein écran qui affiche la page bilan en mode preview */
+  .bilan-preview-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(20, 22, 30, 0.65);
+    z-index: 9000;
+    display: flex; flex-direction: column;
+    backdrop-filter: blur(4px);
+  }
+  .bilan-preview-toolbar {
+    background: #1c2330;
+    color: #fff;
+    padding: 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 2;
+  }
+  .bilan-preview-toolbar-left {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 500; font-size: 14px;
+  }
+  .bilan-preview-toolbar-left i { font-size: 20px; color: #6db3f2; }
+  .bilan-preview-toolbar-right {
+    display: flex; gap: 10px; align-items: center;
+  }
+  .bilan-preview-toolbar-right .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  .bilan-preview-toolbar-right .btn-primary {
+    background: #1c4e80;
+    color: #fff;
+    border-color: #1c4e80;
+  }
+  .bilan-preview-toolbar-right .btn-primary:hover {
+    background: #245d96;
+  }
+  .bilan-preview-toolbar-right .btn-ghost {
+    background: transparent;
+    color: #ccc;
+    border-color: #4a5568;
+  }
+  .bilan-preview-toolbar-right .btn-ghost:hover {
+    background: rgba(255,255,255,0.08);
+  }
+  .bilan-preview-scroller {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px;
+    display: flex; justify-content: center;
+  }
+
+  /* La page bilan : format A4 (21 cm × 29.7 cm), couleurs Axentia */
+  .bilan-print-page {
+    width: 21cm;
+    min-height: 29.7cm;
+    background: #fff;
+    color: #1f2937;
+    font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+    font-size: 10pt;
+    padding: 1.5cm 1.8cm;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    box-sizing: border-box;
+  }
+
+  /* Header avec titre et logo */
+  .bilan-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 6px;
+  }
+  .bilan-title-block { flex: 1; }
+  .bilan-title {
+    font-size: 22pt;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    letter-spacing: 0.5px;
+  }
+  .bilan-subtitle {
+    font-size: 11pt;
+    font-style: italic;
+    color: #6b7280;
+    margin: 4px 0 0;
+  }
+  .bilan-logo {
+    height: 38px;
+    width: auto;
+  }
+  .bilan-date-block {
+    text-align: right;
+    font-size: 9pt;
+    color: #6b7280;
+    margin-top: 8px;
+    margin-bottom: 14px;
+  }
+
+  /* Bandeaux de section : bleu marine */
+  .bilan-section-header {
+    background: #1c4e80;
+    color: #fff;
+    font-weight: 700;
+    font-size: 10pt;
+    padding: 7px 12px;
+    margin-top: 10px;
+    letter-spacing: 0.3px;
+  }
+  /* Sous-bandeaux : bleu clair */
+  .bilan-subsection-header {
+    background: #c7d6e8;
+    color: #1c4e80;
+    font-weight: 700;
+    font-size: 9.5pt;
+    padding: 6px 12px;
+    letter-spacing: 0.2px;
+  }
+  /* Lignes de tableau */
+  .bilan-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+  }
+  .bilan-table td {
+    padding: 5px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+  }
+  .bilan-table td.bilan-libelle-indent {
+    padding-left: 30px;
+    color: #374151;
+  }
+  .bilan-table td.bilan-libelle-bold {
+    font-weight: 600;
+    color: #1f2937;
+  }
+  .bilan-table td.bilan-montant {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    width: 110px;
+  }
+  .bilan-table td.bilan-pct {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: #6b7280;
+    width: 60px;
+  }
+  /* Sous-totaux : fond teal */
+  .bilan-table tr.bilan-subtotal td {
+    background: #2a9d8f;
+    color: #fff;
+    font-weight: 700;
+    border-bottom: none;
+    padding-top: 7px; padding-bottom: 7px;
+  }
+  /* Total opération : fond bleu marine plus marqué */
+  .bilan-table tr.bilan-total td {
+    background: #1c4e80;
+    color: #fff;
+    font-weight: 700;
+    border-bottom: none;
+    padding-top: 8px; padding-bottom: 8px;
+    font-size: 10pt;
+  }
+  /* En-tête de tableau (Montants TTC / %) */
+  .bilan-table-header {
+    background: #1c4e80;
+    color: #fff;
+    font-weight: 700;
+    font-size: 9.5pt;
+  }
+  .bilan-table-header td {
+    padding: 6px 12px;
+    border-bottom: none;
+  }
+
+  /* Identification (lignes clé:valeur) */
+  .bilan-id-table { width: 100%; border-collapse: collapse; }
+  .bilan-id-table td {
+    padding: 5px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 9.5pt;
+  }
+  .bilan-id-table td:first-child {
+    font-weight: 600;
+    width: 35%;
+    color: #1c4e80;
+  }
+
+  /* Équilibre */
+  .bilan-equilibre {
+    margin-top: 14px;
+    text-align: right;
+    font-size: 10pt;
+    font-style: italic;
+    font-weight: 600;
+  }
+  .bilan-equilibre-ok { color: #2a9d8f; }
+  .bilan-equilibre-ko { color: #c4423a; }
+
+  /* Footer */
+  .bilan-footer {
+    margin-top: 28px;
+    text-align: center;
+    font-size: 8pt;
+    font-style: italic;
+    color: #9ca3af;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 8px;
+  }
+
+  /* Légende multi-tranches */
+  .bilan-tranches-legend {
+    margin-top: 6px;
+    margin-bottom: 6px;
+    padding: 8px 12px;
+    background: #f3f4f6;
+    border-left: 3px solid #1c4e80;
+    font-size: 9pt;
+    color: #4b5563;
+  }
+  .bilan-tranches-legend strong { color: #1c4e80; }
+
+  /* ============== MODE PRINT ============== */
+  @media print {
+    /* Masquer tout sauf la page bilan */
+    body * { visibility: hidden; }
+    .bilan-preview-overlay,
+    .bilan-preview-overlay * { visibility: visible; }
+    .bilan-preview-overlay {
+      position: absolute !important;
+      top: 0 !important; left: 0 !important; right: auto !important; bottom: auto !important;
+      background: #fff !important;
+      backdrop-filter: none !important;
+      display: block !important;
+    }
+    .no-print { display: none !important; }
+    .bilan-preview-scroller {
+      padding: 0 !important;
+      overflow: visible !important;
+      display: block !important;
+    }
+    .bilan-print-page {
+      width: 100% !important;
+      min-height: auto !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      page-break-inside: avoid;
+    }
+    /* Format A4 portrait */
+    @page {
+      size: A4 portrait;
+      margin: 1.2cm;
+    }
+    /* Forcer l'impression des couleurs de fond */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+
+  /* ============== MODAL SÉLECTION TRANCHES ============== */
+  .bilan-tranches-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(20,22,30,0.55);
+    z-index: 9100;
+    display: flex; justify-content: center; align-items: center;
+    backdrop-filter: blur(2px);
+  }
+  .bilan-tranches-modal {
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    width: 480px; max-width: 92vw;
+    max-height: 85vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .bilan-tranches-modal-head {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 600;
+  }
+  .bilan-tranches-modal-head .bilan-tranches-modal-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-tertiary); font-size: 22px; line-height: 1;
+  }
+  .bilan-tranches-modal-body {
+    padding: 14px 18px;
+    flex: 1; overflow-y: auto;
+  }
+  .bilan-tranches-modal-body .helper {
+    font-size: 12px; color: var(--text-tertiary);
+    margin-bottom: 10px;
+  }
+  .bilan-tranche-check {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .bilan-tranche-check:hover { background: var(--bg-secondary); }
+  .bilan-tranche-check input { margin: 0; cursor: pointer; }
+  .bilan-tranche-check-info { flex: 1; }
+  .bilan-tranche-check-name {
+    font-weight: 500; font-size: 13px;
+  }
+  .bilan-tranche-check-meta {
+    font-size: 11.5px; color: var(--text-tertiary);
+    margin-top: 1px;
+  }
+  .bilan-tranches-modal-foot {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border-color);
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px;
+  }
+  .bilan-tranches-modal-foot .selection-count {
+    font-size: 12px; color: var(--text-secondary);
+  }
+  .bilan-tranches-modal-foot button {
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+  .bilan-tranches-modal-foot button.primary {
+    background: var(--info-accent);
+    color: #fff;
+    border-color: var(--info-accent);
+  }
+
   /* Comités — fiche op section + global tab */
   .comites-empty {
     padding: 10px 12px;
@@ -4475,7 +4820,6 @@
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js" defer></script>
 </head>
 <body>
 
@@ -4824,6 +5168,25 @@
   </div>
 </div>
 
+<!-- =========== VUE APERÇU BILAN PR/PF (cachée par défaut, affichée en preview ou avant print) =========== -->
+<div id="bilan-preview-overlay" class="bilan-preview-overlay" style="display:none;">
+  <div class="bilan-preview-toolbar no-print">
+    <div class="bilan-preview-toolbar-left">
+      <i class="ti ti-eye"></i>
+      <span>Aperçu avant impression</span>
+    </div>
+    <div class="bilan-preview-toolbar-right">
+      <button class="btn btn-primary" onclick="triggerBilanPrint()"><i class="ti ti-printer"></i>Générer PDF</button>
+      <button class="btn btn-ghost" onclick="closeBilanPreview()"><i class="ti ti-x"></i>Fermer</button>
+    </div>
+  </div>
+  <div class="bilan-preview-scroller">
+    <div id="bilan-print-page" class="bilan-print-page">
+      <!-- Contenu rempli dynamiquement par generateBilanContent() -->
+    </div>
+  </div>
+</div>
+
 
 <script>
 // ============== SUPABASE CONFIG ==============
@@ -4832,9 +5195,6 @@
 const SUPABASE_URL = 'https://odcquhorfhlasnqahgls.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kY3F1aG9yZmhsYXNucWFoZ2xzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc3MDIsImV4cCI6MjA5NTg2MzcwMn0.j3Z5RO-4wDRahoDoxu8n4FC3MaZlEpi9feCxjSfs-ZI';
 
-
-// Template Bilan PR/PF AXENTIA (base64 du .xlsx fourni en référence)
-const TEMPLATE_BILAN_B64 = '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';
 
 let DATA = [{"_uid": "op-demo-001", "code": "A2406", "sheet": "A2406-Albi-Foyer", "display_name": "DÉMO · Albi Foyer Jeunes Actifs", "name": "DÉMO · Albi Foyer Jeunes Actifs", "commune": "Albi", "departement": "Tarn (81)", "region": "Occitanie", "adresse": "12 avenue Maréchal Foch, 81000 Albi", "zone_abc": "B2", "zone_123": "2", "qpv": "Non", "anru": "Non", "maitrise_fonciere": "Pleine propriété", "vefa_mod": "VEFA", "type_travaux": "Neuf", "developpeur": "Maxime CHANCA", "resp_op": "Olivier LE ROUX", "charge_fin": "Bastien MERCIER", "promoteur": "Nexity", "statut": "Travaux", "phase_actuelle": "Travaux", "badge_bg": "#faece7", "badge_text": "#993c1d", "badge_dot": "#d85a30", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406", "code_postal": "81000", "latitude": 43.9298, "longitude": 2.1481, "label_certif": "RE2020", "mode_constructif": "Mixte béton / bois", "mode_chauffage": "Pompe à chaleur (PAC) aérothermique", "nb_batiments": 2, "tags": ["Programme Albi 2024", "APART'AGES"], "comites": [{"id": "com-demo-001", "type": "CA", "date": "15/03/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/CA-15032026.pdf", "doc_name": "PV CA 15-03-2026 - Approbation Albi A2406.pdf", "doc_size": 285600, "doc_data_url": null, "notes": ""}, {"id": "com-demo-002", "type": "C2I", "date": "08/02/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/C2I-08022026.pdf", "doc_name": "PV C2I 08-02-2026 - Validation montage Albi.pdf", "doc_size": 198400, "doc_data_url": null, "notes": ""}, {"id": "com-demo-003", "type": "Revue", "date": "20/05/2026", "lien_sharepoint": "", "doc_name": "Revue OP Albi A2406 - mai 2026.pdf", "doc_size": 410000, "doc_data_url": null, "notes": "Revue trimestrielle avec Aliette"}, {"id": "com-demo-004", "type": "CA", "date": "15/07/2026", "lien_sharepoint": "", "doc_name": null, "doc_size": null, "doc_data_url": null, "notes": "Validation budget complémentaire", "statut": "planifie", "lieu": "AXENTIA Toulouse", "planning_id": "plan-demo-001"}], "date_promesse": "12/03/2024", "date_acte_auth": "28/06/2024", "date_depot_pc": "15/09/2024", "date_obt_pc": "10/02/2025", "date_os": "22/06/2025", "date_livraison": "01/09/2026", "date_conv_loc": "15/07/2026", "date_conv_apl": "15/07/2026", "date_ca_axentia": "18/02/2025", "notes_libres": "Opération de démonstration · 3 tranches mixtes (RSJA + Foyer PMR + résidence étudiante). Suivi rigoureux des appels de fonds promoteur.", "fmt_total_budget": "—", "fmt_total_prets": "—", "fmt_total_subv": "—", "fmt_total_fonds_propres": "—", "fmt_total_surface": "—", "total_surface": null, "tranches": [{"id": "T1", "code_full": "A2406-RSJA", "type_structure": "Résidence Sociale Jeunes Actifs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 5180000, "n_siap": "2024SI08100012", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "Foyer 2024", "beneficiaire_agrement": "Jeunes Actifs <30 ans", "plai_adapte": 8, "detail_logements": "Dont 38 PLAI T1 prime · 12 PLAI T1 standard · 8 PLAI adaptés (mobilité réduite)", "n_leon": "3421", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 340, "date_accord_redev": "12/02/2025", "vol": {"plai": 58, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 1650, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 58, "fonds_propres": 622800, "bilan": {"charge_fonciere": {"Terrain": 1850000, "Frais d'acquisition": 24800, "VRD": 35000, "Droits et taxes": 18500}, "batiment": {"Travaux de construction": 2640000, "Aléas": 132000}, "honoraires": {"Architecte": 158000, "Bureau d'étude": 42000, "OPC / SPS / CT": 28500, "Conduite d'opération": 26200}, "frais_divers": {"Actualisation / Révision": 32000}, "frais_financiers": {"Frais financiers": 192800}}}, {"id": "T2", "code_full": "A2406-FOYER", "type_structure": "Foyer Jeunes Travailleurs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 2350000, "n_siap": "2024SI08100013", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "FJT 2024", "beneficiaire_agrement": "Apprentis & alternants", "plai_adapte": 3, "detail_logements": "Dont 18 PLAI T1 prime · 6 PLUS T1 · 3 PLAI adaptés", "n_leon": "3422", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 320, "vol": {"plai": 21, "plus": 6, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 580, "plus": 165, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 27, "fonds_propres": 47000, "bilan": {"charge_fonciere": {"Terrain": 820000, "Frais d'acquisition": 11200}, "batiment": {"Travaux de construction": 1402000, "Aléas": 59000}, "honoraires": {"Architecte": 72500, "Bureau d'étude": 19000, "Conduite d'opération": 12000}, "frais_divers": {"Actualisation / Révision": 14500}, "frais_financiers": {"Frais financiers": 87800}}}, {"id": "T3", "code_full": "A2406-ETUD", "type_structure": "Résidence Étudiante", "gestionnaire": "ARPEJ", "annee_prog": "2024", "budget_ttc": 1820000, "n_siap": "2024SI08100014", "statut_agrement": "Obtenu", "date_depot_agr": "08/09/2024", "date_dfa": "12/02/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "PLS étudiant", "beneficiaire_agrement": "Étudiants", "plai_adapte": 0, "detail_logements": "Dont 22 PLS T1 · pas de PLAI", "n_leon": "3423", "date_ref": "08/04/2025", "vol": {"plai": 0, "plus": 0, "pls": 22, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 0, "plus": 0, "pls": 615, "pli": 0, "libre": 0, "autre": 0}, "logements": 22, "fonds_propres": 38000, "bilan": {"charge_fonciere": {"Terrain": 620000, "Frais d'acquisition": 8400}, "batiment": {"Travaux de construction": 1103200, "Aléas": 46000}, "honoraires": {"Architecte": 56000, "Bureau d'étude": 15500, "Conduite d'opération": 9800}, "frais_divers": {"Actualisation / Révision": 11200}, "frais_financiers": {"Frais financiers": 67900}}}], "prets": [{"tranche": "RSJA", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1980000, "montant_lo": 1980000, "montant_contrat": 2050000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178432-PLAI", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 40, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "non_garanti": false, "pieces_attendues": [], "source": "Contrat", "lien_sp_lo": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-bati-LO.pdf", "lien_sp_contrat": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-bati-contrat.pdf"}, {"tranche": "RSJA", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 1450000, "montant_lo": 1450000, "montant_contrat": 1480000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178432-PLAIF", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 50, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "non_garanti": false, "source": "Contrat", "lien_sp_lo": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-foncier-LO.pdf", "lien_sp_contrat": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-foncier-contrat.pdf"}, {"tranche": "RSJA", "ligne": "ALS", "financeur": "Action Logement", "montant_sim": 470000, "montant_contrat": 470000, "date_demande": "10/02/2025", "date_contrat": "18/04/2025", "n_contrat": "1208743-ALS", "statut": "Contrat signé", "taux": "0,5%", "duree_emprunt": 35, "duree_prefi": 0, "revision": "Simple", "non_garanti": true, "source": "Contrat"}, {"tranche": "RSJA", "ligne": "PHARE", "financeur": "CDC", "montant_sim": 80000, "montant_contrat": 80000, "date_demande": "10/02/2025", "date_contrat": "22/05/2025", "n_contrat": "U178432-PHARE", "statut": "Contrat signé", "taux": "TLA -0,75%", "duree_emprunt": 25, "revision": "Simple", "non_garanti": false, "source": "Contrat"}, {"tranche": "FOYER", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1180000, "montant_lo": 1180000, "montant_contrat": 1180000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178433-PLAI", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 40, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "source": "Contrat"}, {"tranche": "FOYER", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 580000, "montant_lo": 580000, "montant_contrat": 580000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178433-PLAIF", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 50, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "source": "Contrat"}, {"tranche": "FOYER", "ligne": "PLUS bâti", "financeur": "CDC", "montant_sim": 540000, "montant_lo": 540000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre", "taux": "TLA +0,60%", "duree_emprunt": 40, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "pieces_attendues": ["Acte authentique de propriété", "Convention APL"], "source": "Lettre d'offre"}, {"tranche": "ETUD", "ligne": "PLS bâti", "financeur": "Crédit Agricole", "montant_sim": 1480000, "montant_lo": 1480000, "montant_contrat": 1480000, "date_demande": "05/02/2025", "date_comite_banque": "20/03/2025", "date_lo": "10/04/2025", "date_contrat": "28/05/2025", "n_contrat": "CA-08-2025-541", "statut": "Contrat signé", "taux": "Livret A +1,11%", "duree_emprunt": 35, "duree_prefi": 24, "revision": "Simple", "contact": "Hélène DUPRÉ", "source": "Contrat"}, {"tranche": "ETUD", "ligne": "PLS foncier", "financeur": "Crédit Agricole", "montant_sim": 320000, "montant_lo": 320000, "montant_contrat": 320000, "date_demande": "05/02/2025", "date_comite_banque": "20/03/2025", "date_lo": "10/04/2025", "date_contrat": "28/05/2025", "n_contrat": "CA-08-2025-542", "statut": "Contrat signé", "taux": "Livret A +1,11%", "duree_emprunt": 50, "duree_prefi": 24, "revision": "Simple", "contact": "Hélène DUPRÉ", "source": "Contrat"}], "subventions": [{"tranche": "RSJA", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 232000, "montant_notifie": 232000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée", "contact": "DDT Tarn", "n_arrete": "2025-PLAI-081-012", "lien_sp_notif": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Subv/Etat-PLAI-notif.pdf"}, {"tranche": "RSJA", "financeur": "Région Occitanie", "financement": "Aide foyer jeunes actifs", "montant_demande": 145000, "montant_notifie": 130000, "date_demande": "01/03/2025", "date_notification": "12/04/2025", "date_conv": "05/05/2025", "statut": "Convention signée", "contact": "DRJSCS"}, {"tranche": "RSJA", "financeur": "Commune Albi", "financement": "Subvention équilibre", "montant_demande": 80000, "montant_notifie": 80000, "date_demande": "15/03/2025", "date_notification": "10/05/2025", "statut": "Notifiée"}, {"tranche": "RSJA", "financeur": "CD81", "financement": "Aide logement jeunes", "montant_demande": 35000, "montant_notifie": 35000, "date_demande": "01/03/2025", "date_notification": "20/04/2025", "statut": "Notifiée"}, {"tranche": "FOYER", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 84000, "montant_notifie": 84000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée"}, {"tranche": "FOYER", "financeur": "Région Occitanie", "financement": "FJT 2024", "montant_demande": 45000, "montant_notifie": 42000, "date_demande": "01/03/2025", "date_notification": "12/04/2025", "date_conv": "05/05/2025", "statut": "Convention signée"}, {"tranche": "FOYER", "financeur": "Action Logement", "financement": "Subvention 1% logement", "montant_demande": 25000, "date_demande": "15/03/2025", "statut": "En instruction"}, {"tranche": "ETUD", "financeur": "CD81", "financement": "Aide résidence étudiante", "montant_demande": 65000, "montant_notifie": 60000, "date_demande": "20/03/2025", "date_notification": "28/05/2025", "statut": "Notifiée"}, {"tranche": "ETUD", "financeur": "Université Champollion", "financement": "Participation maître ouvrage", "montant_demande": 40000, "montant_notifie": 40000, "date_demande": "01/03/2025", "date_conv": "20/04/2025", "statut": "Convention signée"}], "garanties": [{"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 50, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "10/04/2025", "contact": "Mairie Albi - DGS", "lien_sp_accord": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Garanties/Commune-AP.pdf", "lien_sp_delib": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Garanties/Commune-delib.pdf"}, {"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Département", "quotite": 50, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "20/03/2025", "date_conv": "15/04/2025", "contact": "CD81 - DGA Finances"}, {"tranche": "RSJA", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "10/04/2025"}, {"tranche": "RSJA", "pret_lie": "PHARE", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "10/04/2025"}, {"tranche": "FOYER", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "08/05/2025"}, {"tranche": "FOYER", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "08/05/2025"}, {"tranche": "FOYER", "pret_lie": "PLUS bâti", "garant": "Commune", "quotite": 100, "statut": "Délibération exécutoire", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_ap": "10/02/2025"}, {"tranche": "ETUD", "pret_lie": "PLS bâti", "garant": "CEGC", "quotite": 100, "statut": "Convention signée", "caution_relais": false, "date_conv": "28/05/2025", "contact": "CEGC Toulouse", "commission": 1.8}, {"tranche": "ETUD", "pret_lie": "PLS foncier", "garant": "CEGC", "quotite": 100, "statut": "Convention signée", "caution_relais": false, "date_conv": "28/05/2025", "commission": 1.8}], "prefinancements": [{"tranche": "RSJA", "banque": "CDC", "pret_lie": "PLAI bâti", "montant_couvert": 2050000, "montant_tire": 1230000, "pct_tire": 60, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours", "taux": "TLA +0,15%"}, {"tranche": "RSJA", "banque": "CDC", "pret_lie": "PLAI foncier", "montant_couvert": 1480000, "montant_tire": 890000, "pct_tire": 60, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours"}, {"tranche": "FOYER", "banque": "CDC", "pret_lie": "PLAI bâti", "montant_couvert": 1180000, "montant_tire": 590000, "pct_tire": 50, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours"}, {"tranche": "FOYER", "banque": "CDC", "pret_lie": "PLAI foncier", "montant_couvert": 580000, "montant_tire": 290000, "pct_tire": 50, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours"}, {"tranche": "ETUD", "banque": "Crédit Agricole", "pret_lie": "PLS bâti", "montant_couvert": 1480000, "montant_tire": 800000, "pct_tire": 54, "date_debut": "28/05/2025", "date_fin": "28/05/2027", "statut": "En cours"}, {"tranche": "ETUD", "banque": "Crédit Agricole", "pret_lie": "PLS foncier", "montant_couvert": 320000, "montant_tire": 170000, "pct_tire": 53, "date_debut": "28/05/2025", "date_fin": "28/05/2027", "statut": "En cours"}], "reservataires": [{"tranche": "RSJA", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 12, "pct_reserve": 21, "etape": "Conventionné", "date_conv": "15/04/2025"}, {"tranche": "RSJA", "reservataire": "Préfecture 81", "financement": "Contingent préfectoral", "nb_logements": 17, "pct_reserve": 30, "etape": "Conventionné", "date_conv": "20/04/2025"}, {"tranche": "RSJA", "reservataire": "Commune Albi", "financement": "Contingent communal", "nb_logements": 6, "pct_reserve": 10, "etape": "Conventionné", "date_conv": "10/04/2025"}, {"tranche": "FOYER", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 8, "pct_reserve": 30, "etape": "Conventionné", "date_conv": "15/04/2025"}, {"tranche": "FOYER", "reservataire": "Préfecture 81", "financement": "Contingent préfectoral", "nb_logements": 5, "pct_reserve": 19, "etape": "Conventionné", "date_conv": "20/04/2025"}, {"tranche": "ETUD", "reservataire": "Université Champollion", "financement": "Convention résidence", "nb_logements": 22, "pct_reserve": 100, "etape": "Conventionné", "date_conv": "10/05/2025"}], "phases_history": [{"name": "Montage", "date_fige": "18/03/2025", "snapshot": {"_uid": "op-demo-001", "code": "A2406", "sheet": "A2406-Albi-Foyer", "display_name": "DÉMO · Albi Foyer Jeunes Actifs", "name": "DÉMO · Albi Foyer Jeunes Actifs", "commune": "Albi", "departement": "Tarn (81)", "region": "Occitanie", "adresse": "12 avenue Maréchal Foch, 81000 Albi", "zone_abc": "B2", "zone_123": "2", "qpv": "Non", "anru": "Non", "maitrise_fonciere": "Pleine propriété", "vefa_mod": "VEFA", "type_travaux": "Neuf", "developpeur": "Maxime CHANCA", "resp_op": "Olivier LE ROUX", "charge_fin": "Bastien MERCIER", "promoteur": "Nexity", "statut": "Travaux", "phase_actuelle": "Montage", "badge_bg": "#faece7", "badge_text": "#993c1d", "badge_dot": "#d85a30", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406", "code_postal": "81000", "latitude": 43.9298, "longitude": 2.1481, "label_certif": "RE2020", "mode_constructif": "Mixte béton / bois", "mode_chauffage": "Pompe à chaleur (PAC) aérothermique", "nb_batiments": 2, "tags": ["Programme Albi 2024", "APART'AGES"], "comites": [{"id": "com-demo-001", "type": "CA", "date": "15/03/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/CA-15032026.pdf", "doc_name": "PV CA 15-03-2026 - Approbation Albi A2406.pdf", "doc_size": 285600, "doc_data_url": null, "notes": ""}, {"id": "com-demo-002", "type": "C2I", "date": "08/02/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/C2I-08022026.pdf", "doc_name": "PV C2I 08-02-2026 - Validation montage Albi.pdf", "doc_size": 198400, "doc_data_url": null, "notes": ""}, {"id": "com-demo-003", "type": "Revue", "date": "20/05/2026", "lien_sharepoint": "", "doc_name": "Revue OP Albi A2406 - mai 2026.pdf", "doc_size": 410000, "doc_data_url": null, "notes": "Revue trimestrielle avec Aliette"}, {"id": "com-demo-004", "type": "CA", "date": "15/07/2026", "lien_sharepoint": "", "doc_name": null, "doc_size": null, "doc_data_url": null, "notes": "Validation budget complémentaire", "statut": "planifie", "lieu": "AXENTIA Toulouse", "planning_id": "plan-demo-001"}], "date_promesse": "12/03/2024", "date_acte_auth": "28/06/2024", "date_depot_pc": "15/09/2024", "date_obt_pc": "10/02/2025", "date_os": "22/06/2025", "date_livraison": "01/09/2026", "date_conv_loc": "15/07/2026", "date_conv_apl": "15/07/2026", "date_ca_axentia": "18/02/2025", "notes_libres": "Opération de démonstration · 3 tranches mixtes (RSJA + Foyer PMR + résidence étudiante). Suivi rigoureux des appels de fonds promoteur.", "fmt_total_budget": "—", "fmt_total_prets": "—", "fmt_total_subv": "—", "fmt_total_fonds_propres": "—", "fmt_total_surface": "—", "total_surface": null, "tranches": [{"id": "T1", "code_full": "A2406-RSJA", "type_structure": "Résidence Sociale Jeunes Actifs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 4850000, "n_siap": "2024SI08100012", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "Foyer 2024", "beneficiaire_agrement": "Jeunes Actifs <30 ans", "plai_adapte": 6, "detail_logements": "Dont 38 PLAI T1 prime · 12 PLAI T1 standard · 8 PLAI adaptés (mobilité réduite)", "n_leon": "3421", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 340, "date_accord_redev": "12/02/2025", "vol": {"plai": 55, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 1600, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 55, "fonds_propres": 884500, "bilan": {"charge_fonciere": {"Terrain": 1750000, "Frais d'acquisition": 23500}, "batiment": {"Travaux de construction": 2480000, "Aléas": 124000}, "honoraires": {"Architecte": 149000, "Bureau d'étude": 38000, "Conduite d'opération": 22000}, "frais_divers": {"Actualisation / Révision": 28000}, "frais_financiers": {"Frais financiers": 180000}}}, {"id": "T2", "code_full": "A2406-FOYER", "type_structure": "Foyer Jeunes Travailleurs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 2200000, "n_siap": "2024SI08100013", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "FJT 2024", "beneficiaire_agrement": "Apprentis & alternants", "plai_adapte": 3, "detail_logements": "Dont 18 PLAI T1 prime · 6 PLUS T1 · 3 PLAI adaptés", "n_leon": "3422", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 320, "vol": {"plai": 21, "plus": 6, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 580, "plus": 165, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 27, "fonds_propres": 934500, "bilan": {"charge_fonciere": {"Terrain": 780000, "Frais d'acquisition": 10500}, "batiment": {"Travaux de construction": 1100000, "Aléas": 55000}, "honoraires": {"Architecte": 68000, "Bureau d'étude": 17500, "Conduite d'opération": 10500}, "frais_divers": {"Actualisation / Révision": 13000}, "frais_financiers": {"Frais financiers": 80000}}}, {"id": "T3", "code_full": "A2406-ETUD", "type_structure": "Résidence Étudiante", "gestionnaire": "ARPEJ", "annee_prog": "2024", "budget_ttc": 1720000, "n_siap": "2024SI08100014", "statut_agrement": "Obtenu", "date_depot_agr": "08/09/2024", "date_dfa": "12/02/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "PLS étudiant", "beneficiaire_agrement": "Étudiants", "plai_adapte": 0, "detail_logements": "Dont 22 PLS T1 · pas de PLAI", "n_leon": "3423", "date_ref": "08/04/2025", "vol": {"plai": 0, "plus": 0, "pls": 22, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 0, "plus": 0, "pls": 615, "pli": 0, "libre": 0, "autre": 0}, "logements": 22, "fonds_propres": 249800, "bilan": {"charge_fonciere": {"Terrain": 590000, "Frais d'acquisition": 8000}, "batiment": {"Travaux de construction": 870000, "Aléas": 43500}, "honoraires": {"Architecte": 52500, "Bureau d'étude": 14500, "Conduite d'opération": 8800}, "frais_divers": {"Actualisation / Révision": 10500}, "frais_financiers": {"Frais financiers": 62000}}}], "prets": [{"tranche": "RSJA", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1860000, "statut": "À demander", "taux": "TLA -0,20%", "duree_emprunt": 40, "revision": "Double"}, {"tranche": "RSJA", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 1380000, "statut": "À demander", "taux": "TLA -0,20%", "duree_emprunt": 50, "revision": "Double"}, {"tranche": "RSJA", "ligne": "ALS", "financeur": "Action Logement", "montant_sim": 450000, "statut": "À demander", "non_garanti": true}, {"tranche": "FOYER", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1120000, "statut": "À demander"}, {"tranche": "ETUD", "ligne": "PLS bâti", "financeur": "Crédit Agricole", "montant_sim": 1410000, "statut": "À demander"}], "subventions": [{"tranche": "RSJA", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 220000, "statut": "À déposer"}, {"tranche": "FOYER", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 80000, "statut": "À déposer"}], "garanties": [{"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "À demander"}, {"tranche": "RSJA", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "À demander"}, {"tranche": "FOYER", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "À demander"}], "prefinancements": [], "reservataires": [{"tranche": "RSJA", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 10, "pct_reserve": 18, "etape": "En négociation"}], "phases_history": []}}, {"name": "Validation CA", "date_fige": "12/06/2025", "snapshot": {"_uid": "op-demo-001", "code": "A2406", "sheet": "A2406-Albi-Foyer", "display_name": "DÉMO · Albi Foyer Jeunes Actifs", "name": "DÉMO · Albi Foyer Jeunes Actifs", "commune": "Albi", "departement": "Tarn (81)", "region": "Occitanie", "adresse": "12 avenue Maréchal Foch, 81000 Albi", "zone_abc": "B2", "zone_123": "2", "qpv": "Non", "anru": "Non", "maitrise_fonciere": "Pleine propriété", "vefa_mod": "VEFA", "type_travaux": "Neuf", "developpeur": "Maxime CHANCA", "resp_op": "Olivier LE ROUX", "charge_fin": "Bastien MERCIER", "promoteur": "Nexity", "statut": "Travaux", "phase_actuelle": "Validation CA", "badge_bg": "#faece7", "badge_text": "#993c1d", "badge_dot": "#d85a30", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406", "code_postal": "81000", "latitude": 43.9298, "longitude": 2.1481, "label_certif": "RE2020", "mode_constructif": "Mixte béton / bois", "mode_chauffage": "Pompe à chaleur (PAC) aérothermique", "nb_batiments": 2, "tags": ["Programme Albi 2024", "APART'AGES"], "comites": [{"id": "com-demo-001", "type": "CA", "date": "15/03/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/CA-15032026.pdf", "doc_name": "PV CA 15-03-2026 - Approbation Albi A2406.pdf", "doc_size": 285600, "doc_data_url": null, "notes": ""}, {"id": "com-demo-002", "type": "C2I", "date": "08/02/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/C2I-08022026.pdf", "doc_name": "PV C2I 08-02-2026 - Validation montage Albi.pdf", "doc_size": 198400, "doc_data_url": null, "notes": ""}, {"id": "com-demo-003", "type": "Revue", "date": "20/05/2026", "lien_sharepoint": "", "doc_name": "Revue OP Albi A2406 - mai 2026.pdf", "doc_size": 410000, "doc_data_url": null, "notes": "Revue trimestrielle avec Aliette"}, {"id": "com-demo-004", "type": "CA", "date": "15/07/2026", "lien_sharepoint": "", "doc_name": null, "doc_size": null, "doc_data_url": null, "notes": "Validation budget complémentaire", "statut": "planifie", "lieu": "AXENTIA Toulouse", "planning_id": "plan-demo-001"}], "date_promesse": "12/03/2024", "date_acte_auth": "28/06/2024", "date_depot_pc": "15/09/2024", "date_obt_pc": "10/02/2025", "date_os": "22/06/2025", "date_livraison": "01/09/2026", "date_conv_loc": "15/07/2026", "date_conv_apl": "15/07/2026", "date_ca_axentia": "18/02/2025", "notes_libres": "Opération de démonstration · 3 tranches mixtes (RSJA + Foyer PMR + résidence étudiante). Suivi rigoureux des appels de fonds promoteur.", "fmt_total_budget": "—", "fmt_total_prets": "—", "fmt_total_subv": "—", "fmt_total_fonds_propres": "—", "fmt_total_surface": "—", "total_surface": null, "tranches": [{"id": "T1", "code_full": "A2406-RSJA", "type_structure": "Résidence Sociale Jeunes Actifs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 5100000, "n_siap": "2024SI08100012", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "Foyer 2024", "beneficiaire_agrement": "Jeunes Actifs <30 ans", "plai_adapte": 8, "detail_logements": "Dont 38 PLAI T1 prime · 12 PLAI T1 standard · 8 PLAI adaptés (mobilité réduite)", "n_leon": "3421", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 340, "date_accord_redev": "12/02/2025", "vol": {"plai": 58, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 1640, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 58, "fonds_propres": 819700, "bilan": {"charge_fonciere": {"Terrain": 1820000, "Frais d'acquisition": 24400, "VRD": 32000, "Droits et taxes": 17800}, "batiment": {"Travaux de construction": 2600000, "Aléas": 130000}, "honoraires": {"Architecte": 155000, "Bureau d'étude": 41500, "OPC / SPS / CT": 27000, "Conduite d'opération": 25500}, "frais_divers": {"Actualisation / Révision": 30500}, "frais_financiers": {"Frais financiers": 188000}}}, {"id": "T2", "code_full": "A2406-FOYER", "type_structure": "Foyer Jeunes Travailleurs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 2320000, "n_siap": "2024SI08100013", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "FJT 2024", "beneficiaire_agrement": "Apprentis & alternants", "plai_adapte": 3, "detail_logements": "Dont 18 PLAI T1 prime · 6 PLUS T1 · 3 PLAI adaptés", "n_leon": "3422", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 320, "vol": {"plai": 21, "plus": 6, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 580, "plus": 165, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 27, "fonds_propres": 461800, "bilan": {"charge_fonciere": {"Terrain": 815000, "Frais d'acquisition": 11000}, "batiment": {"Travaux de construction": 1170000, "Aléas": 58500}, "honoraires": {"Architecte": 71500, "Bureau d'étude": 18800, "Conduite d'opération": 11500}, "frais_divers": {"Actualisation / Révision": 14000}, "frais_financiers": {"Frais financiers": 85500}}}, {"id": "T3", "code_full": "A2406-ETUD", "type_structure": "Résidence Étudiante", "gestionnaire": "ARPEJ", "annee_prog": "2024", "budget_ttc": 1790000, "n_siap": "2024SI08100014", "statut_agrement": "Obtenu", "date_depot_agr": "08/09/2024", "date_dfa": "12/02/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "PLS étudiant", "beneficiaire_agrement": "Étudiants", "plai_adapte": 0, "detail_logements": "Dont 22 PLS T1 · pas de PLAI", "n_leon": "3423", "date_ref": "08/04/2025", "vol": {"plai": 0, "plus": 0, "pls": 22, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 0, "plus": 0, "pls": 615, "pli": 0, "libre": 0, "autre": 0}, "logements": 22, "fonds_propres": 191500, "bilan": {"charge_fonciere": {"Terrain": 615000, "Frais d'acquisition": 8300}, "batiment": {"Travaux de construction": 910000, "Aléas": 45500}, "honoraires": {"Architecte": 55500, "Bureau d'étude": 15200, "Conduite d'opération": 9500}, "frais_divers": {"Actualisation / Révision": 11000}, "frais_financiers": {"Frais financiers": 66500}}}], "prets": [{"tranche": "RSJA", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1950000, "montant_lo": 1980000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre", "taux": "TLA -0,20%", "duree_emprunt": 40, "revision": "Double"}, {"tranche": "RSJA", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 1430000, "montant_lo": 1450000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre", "taux": "TLA -0,20%", "duree_emprunt": 50, "revision": "Double"}, {"tranche": "RSJA", "ligne": "ALS", "financeur": "Action Logement", "montant_sim": 460000, "date_demande": "10/02/2025", "statut": "Demandé", "non_garanti": true}, {"tranche": "FOYER", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1160000, "montant_lo": 1180000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre"}, {"tranche": "FOYER", "ligne": "PLUS bâti", "financeur": "CDC", "montant_sim": 530000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "statut": "Demandé"}, {"tranche": "ETUD", "ligne": "PLS bâti", "financeur": "Crédit Agricole", "montant_sim": 1450000, "montant_lo": 1480000, "date_demande": "05/02/2025", "date_comite_banque": "20/03/2025", "date_lo": "10/04/2025", "statut": "Lettre d'offre"}], "subventions": [{"tranche": "RSJA", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 232000, "montant_notifie": 232000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée"}, {"tranche": "RSJA", "financeur": "Région Occitanie", "financement": "Aide foyer jeunes actifs", "montant_demande": 150000, "date_demande": "01/03/2025", "statut": "Déposée"}, {"tranche": "FOYER", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 84000, "montant_notifie": 84000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée"}, {"tranche": "ETUD", "financeur": "Conseil départemental 81", "financement": "Aide résidence étudiante", "montant_demande": 65000, "date_demande": "20/03/2025", "statut": "Déposée"}], "garanties": [{"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 50, "statut": "Dossier transmis", "date_demande": "20/01/2025"}, {"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Département", "quotite": 50, "statut": "Dossier transmis", "date_demande": "20/01/2025"}, {"tranche": "RSJA", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "Dossier transmis", "date_demande": "20/01/2025"}, {"tranche": "FOYER", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "Accord de principe reçu", "date_demande": "20/01/2025"}, {"tranche": "ETUD", "pret_lie": "PLS bâti", "garant": "CEGC", "quotite": 100, "statut": "Accord de principe reçu", "caution_relais": false}], "prefinancements": [], "reservataires": [{"tranche": "RSJA", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 11, "pct_reserve": 19, "etape": "En négociation"}, {"tranche": "RSJA", "reservataire": "Préfecture 81", "financement": "Contingent préfectoral", "nb_logements": 17, "pct_reserve": 30, "etape": "Validé"}, {"tranche": "ETUD", "reservataire": "Université Champollion", "financement": "Convention résidence", "nb_logements": 22, "pct_reserve": 100, "etape": "Validé"}], "phases_history": []}}]}];
 // On garde les ops en dur comme fallback ; loadFromSupabase() les remplacera si l'API répond.
@@ -6051,205 +6411,350 @@ function createTranche() {
   showToast('Tranche créée', 'plus');
 }
 
-// ============== EXPORT BILAN XLSX ==============
-// Décode une chaîne base64 vers ArrayBuffer (pour SheetJS)
-function b64ToArrayBuffer(b64) {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes.buffer;
-}
-
-// Cherche dans un objet bilan (clé = nom du poste, valeur = montant)
-// le total des postes dont le nom contient l'un des mots-clés (case-insensitive)
-// Retourne aussi la liste des clés matchées pour pouvoir agréger le reste
-function matchPosteSum(bilanSection, keywords) {
-  if (!bilanSection || typeof bilanSection !== 'object') return { total: 0, matchedKeys: [] };
-  const keys = Object.keys(bilanSection);
-  const matchedKeys = [];
+// ============== BILAN PR/PF — APERÇU & PDF ==============
+// Aide : trouve dans un objet bilan (clé=nom poste, valeur=montant) les postes contenant un mot-clé
+function _bilanMatchSum(section, keywords) {
+  if (!section || typeof section !== 'object') return { total: 0, keys: [] };
+  const matched = [];
   let total = 0;
-  keys.forEach(k => {
+  Object.entries(section).forEach(([k, v]) => {
     const kl = String(k).toLowerCase();
-    const matches = keywords.some(kw => kl.includes(kw.toLowerCase()));
-    if (matches) {
-      matchedKeys.push(k);
-      const v = Number(bilanSection[k]);
-      if (!isNaN(v)) total += v;
+    if (keywords.some(kw => kl.includes(kw.toLowerCase()))) {
+      matched.push(k);
+      const n = Number(v);
+      if (!isNaN(n)) total += n;
     }
   });
-  return { total, matchedKeys };
+  return { total, keys: matched };
 }
-
-// Somme tous les postes d'une section SAUF ceux déjà matchés
-function sumOtherPostes(bilanSection, excludeKeys) {
-  if (!bilanSection || typeof bilanSection !== 'object') return 0;
+function _bilanSumOther(section, excludeKeys) {
+  if (!section || typeof section !== 'object') return 0;
   let total = 0;
-  Object.entries(bilanSection).forEach(([k, v]) => {
+  Object.entries(section).forEach(([k, v]) => {
     if (excludeKeys.includes(k)) return;
-    const n = Number(v);
-    if (!isNaN(n)) total += n;
+    const n = Number(v); if (!isNaN(n)) total += n;
   });
   return total;
 }
-
-// Total complet d'une section bilan
-function sumBilanSection(bilanSection) {
-  if (!bilanSection || typeof bilanSection !== 'object') return 0;
-  return Object.values(bilanSection).reduce((s, v) => s + (Number(v) || 0), 0);
+function _bilanSumSection(section) {
+  if (!section || typeof section !== 'object') return 0;
+  return Object.values(section).reduce((s, v) => s + (Number(v) || 0), 0);
 }
-
-// Cherche dans une liste d'entités (prêts) la somme des montants matchant un mot-clé sur le champ "ligne"
-function sumPretsMatching(prets, keywords, excludeKeywords = []) {
-  let total = 0;
+function _bilanSumPrets(prets, kws, excludeKws = []) {
+  let t = 0;
   (prets || []).forEach(p => {
     const ligne = String(p.ligne || '').toLowerCase();
-    const matches = keywords.some(kw => ligne.includes(kw.toLowerCase()));
-    const excluded = excludeKeywords.some(kw => ligne.includes(kw.toLowerCase()));
-    if (matches && !excluded) {
-      // Préférer montant_contrat, puis montant_lo, puis montant_sim
+    const matches = kws.some(kw => ligne.includes(kw.toLowerCase()));
+    const excl = excludeKws.some(kw => ligne.includes(kw.toLowerCase()));
+    if (matches && !excl) {
       const amt = Number(p.montant_contrat) || Number(p.montant_lo) || Number(p.montant_sim) || 0;
-      total += amt;
+      t += amt;
     }
   });
-  return total;
+  return t;
+}
+function _bilanFmt(v) {
+  if (!v || isNaN(v)) return '—';
+  return Math.round(v).toLocaleString('fr-FR') + ' €';
+}
+function _bilanFmtPct(v, total) {
+  if (!total || total === 0) return '—';
+  const p = (v / total) * 100;
+  return p.toFixed(2).replace('.', ',') + ' %';
 }
 
-// Fonction principale : exporte le Bilan PR/PF de la tranche sélectionnée
-async function exportTrancheBilanXlsx() {
-  if (typeof XLSX === 'undefined') {
-    showToast('Bibliothèque Excel non chargée — attendez quelques secondes et réessayez', 'alert-triangle');
-    return;
-  }
-  const op = findOp(selectedOpCode);
-  if (!op) { showToast('Aucune opération sélectionnée', 'alert-triangle'); return; }
-  const t = op.tranches[selectedTrancheIdx];
-  if (!t) { showToast('Aucune tranche sélectionnée', 'alert-triangle'); return; }
+// Agrège les données du bilan pour une liste de tranches sélectionnées (somme des postes)
+function _bilanAggregateData(op, tranches) {
+  // Postes consolidés
+  let vefa = 0, notaire = 0, divFoncier = 0;
+  let conduite = 0, prefi = 0, hypo = 0;
+  let fraisDivers = 0;
+  let pli = 0, pliFoncier = 0, als = 0, subv = 0, fp = 0;
+  // Pour les types de produit / gestionnaires : on liste tout
+  const types = new Set();
+  const gestionnaires = new Set();
+  const refs = new Set();
 
-  try {
-    // 1. Charger le template
-    const ab = b64ToArrayBuffer(TEMPLATE_BILAN_B64);
-    const wb = XLSX.read(ab, { type: 'array', cellStyles: true, cellFormula: true, cellDates: true });
-    const ws = wb.Sheets['Bilan Opération'];
-    if (!ws) {
-      showToast('Template invalide : sheet "Bilan Opération" introuvable', 'alert-triangle');
-      return;
-    }
-
-    // 2. Helper pour écrire dans une cellule en préservant le style
-    const setCell = (ref, value, type) => {
-      const existing = ws[ref] || {};
-      ws[ref] = { ...existing, v: value, t: type || (typeof value === 'number' ? 'n' : 's') };
-      // Supprimer une éventuelle formule sur les cellules qu'on remplace par valeur
-      if (ws[ref].f) delete ws[ref].f;
-    };
-
-    // 3. Identification
-    const today = new Date();
-    const todayStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
-    setCell('E2', todayStr, 's');
-
-    // Sous-titre (B3)
-    const sousTitre = [t.type_structure, t.financement].filter(Boolean).join(' - ') || 'Tranche';
-    setCell('B3', sousTitre, 's');
-
-    // C6 — Programme : "COMMUNE (DEP) - CODE"
-    let depCode = '';
-    if (op.departement) {
-      const m = String(op.departement).match(/\((\d+)\)/);
-      if (m) depCode = ' (' + m[1] + ')';
-      else depCode = ' (' + op.departement + ')';
-    }
-    const programmeStr = `${(op.commune || '').toUpperCase()}${depCode} - ${op.code || ''}`.trim();
-    setCell('C6', programmeStr, 's');
-
-    // E6 — Gestionnaire
-    setCell('E6', t.gestionnaire || '—', 's');
-
-    // C7 — Type produit
-    const typeProduit = [t.type_structure, t.financement ? 'Tranche ' + t.financement : null].filter(Boolean).join(' - ');
-    setCell('C7', typeProduit || '—', 's');
-
-    // E7 — Référence (n_leon ou n_siap)
-    setCell('E7', t.n_leon || t.n_siap || '—', 's');
-
-    // 4. Bilan — Charge foncière
+  tranches.forEach(t => {
     const cf = t.bilan?.charge_fonciere || t.charge_fonciere || {};
-    const vefa = matchPosteSum(cf, ['vefa', 'terrain', 'acquisition fonci', 'achat']);
-    const notaire = matchPosteSum(cf, ['notari', 'frais d\'acqu', 'acquisition']);
-    // "notaire" peut chevaucher "vefa" si poste "acquisition" matche les deux : on filtre
-    const notaireMatchedKeys = notaire.matchedKeys.filter(k => !vefa.matchedKeys.includes(k));
-    const notaireTotal = notaireMatchedKeys.reduce((s, k) => s + (Number(cf[k]) || 0), 0);
-    // Divers foncier = tout le reste
-    const usedKeysCF = [...vefa.matchedKeys, ...notaireMatchedKeys];
-    const diversFoncier = sumOtherPostes(cf, usedKeysCF);
-
-    setCell('D12', vefa.total, 'n');
-    setCell('D13', notaireTotal, 'n');
-    setCell('D14', diversFoncier, 'n');
-
-    // 5. Bilan — Honoraires
     const hon = t.bilan?.honoraires || t.honoraires || {};
-    const conduite = matchPosteSum(hon, ['conduite']);
-    const prefi = matchPosteSum(hon, ['préfi', 'prefi', 'intérêt', 'interet']);
-    const prefiKeys = prefi.matchedKeys.filter(k => !conduite.matchedKeys.includes(k));
-    const prefiTotal = prefiKeys.reduce((s, k) => s + (Number(hon[k]) || 0), 0);
-    const hypo = matchPosteSum(hon, ['hypoth', 'garant']);
-    const hypoKeys = hypo.matchedKeys.filter(k => !conduite.matchedKeys.includes(k) && !prefiKeys.includes(k));
-    const hypoTotal = hypoKeys.reduce((s, k) => s + (Number(hon[k]) || 0), 0);
+    const fd = t.bilan?.frais_divers || t.frais_divers || {};
+    const ff = t.bilan?.frais_financiers || t.frais_financiers || {};
+    const bat = t.bilan?.batiment || t.batiment || {};
 
-    setCell('D18', conduite.total, 'n');
-    setCell('D19', prefiTotal, 'n');
-    setCell('D20', hypoTotal, 'n');
+    const v = _bilanMatchSum(cf, ['vefa', 'terrain', 'acquisition fonci', 'achat']);
+    const n = _bilanMatchSum(cf, ['notari', 'acquisition']);
+    const nKeys = n.keys.filter(k => !v.keys.includes(k));
+    const nTotal = nKeys.reduce((s, k) => s + (Number(cf[k]) || 0), 0);
+    const usedCF = [...v.keys, ...nKeys];
+    vefa += v.total;
+    notaire += nTotal;
+    divFoncier += _bilanSumOther(cf, usedCF);
 
-    // 6. Frais divers (D31) — agrège ce qui n'est pas dans charge_fonciere ni honoraires
-    const fraisDivers = sumBilanSection(t.bilan?.frais_divers || t.frais_divers || {});
-    const fraisFinanciers = sumBilanSection(t.bilan?.frais_financiers || t.frais_financiers || {});
-    const batiment = sumBilanSection(t.bilan?.batiment || t.batiment || {});
-    // Pour ce template (PLI sans bâtiment construit côté Axentia, c'est du VEFA),
-    // les sections batiment/frais_financiers sont souvent vides. On les agrège dans D31.
-    setCell('D31', fraisDivers + fraisFinanciers + batiment, 'n');
+    const cond = _bilanMatchSum(hon, ['conduite']);
+    const pf = _bilanMatchSum(hon, ['préfi', 'prefi', 'intérêt', 'interet']);
+    const pfKeys = pf.keys.filter(k => !cond.keys.includes(k));
+    const pfTotal = pfKeys.reduce((s, k) => s + (Number(hon[k]) || 0), 0);
+    const hy = _bilanMatchSum(hon, ['hypoth', 'garant']);
+    const hyKeys = hy.keys.filter(k => !cond.keys.includes(k) && !pfKeys.includes(k));
+    const hyTotal = hyKeys.reduce((s, k) => s + (Number(hon[k]) || 0), 0);
+    conduite += cond.total;
+    prefi += pfTotal;
+    hypo += hyTotal;
 
-    // 7. Recettes : prêts, subv, fp
+    fraisDivers += _bilanSumSection(fd) + _bilanSumSection(ff) + _bilanSumSection(bat);
+
+    // Recettes
     const trCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
     const pretsT = (op.prets || []).filter(p => p.tranche === trCode);
     const subvT = (op.subventions || []).filter(s => s.tranche === trCode);
 
-    const pli = sumPretsMatching(pretsT, ['pli'], ['foncier']);
-    const pliFoncier = sumPretsMatching(pretsT, ['foncier']);
-    const als = sumPretsMatching(pretsT, ['als']);
-    const subvTotal = subvT.reduce((s, sb) => s + (Number(sb.montant_notifie || sb.montant_notif || sb.montant_demande) || 0), 0);
-    const fp = Number(t.fonds_propres) || 0;
+    pli += _bilanSumPrets(pretsT, ['pli'], ['foncier']);
+    pliFoncier += _bilanSumPrets(pretsT, ['foncier']);
+    als += _bilanSumPrets(pretsT, ['als']);
+    subv += subvT.reduce((s, sb) => s + (Number(sb.montant_notifie || sb.montant_notif || sb.montant_demande) || 0), 0);
+    fp += Number(t.fonds_propres) || 0;
 
-    setCell('D35', pli, 'n');
-    setCell('D36', pliFoncier, 'n');
-    setCell('D37', als, 'n');
-    setCell('D38', subvTotal, 'n');
-    setCell('D39', fp, 'n');
+    if (t.type_structure) types.add(t.type_structure);
+    if (t.gestionnaire) gestionnaires.add(t.gestionnaire);
+    const ref = t.n_leon || t.n_siap;
+    if (ref) refs.add(ref);
+  });
 
-    // 8. Forcer le recalcul des formules à l'ouverture
-    if (!wb.Workbook) wb.Workbook = {};
-    if (!wb.Workbook.CalcPr) wb.Workbook.CalcPr = {};
-    wb.Workbook.CalcPr.fullCalcOnLoad = true;
+  const totalCF = vefa + notaire + divFoncier;
+  const totalHon = conduite + prefi + hypo;
+  const totalPR = totalCF + totalHon;
+  const totalDep = totalCF + totalHon + fraisDivers;
+  const totalRec = pli + pliFoncier + als + subv + fp;
+  const equilibre = totalRec - totalDep;
 
-    // 9. Générer et télécharger
-    const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array', cellStyles: true });
-    const blob = new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const filename = `AXENTIA_Bilan_${op.code || 'OP'}_${trCode || 'T'}_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast(`Bilan exporté : ${filename}`, 'check');
-  } catch (err) {
-    console.error('Export bilan error:', err);
-    showToast('Erreur export : ' + (err.message || err), 'alert-triangle');
-  }
+  return {
+    vefa, notaire, divFoncier, totalCF,
+    conduite, prefi, hypo, totalHon,
+    totalPR,
+    fraisDivers, totalDep,
+    pli, pliFoncier, als, subv, fp, totalRec,
+    equilibre,
+    types: [...types], gestionnaires: [...gestionnaires], refs: [...refs],
+  };
 }
-// ============== END EXPORT BILAN ==============
+
+// Génère le HTML de la page bilan dans le conteneur #bilan-print-page
+function _bilanRenderPage(op, tranchesSelected) {
+  const d = _bilanAggregateData(op, tranchesSelected);
+  const today = new Date();
+  const dateStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
+
+  // Identification
+  const depMatch = (op.departement || '').match(/\((\d+)\)/);
+  const depCode = depMatch ? depMatch[1] : (op.departement || '');
+  const programme = `${(op.commune || '').toUpperCase()}${depCode ? ' (' + depCode + ')' : ''} - ${op.code || ''}`;
+  const typeProduit = d.types.join(' / ') || '—';
+  const gestionnaireStr = d.gestionnaires.join(' / ') || '—';
+  const refsStr = d.refs.join(' / ') || '—';
+
+  // Sous-titre (typologies des tranches sélectionnées)
+  const trancheLabels = tranchesSelected.map(t => {
+    const tc = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
+    return `${tc}${t.financement ? ' (' + t.financement + ')' : ''}`;
+  });
+  const sousTitre = d.types.join(', ') + (d.types.length ? ' — ' : '') + trancheLabels.join(', ');
+
+  const multiTranche = tranchesSelected.length > 1;
+  const legendHtml = multiTranche
+    ? `<div class="bilan-tranches-legend"><strong>Périmètre :</strong> bilan consolidé de ${tranchesSelected.length} tranches (${trancheLabels.join(', ')}). Les montants sont la somme des postes correspondants sur chaque tranche.</div>`
+    : '';
+
+  // Logo Axentia : on récupère le src de l'image de la topnav (déjà chargée en base64 dans le HTML)
+  const logoEl = document.querySelector('.topnav-brand-logo');
+  const logoSrc = logoEl ? logoEl.src : '';
+
+  const equilibreClass = Math.abs(d.equilibre) < 1 ? 'bilan-equilibre-ok' : 'bilan-equilibre-ko';
+  const equilibreText = `Équilibre — Écart (Recettes − Dépenses) : ${d.equilibre >= 0 ? '+' : ''}${_bilanFmt(d.equilibre).replace('—', '0 €')}`;
+
+  return `
+    <div class="bilan-header">
+      <div class="bilan-title-block">
+        <h1 class="bilan-title">BILAN PRÉVISIONNEL D'OPÉRATION</h1>
+        <p class="bilan-subtitle">${escapeHtml(sousTitre || 'Tranche')}</p>
+      </div>
+      ${logoSrc ? `<img src="${logoSrc}" alt="AXENTIA" class="bilan-logo">` : ''}
+    </div>
+    <div class="bilan-date-block">Date : ${dateStr}</div>
+
+    ${legendHtml}
+
+    <div class="bilan-section-header">IDENTIFICATION DE L'OPÉRATION</div>
+    <table class="bilan-id-table">
+      <tr><td>Programme</td><td>${escapeHtml(programme)}</td></tr>
+      <tr><td>Gestionnaire</td><td>${escapeHtml(gestionnaireStr)}</td></tr>
+      <tr><td>Type de produit</td><td>${escapeHtml(typeProduit)}</td></tr>
+      <tr><td>Référence</td><td>${escapeHtml(refsStr)}</td></tr>
+    </table>
+
+    <div class="bilan-section-header">PRIX DE REVIENT PRÉVISIONNEL</div>
+    <table class="bilan-table">
+      <tr class="bilan-table-header"><td></td><td class="bilan-montant">Montants TTC (€)</td><td class="bilan-pct">%</td></tr>
+    </table>
+    <div class="bilan-subsection-header">CHARGE FONCIÈRE</div>
+    <table class="bilan-table">
+      <tr><td class="bilan-libelle-indent">VEFA / Terrain</td><td class="bilan-montant">${_bilanFmt(d.vefa)}</td><td class="bilan-pct">${_bilanFmtPct(d.vefa, d.totalCF)}</td></tr>
+      <tr><td class="bilan-libelle-indent">Frais d'acquisition / notariés</td><td class="bilan-montant">${_bilanFmt(d.notaire)}</td><td class="bilan-pct">${_bilanFmtPct(d.notaire, d.totalCF)}</td></tr>
+      <tr><td class="bilan-libelle-indent">Divers foncier</td><td class="bilan-montant">${_bilanFmt(d.divFoncier)}</td><td class="bilan-pct">${_bilanFmtPct(d.divFoncier, d.totalCF)}</td></tr>
+      <tr class="bilan-subtotal"><td>TOTAL CHARGE FONCIÈRE</td><td class="bilan-montant">${_bilanFmt(d.totalCF)}</td><td class="bilan-pct">100,00 %</td></tr>
+    </table>
+    <div class="bilan-subsection-header">HONORAIRES</div>
+    <table class="bilan-table">
+      <tr><td class="bilan-libelle-indent">Conduite d'opération</td><td class="bilan-montant">${_bilanFmt(d.conduite)}</td><td class="bilan-pct">${_bilanFmtPct(d.conduite, d.totalHon)}</td></tr>
+      <tr><td class="bilan-libelle-indent">Intérêts préfi. forfaitaires</td><td class="bilan-montant">${_bilanFmt(d.prefi)}</td><td class="bilan-pct">${_bilanFmtPct(d.prefi, d.totalHon)}</td></tr>
+      <tr><td class="bilan-libelle-indent">Frais d'hypothèque</td><td class="bilan-montant">${_bilanFmt(d.hypo)}</td><td class="bilan-pct">${_bilanFmtPct(d.hypo, d.totalHon)}</td></tr>
+      <tr class="bilan-subtotal"><td>TOTAL HONORAIRES</td><td class="bilan-montant">${_bilanFmt(d.totalHon)}</td><td class="bilan-pct">100,00 %</td></tr>
+    </table>
+    <table class="bilan-table">
+      <tr class="bilan-total"><td>PRIX DE REVIENT OPÉRATION</td><td class="bilan-montant">${_bilanFmt(d.totalPR)}</td><td class="bilan-pct">100,00 %</td></tr>
+    </table>
+
+    <div class="bilan-section-header">PLAN DE FINANCEMENT PRÉVISIONNEL</div>
+    <table class="bilan-table">
+      <tr class="bilan-table-header"><td></td><td class="bilan-montant">Montants TTC (€)</td><td class="bilan-pct">%</td></tr>
+    </table>
+    <div class="bilan-subsection-header">I — DÉPENSES</div>
+    <table class="bilan-table">
+      <tr><td class="bilan-libelle-indent">Charge Foncière</td><td class="bilan-montant">${_bilanFmt(d.totalCF)}</td><td class="bilan-pct">${_bilanFmtPct(d.totalCF, d.totalDep)}</td></tr>
+      <tr><td class="bilan-libelle-indent">Honoraires</td><td class="bilan-montant">${_bilanFmt(d.totalHon)}</td><td class="bilan-pct">${_bilanFmtPct(d.totalHon, d.totalDep)}</td></tr>
+      <tr><td class="bilan-libelle-indent">Frais divers</td><td class="bilan-montant">${_bilanFmt(d.fraisDivers)}</td><td class="bilan-pct">${_bilanFmtPct(d.fraisDivers, d.totalDep)}</td></tr>
+      <tr class="bilan-subtotal"><td>TOTAL DÉPENSES</td><td class="bilan-montant">${_bilanFmt(d.totalDep)}</td><td class="bilan-pct">100,00 %</td></tr>
+    </table>
+    <div class="bilan-subsection-header">II — RECETTES</div>
+    <table class="bilan-table">
+      <tr><td class="bilan-libelle-indent">PLI</td><td class="bilan-montant">${_bilanFmt(d.pli)}</td><td class="bilan-pct">${_bilanFmtPct(d.pli, d.totalRec)}</td></tr>
+      <tr><td class="bilan-libelle-indent">PLI Foncier</td><td class="bilan-montant">${_bilanFmt(d.pliFoncier)}</td><td class="bilan-pct">${_bilanFmtPct(d.pliFoncier, d.totalRec)}</td></tr>
+      <tr><td class="bilan-libelle-indent">Prêt ALS</td><td class="bilan-montant">${_bilanFmt(d.als)}</td><td class="bilan-pct">${_bilanFmtPct(d.als, d.totalRec)}</td></tr>
+      <tr><td class="bilan-libelle-indent">Subventions</td><td class="bilan-montant">${_bilanFmt(d.subv)}</td><td class="bilan-pct">${_bilanFmtPct(d.subv, d.totalRec)}</td></tr>
+      <tr><td class="bilan-libelle-indent">Fonds propres</td><td class="bilan-montant">${_bilanFmt(d.fp)}</td><td class="bilan-pct">${_bilanFmtPct(d.fp, d.totalRec)}</td></tr>
+      <tr class="bilan-subtotal"><td>TOTAL FINANCEMENT</td><td class="bilan-montant">${_bilanFmt(d.totalRec)}</td><td class="bilan-pct">100,00 %</td></tr>
+    </table>
+
+    <div class="bilan-equilibre ${equilibreClass}">${escapeHtml(equilibreText)}</div>
+
+    <div class="bilan-footer">Document confidentiel — Template prévisionnel d'opération · AXENTIA</div>
+  `;
+}
+
+// Modal de sélection des tranches (avec checkboxes)
+function _bilanOpenTranchesModal(op, defaultIdx, onConfirm) {
+  document.querySelectorAll('.bilan-tranches-modal-backdrop').forEach(p => p.remove());
+  const tranches = op.tranches || [];
+  if (tranches.length === 0) {
+    showToast('Aucune tranche disponible', 'alert-triangle');
+    return;
+  }
+  // Si une seule tranche, on bypasse le modal
+  if (tranches.length === 1) {
+    onConfirm([0]);
+    return;
+  }
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'bilan-tranches-modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="bilan-tranches-modal">
+      <div class="bilan-tranches-modal-head">
+        <span>Sélectionner les tranches à inclure</span>
+        <button class="bilan-tranches-modal-close" type="button">×</button>
+      </div>
+      <div class="bilan-tranches-modal-body">
+        <p class="helper">Cochez une ou plusieurs tranches. Le bilan consolide les postes (somme) sur les tranches sélectionnées.</p>
+        ${tranches.map((t, i) => {
+          const tc = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
+          const label = `${tc} — ${escapeHtml(t.type_structure || '?')}${t.financement ? ' (' + escapeHtml(t.financement) + ')' : ''}`;
+          const meta = `${t.logements || '?'} logements · ${t.gestionnaire || 'sans gestionnaire'}`;
+          return `
+            <label class="bilan-tranche-check">
+              <input type="checkbox" data-tranche-idx="${i}" ${i === defaultIdx ? 'checked' : ''}>
+              <div class="bilan-tranche-check-info">
+                <div class="bilan-tranche-check-name">${label}</div>
+                <div class="bilan-tranche-check-meta">${escapeHtml(meta)}</div>
+              </div>
+            </label>
+          `;
+        }).join('')}
+      </div>
+      <div class="bilan-tranches-modal-foot">
+        <span class="selection-count" id="bilan-sel-count">1 tranche sélectionnée</span>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="cancel-btn">Annuler</button>
+          <button type="button" class="primary confirm-btn">Continuer</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+  replaceTablerIcons();
+
+  const updateCount = () => {
+    const n = backdrop.querySelectorAll('input[type="checkbox"]:checked').length;
+    backdrop.querySelector('#bilan-sel-count').textContent = `${n} tranche${n > 1 ? 's' : ''} sélectionnée${n > 1 ? 's' : ''}`;
+  };
+  backdrop.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', updateCount);
+  });
+  const close = () => backdrop.remove();
+  backdrop.querySelector('.bilan-tranches-modal-close').addEventListener('click', close);
+  backdrop.querySelector('.cancel-btn').addEventListener('click', close);
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+  backdrop.querySelector('.confirm-btn').addEventListener('click', () => {
+    const idxs = [...backdrop.querySelectorAll('input[type="checkbox"]:checked')]
+      .map(cb => parseInt(cb.dataset.trancheIdx, 10))
+      .filter(n => !isNaN(n));
+    if (idxs.length === 0) {
+      showToast('Sélectionnez au moins une tranche', 'alert-triangle');
+      return;
+    }
+    close();
+    onConfirm(idxs);
+  });
+}
+
+// Affiche l'aperçu (avec toolbar) sans imprimer
+function openBilanPreview() {
+  const op = findOp(selectedOpCode);
+  if (!op) { showToast('Aucune opération sélectionnée', 'alert-triangle'); return; }
+  _bilanOpenTranchesModal(op, selectedTrancheIdx, (idxs) => {
+    const tranches = idxs.map(i => op.tranches[i]).filter(Boolean);
+    const html = _bilanRenderPage(op, tranches);
+    document.getElementById('bilan-print-page').innerHTML = html;
+    document.getElementById('bilan-preview-overlay').style.display = 'flex';
+    replaceTablerIcons();
+  });
+}
+
+// Ouvre directement l'aperçu PUIS lance l'impression (parcours rapide)
+function openBilanPrint() {
+  const op = findOp(selectedOpCode);
+  if (!op) { showToast('Aucune opération sélectionnée', 'alert-triangle'); return; }
+  _bilanOpenTranchesModal(op, selectedTrancheIdx, (idxs) => {
+    const tranches = idxs.map(i => op.tranches[i]).filter(Boolean);
+    const html = _bilanRenderPage(op, tranches);
+    document.getElementById('bilan-print-page').innerHTML = html;
+    document.getElementById('bilan-preview-overlay').style.display = 'flex';
+    replaceTablerIcons();
+    // Léger délai pour laisser le DOM se rendre + les icônes Tabler se charger
+    setTimeout(() => { window.print(); }, 200);
+  });
+}
+
+// Lance l'impression depuis le bouton dans la toolbar de l'aperçu
+function triggerBilanPrint() {
+  window.print();
+}
+
+// Ferme l'overlay d'aperçu
+function closeBilanPreview() {
+  document.getElementById('bilan-preview-overlay').style.display = 'none';
+  document.getElementById('bilan-print-page').innerHTML = '';
+}
+// ============== END BILAN PR/PF ==============
 
 function deleteTranche() {
   const op = findOp(selectedOpCode);
@@ -7337,7 +7842,10 @@ function renderTrancheDetail() {
             ${t.statut_agrement && !editMode ? `<span class="badge-secondary">Agr. ${escapeHtml(t.statut_agrement)}</span>` : ''}
           </div>
         </div>
-        ${editMode ? `<button class="icon-btn danger-btn" onclick="deleteTranche()" title="Supprimer cette tranche"><i class="ti ti-trash"></i></button>` : `<button class="icon-btn" onclick="exportTrancheBilanXlsx()" title="Exporter le Bilan PR/PF en Excel"><i class="ti ti-file-spreadsheet"></i></button>`}
+        ${editMode ? `<button class="icon-btn danger-btn" onclick="deleteTranche()" title="Supprimer cette tranche"><i class="ti ti-trash"></i></button>` : `
+          <button class="icon-btn" onclick="openBilanPreview()" title="Aperçu du Bilan PR/PF"><i class="ti ti-eye"></i></button>
+          <button class="icon-btn" onclick="openBilanPrint()" title="Générer le Bilan PR/PF en PDF"><i class="ti ti-printer"></i></button>
+        `}
       </div>
 
       <div class="metric-row" style="--cols: 3;">
