@@ -14012,6 +14012,7 @@ replaceTablerIcons(); // initial pass to handle topnav and dashboard
 // Charge les opérations depuis Supabase et remplace les données en dur.
 // Si Supabase ne répond pas, les données démo en dur restent affichées.
 async function loadFromSupabase() {
+  const splashStart = Date.now();
   // Filet de sécurité : si le chargement dépasse 8s, on cache le splash quand même
   const splashTimeout = setTimeout(() => {
     const s = document.getElementById('loadingSplash');
@@ -14282,10 +14283,15 @@ async function loadFromSupabase() {
     if (typeof showToast === 'function') {
       showToast(`${DATA.length} opérations chargées depuis Supabase`, 'check');
     }
-    // Cacher l'écran de chargement
+    // Cacher l'écran de chargement (avec délai minimum de 1.2s pour effet visuel)
     clearTimeout(splashTimeout);
-    const splash = document.getElementById('loadingSplash');
-    if (splash) splash.classList.add('hidden');
+    const elapsed = Date.now() - splashStart;
+    const minSplashDuration = 1200;
+    const remaining = Math.max(0, minSplashDuration - elapsed);
+    setTimeout(() => {
+      const splash = document.getElementById('loadingSplash');
+      if (splash) splash.classList.add('hidden');
+    }, remaining);
   } catch (err) {
     console.error('Erreur Supabase :', err);
     if (typeof showToast === 'function') {
@@ -14293,8 +14299,12 @@ async function loadFromSupabase() {
     }
     // Cacher aussi le splash en cas d'erreur (sinon il reste éternellement)
     clearTimeout(splashTimeout);
-    const splash = document.getElementById('loadingSplash');
-    if (splash) splash.classList.add('hidden');
+    const elapsed = Date.now() - splashStart;
+    const remaining = Math.max(0, 1200 - elapsed);
+    setTimeout(() => {
+      const splash = document.getElementById('loadingSplash');
+      if (splash) splash.classList.add('hidden');
+    }, remaining);
   }
 }
 
