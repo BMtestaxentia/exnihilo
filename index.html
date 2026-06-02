@@ -2245,6 +2245,15 @@
   /* === Pop-up enrichi (map-popup-rich) === */
   .map-popup-rich { min-width: 260px; max-width: 290px; }
   .map-popup-header { padding-bottom: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 8px; }
+  .map-popup-rich .map-popup-name { margin: 2px 0 4px; }
+  .map-popup-rich .map-popup-addr {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    line-height: 1.35;
+  }
+  .map-popup-rich .map-popup-addr i, .map-popup-rich .map-popup-addr .tabler-svg-icon { font-size: 12px; flex-shrink: 0; }
   .map-popup-loc { color: var(--text-secondary); }
   .map-popup-stats {
     display: flex; flex-direction: column; gap: 5px;
@@ -2265,39 +2274,6 @@
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
-  .map-popup-alerts {
-    padding: 6px 8px;
-    background: var(--warning-bg);
-    border-radius: 4px;
-    margin-bottom: 8px;
-  }
-  .map-popup-alerts-head {
-    display: flex; align-items: center; gap: 6px;
-    color: var(--warning-text);
-    font-size: 11.5px; font-weight: 700;
-    margin-bottom: 5px;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-  }
-  .map-popup-alerts-head i, .map-popup-alerts-head .tabler-svg-icon { font-size: 13px; }
-  .map-popup-alert {
-    padding: 4px 7px;
-    border-left: 3px solid var(--warning-accent);
-    background: var(--bg-primary);
-    border-radius: 2px;
-    font-size: 11px;
-    color: var(--text-primary);
-    margin-bottom: 3px;
-    line-height: 1.35;
-  }
-  .map-popup-alert:last-child { margin-bottom: 0; }
-  .map-popup-alert-more {
-    font-size: 10.5px;
-    color: var(--text-tertiary);
-    font-style: italic;
-    margin-top: 4px;
-    text-align: right;
-  }
   .map-popup-people {
     display: flex; align-items: center; gap: 7px;
     padding: 6px 8px;
@@ -2305,27 +2281,30 @@
     border-radius: 4px;
     font-size: 11.5px;
     margin-bottom: 8px;
+    line-height: 1.4;
   }
   .map-popup-people i, .map-popup-people .tabler-svg-icon {
     color: var(--text-secondary);
     font-size: 13px;
+    flex-shrink: 0;
   }
-  .map-popup-role {
-    color: var(--text-tertiary);
-    font-size: 10.5px;
-  }
-  .map-popup-rich .map-popup-addr {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px;
-    color: var(--text-tertiary);
-    margin-bottom: 8px;
-  }
-  .map-popup-rich .map-popup-addr i, .map-popup-rich .map-popup-addr .tabler-svg-icon { font-size: 12px; }
   .map-popup-rich .map-popup-open {
     display: flex; align-items: center; justify-content: center;
     gap: 4px;
   }
   .map-popup-rich .map-popup-open i, .map-popup-rich .map-popup-open .tabler-svg-icon { font-size: 14px; }
+  .map-popup-alert-badge {
+    margin-top: 8px;
+    padding: 5px 8px;
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+    justify-content: center;
+  }
+  .map-popup-alert-badge i, .map-popup-alert-badge .tabler-svg-icon { font-size: 13px; }
   /* Override Leaflet default popup styling to match our theme */
   .leaflet-popup-content-wrapper {
     background: var(--bg-primary) !important;
@@ -12207,13 +12186,10 @@ function renderMap() {
 
     // Top 2 alertes (les plus urgentes)
     const alertsForOp = computeAlerts(op);
-    alertsForOp.sort((a, b) => a.days - b.days);
-    const topAlerts = alertsForOp.slice(0, 2);
-    const alertColors = { 'expired': '#dc2626', 'critical': '#ea580c', 'warning': '#d97706', 'info': '#64748b' };
+    const alertsCount = alertsForOp.length;
 
-    // Responsable principal : préférer charge_fin, puis resp_op, puis developpeur
-    const responsable = op.charge_fin || op.resp_op || op.developpeur || null;
-    const roleLabel = op.charge_fin ? 'chargé de financement' : (op.resp_op ? 'responsable op.' : 'développeur');
+    // Liste des personnes en charge (sans titre)
+    const peopleList = [op.developpeur, op.resp_op, op.charge_fin].filter(Boolean);
 
     // Département depuis le code postal de l'adresse, ou champ explicite
     const dept = op.departement || op.dept || '';
@@ -12223,9 +12199,10 @@ function renderMap() {
         <div class="map-popup-header">
           <div class="map-popup-code">${escapeHtml(op.code || op.sheet || '—')}</div>
           <div class="map-popup-name">${escapeHtml(op.display_name || '')}</div>
+          ${op.adresse ? `<div class="map-popup-addr"><i class="ti ti-map-pin"></i> ${escapeHtml(op.adresse)}</div>` : ''}
           <div class="map-popup-meta">
-            <span class="map-popup-phase" style="background:${color};color:white;">${escapeHtml(phase)}</span>
             ${op.commune ? `<span class="map-popup-loc">${escapeHtml(op.commune)}${dept ? ` (${escapeHtml(dept)})` : ''}</span>` : ''}
+            <span class="map-popup-phase" style="background:${color};color:white;">${escapeHtml(phase)}</span>
           </div>
         </div>
 
@@ -12255,29 +12232,21 @@ function renderMap() {
           ` : ''}
         </div>
 
-        ${topAlerts.length > 0 ? `
-          <div class="map-popup-alerts">
-            <div class="map-popup-alerts-head">
-              <i class="ti ti-alert-triangle"></i>
-              <span>${alertsForOp.length} alerte${alertsForOp.length > 1 ? 's' : ''}</span>
-            </div>
-            ${topAlerts.map(a => `
-              <div class="map-popup-alert" style="border-left-color:${alertColors[a.level] || '#888'};">${escapeHtml(a.msg)}</div>
-            `).join('')}
-            ${alertsForOp.length > 2 ? `<div class="map-popup-alert-more">+ ${alertsForOp.length - 2} autre${alertsForOp.length - 2 > 1 ? 's' : ''}</div>` : ''}
-          </div>
-        ` : ''}
-
-        ${responsable ? `
+        ${peopleList.length > 0 ? `
           <div class="map-popup-people">
-            <i class="ti ti-user"></i>
-            <span>${escapeHtml(responsable)} <span class="map-popup-role">· ${escapeHtml(roleLabel)}</span></span>
+            <i class="ti ti-users"></i>
+            <span>${peopleList.map(p => escapeHtml(p)).join(' · ')}</span>
           </div>
         ` : ''}
-
-        ${op.adresse ? `<div class="map-popup-addr"><i class="ti ti-map-pin"></i> ${escapeHtml(op.adresse)}</div>` : ''}
 
         <button class="map-popup-open" data-op-uid="${escapeHtml(op._uid)}">Ouvrir la fiche <i class="ti ti-arrow-right"></i></button>
+
+        ${alertsCount > 0 ? `
+          <div class="map-popup-alert-badge">
+            <i class="ti ti-alert-triangle"></i>
+            <span>${alertsCount} alerte${alertsCount > 1 ? 's' : ''} active${alertsCount > 1 ? 's' : ''}</span>
+          </div>
+        ` : ''}
       </div>
     `;
     marker.bindPopup(popupHtml);
