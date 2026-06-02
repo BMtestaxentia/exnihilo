@@ -2559,11 +2559,38 @@
   /* OPS layout */
   .ops-shell {
     display: grid;
-    grid-template-columns: var(--sidebar-width, 96px) 1fr 1.4fr;
+    grid-template-columns: var(--sidebar-width, 96px) 1fr 1.15fr;
     height: calc(100vh - 56px); overflow: hidden;
     transition: grid-template-columns 0.2s ease;
   }
   .ops-shell.expanded { --sidebar-width: 260px; }
+
+  /* Adaptation aux écrans ≤ 1500 px (laptop 15") */
+  @media (max-width: 1500px) {
+    .ops-shell { grid-template-columns: var(--sidebar-width, 96px) 1fr 1.1fr; }
+    .op-detail, .tranche-detail { padding-left: 18px; padding-right: 18px; }
+  }
+  /* Écrans ≤ 1280 px (petit laptop) */
+  @media (max-width: 1280px) {
+    .ops-shell { grid-template-columns: var(--sidebar-width, 90px) 1fr 1fr; }
+    .ops-shell.expanded { --sidebar-width: 220px; }
+    .op-detail, .tranche-detail { padding-left: 14px; padding-right: 14px; }
+  }
+  /* Écrans ≤ 1100 px : sidebar mini */
+  @media (max-width: 1100px) {
+    .ops-shell { grid-template-columns: var(--sidebar-width, 72px) 1fr 1fr; }
+    .ops-shell.expanded { --sidebar-width: 200px; }
+  }
+  /* Très petits écrans : empile op et tranche verticalement */
+  @media (max-width: 900px) {
+    .ops-shell {
+      grid-template-columns: var(--sidebar-width, 60px) 1fr;
+      grid-template-rows: auto 1fr;
+    }
+    .ops-shell .sidebar { grid-row: span 2; }
+    .op-detail { border-bottom: 2px solid var(--border-color); max-height: 50vh; }
+    .tranche-detail { padding-left: 14px; padding-right: 14px; }
+  }
   .sidebar { background: var(--bg-primary); border-right: 1px solid var(--border-color); overflow-y: auto; padding: 0; }
   .sidebar-sticky {
     position: sticky; top: 0; z-index: 10;
