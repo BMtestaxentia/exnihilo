@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ExNihilo - POC</title>
+<script>
+  // Restauration du thème AVANT le rendu pour éviter le flash de mauvais thème
+  (function() {
+    try {
+      var saved = localStorage.getItem('exnihilo:theme');
+      if (saved === 'dark' || saved === 'light') {
+        document.documentElement.setAttribute('data-theme', saved);
+      }
+    } catch (e) {}
+  })();
+</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/[email protected]/iconfont/tabler-icons.min.css">
 <style>
   :root {
@@ -4503,6 +4514,9 @@
         <select class="synth-filter-select" id="mapRegionFilter">
           <option value="">Toutes les régions</option>
         </select>
+        <select class="synth-filter-select" id="mapPersonFilter">
+          <option value="">Toutes les personnes</option>
+        </select>
         <button class="synth-filter-reset" id="mapFilterReset"><i class="ti ti-x"></i>Reset</button>
         <span class="synth-count" id="mapCount"></span>
       </div>
@@ -4988,6 +5002,20 @@ function opBilanLineTotal(op, sectionKey, lineName) {
   }, 0);
 }
 // ============== END REFERENTIELS ==============
+
+// ============== PERSISTANCE (localStorage) ==============
+// Helpers safe : essaient localStorage, retombent silencieusement si indisponible (mode privé, etc.)
+const STORAGE_PREFIX = 'exnihilo:';
+function storageGet(key) {
+  try { return localStorage.getItem(STORAGE_PREFIX + key); }
+  catch (e) { return null; }
+}
+function storageSet(key, value) {
+  try {
+    if (value === null || value === undefined) localStorage.removeItem(STORAGE_PREFIX + key);
+    else localStorage.setItem(STORAGE_PREFIX + key, String(value));
+  } catch (e) { /* swallow */ }
+}
 
 let selectedOpCode = DATA[0]?._uid || null;
 let selectedTrancheIdx = 0;
@@ -8668,6 +8696,7 @@ function selectOp(code) {
   editMode = false; // exit edit mode when switching ops
   viewingSnapshotIdx = null;
   compareWithIdx = null;
+  storageSet('selectedOp', code || '');
   renderAll();
 }
 function selectTranche(idx) { selectedTrancheIdx = idx; renderTrancheDetail(); replaceTablerIcons(); }
@@ -8917,7 +8946,7 @@ function addMapLayerToggle(map, defaultType) {
   return ctrl;
 }
 let mapMarkers = [];
-let mapFilters = { search: '', phase: '', region: '' };
+let mapFilters = { search: '', phase: '', region: '', person: '' };
 const PHASE_MARKER_COLORS = {
   'Montage': '#d85a30',
   'Validation CA': '#185fa5',
@@ -11861,6 +11890,7 @@ function switchToTab(viewName) {
   const view = document.getElementById(`view-${viewName}`);
   if (tab) tab.classList.add('active');
   if (view) view.classList.add('active');
+  storageSet('activeView', viewName);
   // Trigger the same render as a real click would
   if (viewName === 'suivi') { renderSuivi(); }
   else if (viewName === 'validations') { initValidationsView(); renderValidations(); }
@@ -12117,6 +12147,7 @@ function renderMap() {
     }
     if (mapFilters.phase && (op.phase_actuelle || 'Montage') !== mapFilters.phase) return false;
     if (mapFilters.region && op.region !== mapFilters.region) return false;
+    if (mapFilters.person && op.developpeur !== mapFilters.person && op.resp_op !== mapFilters.person && op.charge_fin !== mapFilters.person) return false;
     return true;
   });
 
@@ -12130,6 +12161,23 @@ function renderMap() {
       regionSelect.appendChild(opt);
     });
     regionSelect.value = mapFilters.region;
+  }
+
+  // Populate person filter dropdown (once)
+  const personSelect = document.getElementById('mapPersonFilter');
+  if (personSelect && personSelect.options.length <= 1) {
+    const persons = new Set();
+    DATA.forEach(o => {
+      if (o.developpeur) persons.add(o.developpeur);
+      if (o.resp_op) persons.add(o.resp_op);
+      if (o.charge_fin) persons.add(o.charge_fin);
+    });
+    [...persons].sort().forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p; opt.textContent = p;
+      personSelect.appendChild(opt);
+    });
+    personSelect.value = mapFilters.person;
   }
 
   // Place markers for ops with coordinates
@@ -12300,7 +12348,7 @@ function initMapFilters() {
     search.dataset.wired = '1';
     search.addEventListener('input', (e) => { mapFilters.search = e.target.value; renderMap(); });
   }
-  ['Phase', 'Region'].forEach(k => {
+  ['Phase', 'Region', 'Person'].forEach(k => {
     const el = document.getElementById('map' + k + 'Filter');
     if (el && !el.dataset.wired) {
       el.dataset.wired = '1';
@@ -12311,10 +12359,11 @@ function initMapFilters() {
   if (reset && !reset.dataset.wired) {
     reset.dataset.wired = '1';
     reset.addEventListener('click', () => {
-      mapFilters = { search: '', phase: '', region: '' };
+      mapFilters = { search: '', phase: '', region: '', person: '' };
       const s = document.getElementById('mapSearchInput'); if (s) s.value = '';
       const p = document.getElementById('mapPhaseFilter'); if (p) p.value = '';
       const r = document.getElementById('mapRegionFilter'); if (r) r.value = '';
+      const pe = document.getElementById('mapPersonFilter'); if (pe) pe.value = '';
       renderMap();
     });
   }
@@ -12629,7 +12678,7 @@ function setupGanttDragHandlers() {
 
 // ============== SYNTHESE TABBED VIEW ==============
 
-let synthActiveTab = 'identite';
+let synthActiveTab = storageGet('synthTab') || 'identite';
 let synthFilter = '';
 let synthFilters = { phase: '', region: '', equipe: '', type_travaux: '' };
 let synthSort = { tabId: null, colIdx: null, direction: null };
@@ -12923,6 +12972,7 @@ function renderSynthTabs() {
         });
       }
       synthActiveTab = el.dataset.synthTab;
+      storageSet('synthTab', synthActiveTab);
       renderSynthTabs();
       renderSynthContextFilters();
       renderSynthTable();
@@ -13435,7 +13485,9 @@ function populateSynthFilters() {
   if (toggle) {
     toggle.addEventListener('click', () => {
       const current = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-      root.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+      const next = current === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      storageSet('theme', next);
     });
   }
 })();
@@ -13610,6 +13662,7 @@ document.querySelectorAll('.topnav-tab').forEach(tab => {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('view-' + target).classList.add('active');
+    storageSet('activeView', target);
     if (target === 'gantt') {
       renderGantt();
       replaceTablerIcons();
@@ -13935,7 +13988,13 @@ async function loadFromSupabase() {
     });
     console.log('WORKFLOWS chargés :', WORKFLOWS.length);
 
-    selectedOpCode = DATA[0]?._uid || null;
+    // Restaurer l'opération sélectionnée si elle existe encore en DB, sinon première op
+    const savedOp = storageGet('selectedOp');
+    if (savedOp && DATA.some(o => o._uid === savedOp)) {
+      selectedOpCode = savedOp;
+    } else {
+      selectedOpCode = DATA[0]?._uid || null;
+    }
     selectedTrancheIdx = 0;
     // Mettre à jour le compteur dynamique dans la synthèse
     const synthCount = document.getElementById('dashboardOpsCount');
@@ -13946,6 +14005,14 @@ async function loadFromSupabase() {
     renderOpTable();
     renderAccueil();
     replaceTablerIcons();
+
+    // Restaurer la vue active si on en a une sauvegardée (mais seulement si elle est valide)
+    const savedView = storageGet('activeView');
+    const validViews = ['accueil', 'operations', 'dashboard', 'suivi', 'validations', 'comites', 'gantt', 'carte', 'finances', 'tresorerie', 'referentiels', 'trash'];
+    if (savedView && validViews.includes(savedView) && savedView !== 'accueil') {
+      switchToTab(savedView);
+    }
+
     if (typeof showToast === 'function') {
       showToast(`${DATA.length} opérations chargées depuis Supabase`, 'check');
     }
