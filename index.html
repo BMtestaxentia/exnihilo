@@ -2606,14 +2606,15 @@
     gap: 1px;
     z-index: 110;
   }
+  .topnav-dropdown:hover .topnav-dropdown-menu { display: flex; }
   /* Pont invisible pour éviter que le hover se perde entre trigger et menu */
-  .topnav-dropdown::after {
+  .topnav-dropdown::before {
     content: '';
     position: absolute;
     top: 100%; left: 0; right: 0;
-    height: 10px;
+    height: 12px;
+    pointer-events: auto;
   }
-  .topnav-dropdown:hover .topnav-dropdown-menu { display: flex; }
   .topnav-dropdown-menu .topnav-tab {
     width: 100%;
     padding: 8px 12px;
@@ -4359,15 +4360,15 @@
       <div class="topnav-tab" data-view="tresorerie"><i class="ti ti-wallet"></i>Trésorerie</div>
     </div>
     <div class="topnav-spacer"></div>
-    <div class="topnav-group topnav-group-admin topnav-dropdown" id="adminDropdown">
-      <div class="topnav-dropdown-trigger">
-        <i class="ti ti-settings"></i>Admin
-        <i class="ti ti-chevron-down topnav-dropdown-chevron"></i>
-      </div>
-      <div class="topnav-dropdown-menu">
-        <div class="topnav-tab" data-view="referentiels"><i class="ti ti-list"></i>Référentiels</div>
-        <div class="topnav-tab" data-view="trash"><i class="ti ti-trash"></i>Corbeille</div>
-      </div>
+  </div>
+  <div class="topnav-group topnav-group-admin topnav-dropdown" id="adminDropdown">
+    <div class="topnav-dropdown-trigger">
+      <i class="ti ti-settings"></i>Admin
+      <i class="ti ti-chevron-down topnav-dropdown-chevron"></i>
+    </div>
+    <div class="topnav-dropdown-menu">
+      <div class="topnav-tab" data-view="referentiels"><i class="ti ti-list"></i>Référentiels</div>
+      <div class="topnav-tab" data-view="trash"><i class="ti ti-trash"></i>Corbeille</div>
     </div>
   </div>
   <div class="topnav-user">
