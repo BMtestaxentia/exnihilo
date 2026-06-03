@@ -6668,7 +6668,7 @@ function _bilanOpenTranchesModal(op, defaultIdx, onConfirm) {
         ${tranches.map((t, i) => {
           const tc = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
           const label = `${tc} — ${escapeHtml(t.type_structure || '?')}${t.financement ? ' (' + escapeHtml(t.financement) + ')' : ''}`;
-          const meta = `${t.logements || '?'} logements · ${t.gestionnaire || 'sans gestionnaire'}`;
+          const meta = `${trancheLogements(t) || '?'} logements · ${t.gestionnaire || 'sans gestionnaire'}`;
           return `
             <label class="bilan-tranche-check">
               <input type="checkbox" data-tranche-idx="${i}" ${i === defaultIdx ? 'checked' : ''}>
@@ -6967,10 +6967,16 @@ function trancheBudgetTTC(t) {
   }
   return hasAny ? total : null;
 }
-// Logements d'une tranche : saisie directe (champ logements stocké en DB)
-// La volumétrie T1-T5+ est un détail informatif qui ne court-circuite plus la saisie.
+// Logements d'une tranche : la VOLUMÉTRIE est la source de vérité (cohérent avec le
+// libellé "auto · somme volumétrie" et avec les fonctions snapshot).
+// Si un détail volumétrie existe, le total = sa somme — JAMAIS le champ scalaire stocké,
+// qui peut être obsolète (ex: 85 figé alors que la volumétrie ne somme plus qu'à 20)
+// et générait des "logements fantômes". Fallback sur t.logements uniquement pour les
+// (rares) tranches anciennes sans aucune volumétrie.
 function trancheLogements(t) {
-  const v = t?.logements;
+  if (!t) return null;
+  if (t.vol) return sumVol(t);
+  const v = t.logements;
   if (v === null || v === undefined || v === '') return null;
   const n = Number(v);
   return isNaN(n) ? null : n;
@@ -7299,9 +7305,10 @@ function saveOpEdits() {
       if (v) t.bilan[sec][line] = v;
       else delete t.bilan[sec][line];
     });
-    // Auto-derive logements from vol sum (sync the field for consistency)
-    const volSum = sumVol(t);
-    if (volSum > 0) t.logements = volSum;
+    // Resynchronise le champ scalaire stocké sur la volumétrie (source de vérité).
+    // Toujours, même si la somme est 0 : c'est l'absence de ce resync qui laissait
+    // survivre les valeurs obsolètes ("logements fantômes").
+    t.logements = sumVol(t);
 
     // Handle tranche code (short name) rename + cascade to sub-entities
     const codeInput = document.querySelector('[data-edit-tranche-code]');
