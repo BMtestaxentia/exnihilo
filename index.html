@@ -15636,14 +15636,9 @@ function mapTrancheFromSupabase(t) {
     conv_loc_montant_loyer: t.conv_loc_montant_loyer,
     conv_loc_date_valeur: t.conv_loc_date_valeur || '',
     conv_loc_grille: t.conv_loc_grille || '',
-    // Volumétrie par typologie (T1, T2, etc.)
-    vol: {
-      'T1': t.t1,
-      'T2': t.t2,
-      'T3': t.t3,
-      'T4': t.t4,
-      'T5+': t.t5_plus,
-    },
+    // Volumétrie par financement (PLAI/PLUS/PLS/PLI/LIBRE/AUTRE) — colonne JSONB, même
+    // pattern que surfaces. C'est l'axe utilisé par la grille d'édition et par sumVol.
+    vol: t.vol || {},
     // Sous-sections JSONB (bilan d'opération, surfaces)
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
@@ -16197,6 +16192,7 @@ function buildTranchePayload(t, operationId) {
     t3: t.vol?.['T3'] || null,
     t4: t.vol?.['T4'] || null,
     t5_plus: t.vol?.['T5+'] || null,
+    vol: t.vol || {},
     notes: t.notes || '',
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
