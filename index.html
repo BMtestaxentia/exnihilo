@@ -6668,7 +6668,7 @@ function _bilanOpenTranchesModal(op, defaultIdx, onConfirm) {
         ${tranches.map((t, i) => {
           const tc = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
           const label = `${tc} — ${escapeHtml(t.type_structure || '?')}${t.financement ? ' (' + escapeHtml(t.financement) + ')' : ''}`;
-          const meta = `${t.logements || '?'} logements · ${t.gestionnaire || 'sans gestionnaire'}`;
+          const meta = `${trancheLogements(t) || '?'} logements · ${t.gestionnaire || 'sans gestionnaire'}`;
           return `
             <label class="bilan-tranche-check">
               <input type="checkbox" data-tranche-idx="${i}" ${i === defaultIdx ? 'checked' : ''}>
@@ -6970,7 +6970,11 @@ function trancheBudgetTTC(t) {
 // Logements d'une tranche : saisie directe (champ logements stocké en DB)
 // La volumétrie T1-T5+ est un détail informatif qui ne court-circuite plus la saisie.
 function trancheLogements(t) {
-  const v = t?.logements;
+  // Volumétrie = source de vérité (cohérent avec "auto · somme volumétrie" et les snapshots).
+  // Si un détail vol existe, total = sa somme (jamais le scalaire stocké, qui peut être obsolète).
+  if (!t) return null;
+  if (t.vol) return sumVol(t);
+  const v = t.logements;
   if (v === null || v === undefined || v === '') return null;
   const n = Number(v);
   return isNaN(n) ? null : n;
@@ -7299,9 +7303,8 @@ function saveOpEdits() {
       if (v) t.bilan[sec][line] = v;
       else delete t.bilan[sec][line];
     });
-    // Auto-derive logements from vol sum (sync the field for consistency)
-    const volSum = sumVol(t);
-    if (volSum > 0) t.logements = volSum;
+    // Resync du scalaire logements sur la volumétrie (source de vérité), toujours.
+    t.logements = sumVol(t);
 
     // Handle tranche code (short name) rename + cascade to sub-entities
     const codeInput = document.querySelector('[data-edit-tranche-code]');
@@ -15638,13 +15641,7 @@ function mapTrancheFromSupabase(t) {
     conv_loc_date_valeur: t.conv_loc_date_valeur || '',
     conv_loc_grille: t.conv_loc_grille || '',
     // Volumétrie par typologie (T1, T2, etc.)
-    vol: {
-      'T1': t.t1,
-      'T2': t.t2,
-      'T3': t.t3,
-      'T4': t.t4,
-      'T5+': t.t5_plus,
-    },
+    vol: t.vol || {},
     // Sous-sections JSONB (bilan d'opération, surfaces)
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
@@ -16274,6 +16271,7 @@ function buildTranchePayload(t, operationId) {
     t3: t.vol?.['T3'] || null,
     t4: t.vol?.['T4'] || null,
     t5_plus: t.vol?.['T5+'] || null,
+    vol: t.vol || {},
     notes: t.notes || '',
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
