@@ -15317,11 +15317,12 @@ async function loadFromSupabase() {
       fetch(`${SUPABASE_URL}/rest/v1/tags?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/phase_snapshots?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/referentiels?select=*&is_active=eq.true&order=item_order`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/prefinancements?select=*`, { headers }),
     ];
     const responses = await Promise.all(fetches);
     if (!responses[0].ok) throw new Error('Operations: ' + responses[0].status);
 
-    const [opsRows, tranchesRows, pretsRows, garantiesRows, subvRows, reservRows, comitesRows, wfRows, wfRecipRows, auditRows, tagsRows, snapsRows, refRows] = await Promise.all(
+    const [opsRows, tranchesRows, pretsRows, garantiesRows, subvRows, reservRows, comitesRows, wfRows, wfRecipRows, auditRows, tagsRows, snapsRows, refRows, prefinRows] = await Promise.all(
       responses.map(async (r, i) => r.ok ? await r.json() : [])
     );
 
@@ -15379,6 +15380,7 @@ async function loadFromSupabase() {
       garanties: [],
       subventions: [],
       reservataires: [],
+      prefinancements: [],
       comites: [],
       workflows: [],
       tags: [],
@@ -15431,6 +15433,11 @@ async function loadFromSupabase() {
       const reservataresForOp = reservRows
         .filter(r => r.operation_id === row.id)
         .map(r => mapReservataireFromSupabase(r, trancheSuffixMap));
+
+      // Préfinancements
+      const prefinancementsForOp = prefinRows
+        .filter(pf => pf.operation_id === row.id)
+        .map(pf => mapPrefinancementFromSupabase(pf, trancheSuffixMap, pretLigneMap));
 
       // Comités
       const comitesForOp = comitesRows
@@ -15515,6 +15522,7 @@ async function loadFromSupabase() {
         garanties: garantiesForOp,
         subventions: subventionsForOp,
         reservataires: reservataresForOp,
+        prefinancements: prefinancementsForOp,
         comites: comitesForOp,
         workflows: workflowsForOp,
         audit_log: auditForOp,
@@ -15676,6 +15684,9 @@ function mapSubventionFromSupabase(s, trancheSuffixMap) {
     statut: s.statut || '',
     notes: s.notes || '',
     lien_sp_conv: s.lien_sp_conv || '',
+    contact: s.contact || '',
+    n_arrete: s.n_arrete || '',
+    lien_sp_notif: s.lien_sp_notif || '',
     // Nouveau champ temporel (Livrable 1)
     date_versement_prevue: s.date_versement_prevue || '',
   };
@@ -15699,8 +15710,30 @@ function mapReservataireFromSupabase(r, trancheSuffixMap) {
     date_demande: r.date_demande || '',
     date_conv: r.date_conv || '',
     contact: r.contact || '',
+    pct_reserve: r.pct_reserve,
+    lien_sharepoint: r.lien_sharepoint || '',
     commentaires: r.notes || '',
     notes: r.notes || '',
+  };
+}
+
+function mapPrefinancementFromSupabase(pf, trancheSuffixMap, pretLigneMap) {
+  return {
+    _supabase_id: pf.id,
+    id: 'pf-supabase-' + pf.id,
+    tranche: pf.tranche_id ? (trancheSuffixMap[pf.tranche_id] || '') : '',
+    pret_lie: (pretLigneMap && pf.pret_id) ? (pretLigneMap[pf.pret_id] || '') : '',
+    banque: pf.banque || '',
+    montant_couvert: pf.montant_couvert,
+    montant_tire: pf.montant_tire,
+    pct_tire: pf.pct_tire,
+    date_debut: pf.date_debut || '',
+    date_fin: pf.date_fin || '',
+    statut: pf.statut || '',
+    taux: pf.taux || '',
+    commentaires: pf.notes || '',
+    notes: pf.notes || '',
+    lien_sharepoint: pf.lien_sharepoint || '',
   };
 }
 
@@ -15803,6 +15836,7 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     source: p.source || p.statut || '',
     lien_sp_lo: p.lien_sp_lo || '',
     lien_sp_contrat: p.lien_sp_contrat || '',
+    lien_sharepoint: p.lien_sharepoint || '',
     // Nouveaux champs temporels (Livrable 1)
     date_premier_tirage: p.date_premier_tirage || '',
     date_mise_en_force: p.date_mise_en_force || '',
@@ -15826,6 +15860,7 @@ function mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap) {
     montant_couvert: g.montant_couvert,
     date_demande: g.date_demande || '',
     date_ap: g.date_ap || '',
+    date_comite: g.date_comite || '',
     date_delib: g.date_delib || '',
     date_conv: g.date_conv || '',
     reference_delib: g.reference_delib || '',
@@ -15837,6 +15872,7 @@ function mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap) {
     commission: g.commission,
     lien_sp_accord: g.lien_sp_accord || '',
     lien_sp_delib: g.lien_sp_delib || '',
+    lien_sharepoint: g.lien_sharepoint || '',
   };
 }
 // ----- Fin mapping -----
@@ -16080,6 +16116,9 @@ async function syncEntitiesToSupabase(op, operationId) {
       // Colonne 'notes' ← champ front 'commentaires'
       notes: s.commentaires || s.notes || '',
       lien_sp_conv: s.lien_sp_conv || '',
+      contact: s.contact || '',
+      n_arrete: s.n_arrete || '',
+      lien_sp_notif: s.lien_sp_notif || '',
     }),
   });
 
@@ -16104,6 +16143,30 @@ async function syncEntitiesToSupabase(op, operationId) {
       contact: r.contact || '',
       // Colonne 'notes' ← champ front 'commentaires'
       notes: r.commentaires || r.notes || '',
+      pct_reserve: r.pct_reserve,
+      lien_sharepoint: r.lien_sharepoint || '',
+    }),
+  });
+
+  // === PRÉFINANCEMENTS ===
+  await syncSimpleEntity({
+    op, operationId, headers,
+    tableName: 'prefinancements',
+    localItems: op.prefinancements || [],
+    buildPayload: (pf) => ({
+      operation_id: operationId,
+      tranche_id: findTrancheSupabaseIdFromSuffix(op, pf.tranche),
+      pret_id: pretLigneToSupabaseId[pf.pret_lie] || null,
+      banque: pf.banque || '',
+      montant_couvert: pf.montant_couvert,
+      montant_tire: pf.montant_tire,
+      pct_tire: pf.pct_tire,
+      date_debut: pf.date_debut || null,
+      date_fin: pf.date_fin || null,
+      statut: pf.statut || '',
+      taux: pf.taux || '',
+      notes: pf.commentaires || pf.notes || '',
+      lien_sharepoint: pf.lien_sharepoint || '',
     }),
   });
 
@@ -16255,6 +16318,7 @@ function buildPretPayload(p, operationId, trancheId) {
     source: p.source || '',
     lien_sp_lo: p.lien_sp_lo || '',
     lien_sp_contrat: p.lien_sp_contrat || '',
+    lien_sharepoint: p.lien_sharepoint || '',
   };
 }
 
@@ -16273,6 +16337,7 @@ function buildGarantiePayload(g, operationId, trancheId, pretId) {
     montant_couvert: g.montant_couvert,
     date_demande: g.date_demande || null,
     date_ap: g.date_ap || null,
+    date_comite: g.date_comite || null,
     date_delib: g.date_delib || null,
     date_conv: g.date_conv || null,
     reference_delib: g.reference_delib || '',
@@ -16283,6 +16348,7 @@ function buildGarantiePayload(g, operationId, trancheId, pretId) {
     commission: g.commission,
     lien_sp_accord: g.lien_sp_accord || '',
     lien_sp_delib: g.lien_sp_delib || '',
+    lien_sharepoint: g.lien_sharepoint || '',
   };
 }
 
