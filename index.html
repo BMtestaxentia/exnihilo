@@ -6668,7 +6668,7 @@ function _bilanOpenTranchesModal(op, defaultIdx, onConfirm) {
         ${tranches.map((t, i) => {
           const tc = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
           const label = `${tc} — ${escapeHtml(t.type_structure || '?')}${t.financement ? ' (' + escapeHtml(t.financement) + ')' : ''}`;
-          const meta = `${trancheLogements(t) || '?'} logements · ${t.gestionnaire || 'sans gestionnaire'}`;
+          const meta = `${t.logements || '?'} logements · ${t.gestionnaire || 'sans gestionnaire'}`;
           return `
             <label class="bilan-tranche-check">
               <input type="checkbox" data-tranche-idx="${i}" ${i === defaultIdx ? 'checked' : ''}>
@@ -6967,16 +6967,10 @@ function trancheBudgetTTC(t) {
   }
   return hasAny ? total : null;
 }
-// Logements d'une tranche : la VOLUMÉTRIE est la source de vérité (cohérent avec le
-// libellé "auto · somme volumétrie" et avec les fonctions snapshot).
-// Si un détail volumétrie existe, le total = sa somme — JAMAIS le champ scalaire stocké,
-// qui peut être obsolète (ex: 85 figé alors que la volumétrie ne somme plus qu'à 20)
-// et générait des "logements fantômes". Fallback sur t.logements uniquement pour les
-// (rares) tranches anciennes sans aucune volumétrie.
+// Logements d'une tranche : saisie directe (champ logements stocké en DB)
+// La volumétrie T1-T5+ est un détail informatif qui ne court-circuite plus la saisie.
 function trancheLogements(t) {
-  if (!t) return null;
-  if (t.vol) return sumVol(t);
-  const v = t.logements;
+  const v = t?.logements;
   if (v === null || v === undefined || v === '') return null;
   const n = Number(v);
   return isNaN(n) ? null : n;
@@ -7305,10 +7299,9 @@ function saveOpEdits() {
       if (v) t.bilan[sec][line] = v;
       else delete t.bilan[sec][line];
     });
-    // Resynchronise le champ scalaire stocké sur la volumétrie (source de vérité).
-    // Toujours, même si la somme est 0 : c'est l'absence de ce resync qui laissait
-    // survivre les valeurs obsolètes ("logements fantômes").
-    t.logements = sumVol(t);
+    // Auto-derive logements from vol sum (sync the field for consistency)
+    const volSum = sumVol(t);
+    if (volSum > 0) t.logements = volSum;
 
     // Handle tranche code (short name) rename + cascade to sub-entities
     const codeInput = document.querySelector('[data-edit-tranche-code]');
@@ -15636,9 +15629,14 @@ function mapTrancheFromSupabase(t) {
     conv_loc_montant_loyer: t.conv_loc_montant_loyer,
     conv_loc_date_valeur: t.conv_loc_date_valeur || '',
     conv_loc_grille: t.conv_loc_grille || '',
-    // Volumétrie par financement (PLAI/PLUS/PLS/PLI/LIBRE/AUTRE) — colonne JSONB, même
-    // pattern que surfaces. C'est l'axe utilisé par la grille d'édition et par sumVol.
-    vol: t.vol || {},
+    // Volumétrie par typologie (T1, T2, etc.)
+    vol: {
+      'T1': t.t1,
+      'T2': t.t2,
+      'T3': t.t3,
+      'T4': t.t4,
+      'T5+': t.t5_plus,
+    },
     // Sous-sections JSONB (bilan d'opération, surfaces)
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
@@ -15689,13 +15687,19 @@ function mapReservataireFromSupabase(r, trancheSuffixMap) {
     id: 'rv-supabase-' + r.id,
     tranche: r.tranche_id ? (trancheSuffixMap[r.tranche_id] || '') : '',
     tranche_id_raw: r.tranche_id,
+    // Champs front (la grille lit ces noms) + alias colonnes pour compat
+    reservataire: r.entite || '',
     entite: r.entite || '',
+    nb_logements: r.nb_logements_reserves,
     nb_logements_reserves: r.nb_logements_reserves,
+    financement: r.type_reservation || '',
     type_reservation: r.type_reservation || '',
+    etape: r.statut || '',
     statut: r.statut || '',
     date_demande: r.date_demande || '',
     date_conv: r.date_conv || '',
     contact: r.contact || '',
+    commentaires: r.notes || '',
     notes: r.notes || '',
   };
 }
@@ -15786,6 +15790,7 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     date_derniere_echeance: p.date_derniere_echeance || '',
     fenetre_tirage: p.fenetre_tirage || '',
     notes: p.notes || '',
+    commentaires: p.notes || '',
     // Champs enrichis depuis Supabase
     date_demande: p.date_demande || '',
     date_comite_banque: p.date_comite_banque || '',
@@ -15826,6 +15831,7 @@ function mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap) {
     reference_delib: g.reference_delib || '',
     statut: g.statut || '',
     notes: g.notes || '',
+    commentaires: g.notes || '',
     contact: g.contact || '',
     caution_relais: g.caution_relais || false,
     commission: g.commission,
@@ -16055,16 +16061,24 @@ async function syncEntitiesToSupabase(op, operationId) {
     buildPayload: (s) => ({
       operation_id: operationId,
       tranche_id: findTrancheSupabaseIdFromSuffix(op, s.tranche),
-      type: s.type || '',
+      // Colonne 'type' ← champ front 'financement'
+      type: s.financement || s.type || '',
       financeur: s.financeur || '',
+      montant_simule: s.montant_simule,
+      date_simule: s.date_simule || null,
       montant_demande: s.montant_demande,
       date_demande: s.date_demande || null,
-      date_notif: s.date_notif || null,
-      montant_notif: s.montant_notif,
-      date_conv_signature: s.date_conv_signature || null,
+      // Colonne 'date_notif' ← champ front 'date_notification'
+      date_notif: s.date_notification || s.date_notif || null,
+      // Colonne 'montant_notif' ← champ front 'montant_notifie' (LE bug signalé)
+      montant_notif: (s.montant_notifie !== undefined && s.montant_notifie !== null) ? s.montant_notifie : s.montant_notif,
+      // Colonne 'date_conv_signature' ← champ front 'date_conv'
+      date_conv_signature: s.date_conv || s.date_conv_signature || null,
       montant_verse: s.montant_verse,
+      date_versement_prevue: s.date_versement_prevue || null,
       statut: s.statut || '',
-      notes: s.notes || '',
+      // Colonne 'notes' ← champ front 'commentaires'
+      notes: s.commentaires || s.notes || '',
       lien_sp_conv: s.lien_sp_conv || '',
     }),
   });
@@ -16077,14 +16091,19 @@ async function syncEntitiesToSupabase(op, operationId) {
     buildPayload: (r) => ({
       operation_id: operationId,
       tranche_id: findTrancheSupabaseIdFromSuffix(op, r.tranche),
-      entite: r.entite || '',
-      nb_logements_reserves: r.nb_logements_reserves,
-      type_reservation: r.type_reservation || '',
-      statut: r.statut || '',
+      // Colonne 'entite' ← champ front 'reservataire'
+      entite: r.reservataire || r.entite || '',
+      // Colonne 'nb_logements_reserves' ← champ front 'nb_logements'
+      nb_logements_reserves: (r.nb_logements !== undefined && r.nb_logements !== null) ? r.nb_logements : r.nb_logements_reserves,
+      // Colonne 'type_reservation' ← champ front 'financement'
+      type_reservation: r.financement || r.type_reservation || '',
+      // Colonne 'statut' ← champ front 'etape'
+      statut: r.etape || r.statut || '',
       date_demande: r.date_demande || null,
       date_conv: r.date_conv || null,
       contact: r.contact || '',
-      notes: r.notes || '',
+      // Colonne 'notes' ← champ front 'commentaires'
+      notes: r.commentaires || r.notes || '',
     }),
   });
 
@@ -16192,7 +16211,6 @@ function buildTranchePayload(t, operationId) {
     t3: t.vol?.['T3'] || null,
     t4: t.vol?.['T4'] || null,
     t5_plus: t.vol?.['T5+'] || null,
-    vol: t.vol || {},
     notes: t.notes || '',
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
@@ -16225,7 +16243,7 @@ function buildPretPayload(p, operationId, trancheId) {
     date_premiere_echeance: p.date_premiere_echeance || null,
     date_derniere_echeance: p.date_derniere_echeance || null,
     fenetre_tirage: p.fenetre_tirage || '',
-    notes: p.notes || '',
+    notes: p.commentaires || p.notes || '',
     date_demande: p.date_demande || null,
     date_comite_banque: p.date_comite_banque || null,
     n_contrat: p.n_contrat || '',
@@ -16259,7 +16277,7 @@ function buildGarantiePayload(g, operationId, trancheId, pretId) {
     date_conv: g.date_conv || null,
     reference_delib: g.reference_delib || '',
     statut: g.statut || '',
-    notes: g.notes || '',
+    notes: g.commentaires || g.notes || '',
     contact: g.contact || '',
     caution_relais: g.caution_relais || false,
     commission: g.commission,
