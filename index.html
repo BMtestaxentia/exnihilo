@@ -7277,7 +7277,7 @@ function saveOpEdits() {
     document.querySelectorAll('[data-edit-tranche-field]').forEach(el => {
       const field = el.dataset.editTrancheField;
       let val = el.value;
-      const numFields = ['logements','budget_ttc','fonds_propres','accord_redevance','duree_reconstitution_fp','taux_remuneration_fp','injection_pgerc'];
+      const numFields = ['logements','budget_ttc','fonds_propres','accord_redevance','duree_reconstitution_fp','taux_remuneration_fp','injection_pgerc','nb_droits_etat'];
       if (numFields.includes(field)) {
         val = val === '' ? null : parseFloat(val);
       }
@@ -7898,6 +7898,7 @@ function renderTrancheDetail() {
         ${editableKV('Catégorie', t.categorie_agrement, 'categorie_agrement', 'text', 'tranche-field')}
         ${editableKV('Bénéficiaire', t.beneficiaire_agrement, 'beneficiaire_agrement', 'text', 'tranche-field')}
         ${editableKV('PLAI adapté (nb logts)', t.plai_adapte, 'plai_adapte', 'number', 'tranche-field')}
+        ${editableKV('Droits réservataires État/délégataire', t.nb_droits_etat, 'nb_droits_etat', 'number', 'tranche-field')}
         ${editableNotes(t.detail_logements, 'detail_logements', 'tranche-field', 'Ex: Dont 75 PLAI T1 prime · 22 PLAI T2 standard…')}
       </div>
 
@@ -8706,7 +8707,7 @@ const SECTION_FIELD_MAP = {
 const NUMERIC_FIELDS = new Set([
   'montant_demande','montant_notifie','montant_sim','montant_lo','montant_contrat',
   'quotite','montant_couvert','montant_tire','pct_tire','nb_logements','pct_reserve',
-  'duree_emprunt','duree_prefi','taux_spread','commission'
+  'duree_emprunt','duree_prefi','taux_spread','commission','nb_droits_reserves'
 ]);
 
 function addEntityRow(section) {
@@ -8823,6 +8824,7 @@ function renderSubvCardEdit(i, op) {
         <div class="card-edit-field"><label>Montant notifié (€)</label><input type="number" min="0" class="card-input" data-field="montant_notifie" value="${i.montant_notifie || ''}"></div>
         <div class="card-edit-field"><label>Date notification</label><input class="card-input" data-field="date_notification" value="${escapeHtml(i.date_notification || '')}" placeholder="JJ/MM/AAAA"></div>
         <div class="card-edit-field"><label>Contact</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
+        <div class="card-edit-field"><label>Droits réservataires (financeur)</label><input type="number" min="0" class="card-input" data-field="nb_droits_reserves" value="${i.nb_droits_reserves || ''}"></div>
         <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
         ${sharepointEditFields([
           { field: 'lien_sp_notif', label: "Lien notification (SharePoint)", currentValue: i.lien_sp_notif || i.lien_sharepoint },
@@ -9026,6 +9028,7 @@ function renderPretCardEdit(i, op) {
           <div class="card-edit-field"><label>Contrat</label><input class="card-input" data-field="date_contrat" value="${escapeHtml(i.date_contrat || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
           <div class="card-edit-field"><label>Contact banque</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
+          <div class="card-edit-field"><label>Droits réservataires (ALS)</label><input type="number" min="0" class="card-input" data-field="nb_droits_reserves" value="${i.nb_droits_reserves || ''}"></div>
         </div>
       </div>
 
@@ -9454,6 +9457,7 @@ function renderGarantieCardEdit(i, op) {
         <div class="card-edit-subgroup-title">Contact & notes</div>
         <div class="card-edit-grid">
           <div class="card-edit-field wide"><label>Contact</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}" placeholder="Ex: Mairie - Service finances"></div>
+          <div class="card-edit-field"><label>Droits réservataires (garant)</label><input type="number" min="0" class="card-input" data-field="nb_droits_reserves" value="${i.nb_droits_reserves || ''}"></div>
           <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
         ${sharepointEditFields([
           { field: 'lien_sp_accord', label: 'Lien accord de principe (SharePoint)', currentValue: i.lien_sp_accord },
@@ -15635,6 +15639,7 @@ function mapTrancheFromSupabase(t) {
     duree_reconstitution_fp: t.duree_reconstitution_fp,
     taux_remuneration_fp: t.taux_remuneration_fp,
     injection_pgerc: t.injection_pgerc,
+    nb_droits_etat: t.nb_droits_etat,
     date_agrement: t.date_agrement || '',
     date_dfa: t.date_dfa || '',
     prix_revient_logt: t.prix_revient_logt,
@@ -15697,6 +15702,7 @@ function mapSubventionFromSupabase(s, trancheSuffixMap) {
     contact: s.contact || '',
     n_arrete: s.n_arrete || '',
     lien_sp_notif: s.lien_sp_notif || '',
+    nb_droits_reserves: s.nb_droits_reserves,
     // Nouveau champ temporel (Livrable 1)
     date_versement_prevue: s.date_versement_prevue || '',
   };
@@ -15847,6 +15853,7 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     lien_sp_lo: p.lien_sp_lo || '',
     lien_sp_contrat: p.lien_sp_contrat || '',
     lien_sharepoint: p.lien_sharepoint || '',
+    nb_droits_reserves: p.nb_droits_reserves,
     // Nouveaux champs temporels (Livrable 1)
     date_premier_tirage: p.date_premier_tirage || '',
     date_mise_en_force: p.date_mise_en_force || '',
@@ -15883,6 +15890,7 @@ function mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap) {
     lien_sp_accord: g.lien_sp_accord || '',
     lien_sp_delib: g.lien_sp_delib || '',
     lien_sharepoint: g.lien_sharepoint || '',
+    nb_droits_reserves: g.nb_droits_reserves,
   };
 }
 // ----- Fin mapping -----
@@ -16129,6 +16137,7 @@ async function syncEntitiesToSupabase(op, operationId) {
       contact: s.contact || '',
       n_arrete: s.n_arrete || '',
       lien_sp_notif: s.lien_sp_notif || '',
+      nb_droits_reserves: s.nb_droits_reserves,
     }),
   });
 
@@ -16272,6 +16281,7 @@ function buildTranchePayload(t, operationId) {
     duree_reconstitution_fp: t.duree_reconstitution_fp,
     taux_remuneration_fp: t.taux_remuneration_fp,
     injection_pgerc: t.injection_pgerc,
+    nb_droits_etat: t.nb_droits_etat,
     date_agrement: t.date_agrement || null,
     date_dfa: t.date_dfa || null,
     prix_revient_logt: t.prix_revient_logt,
@@ -16334,6 +16344,7 @@ function buildPretPayload(p, operationId, trancheId) {
     lien_sp_lo: p.lien_sp_lo || '',
     lien_sp_contrat: p.lien_sp_contrat || '',
     lien_sharepoint: p.lien_sharepoint || '',
+    nb_droits_reserves: p.nb_droits_reserves,
   };
 }
 
@@ -16364,6 +16375,7 @@ function buildGarantiePayload(g, operationId, trancheId, pretId) {
     lien_sp_accord: g.lien_sp_accord || '',
     lien_sp_delib: g.lien_sp_delib || '',
     lien_sharepoint: g.lien_sharepoint || '',
+    nb_droits_reserves: g.nb_droits_reserves,
   };
 }
 
