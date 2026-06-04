@@ -9675,12 +9675,14 @@ function renderReservataireCardEdit(i, op) {
         <div class="card-edit-field"><label>Financement</label>
           <select class="card-input" data-field="financement">
             <option value=""></option>
+            ${i.financement && !['PLAI','PLUS','PLS','PLI','LIBRE'].includes(i.financement) ? `<option value="${escapeHtml(i.financement)}" selected>${escapeHtml(i.financement)}</option>` : ''}
             ${['PLAI','PLUS','PLS','PLI','LIBRE'].map(s => `<option value="${s}"${i.financement===s?' selected':''}>${s}</option>`).join('')}
           </select>
         </div>
         <div class="card-edit-field"><label>Réservataire</label>
           <select class="card-input" data-field="reservataire">
             <option value=""></option>
+            ${i.reservataire && !['État','État (DDETS)','Action Logement','Commune','Métropole','EPCI','Département','Région','Autre'].includes(i.reservataire) ? `<option value="${escapeHtml(i.reservataire)}" selected>${escapeHtml(i.reservataire)}</option>` : ''}
             ${['État','État (DDETS)','Action Logement','Commune','Métropole','EPCI','Département','Région','Autre'].map(s => `<option value="${s}"${i.reservataire===s?' selected':''}>${s}</option>`).join('')}
           </select>
         </div>
