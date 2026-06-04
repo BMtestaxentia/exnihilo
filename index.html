@@ -7243,15 +7243,16 @@ function syncReservatairesFromSources(op, t) {
     op.reservataires.push({ tranche: trCode, reservataire: 'Action Logement (ALS)', financement: 'Contingent ALS', etape: 'À négocier' });
   }
 
-  // État / délégataire : droits saisis dans l'agrément
-  if (t.nb_droits_etat) {
-    let r = findRes('État / Délégataire');
-    if (!r) {
-      r = { tranche: trCode, reservataire: 'État / Délégataire', financement: 'Contingent aides à la pierre', etape: 'À négocier' };
-      op.reservataires.push(r);
+  // Agrément : pour chaque financement agréé (> 0), une ligne "Droits réservataires <TYPE>"
+  const va = t.vol_agree || {};
+  ['plai','plus','pls','pli','libre','autre'].forEach(k => {
+    if (Number(va[k]) > 0) {
+      const name = 'Droits réservataires ' + k.toUpperCase();
+      if (!findRes(name)) {
+        op.reservataires.push({ tranche: trCode, reservataire: name, financement: 'Contingent agrément ' + k.toUpperCase(), etape: 'À négocier' });
+      }
     }
-    r.nb_logements = t.nb_droits_etat; // report du nombre saisi dans l'agrément
-  }
+  });
 }
 
 function saveOpEdits() {
@@ -7315,6 +7316,11 @@ function saveOpEdits() {
     document.querySelectorAll('[data-edit-tranche-vol]').forEach(el => {
       const key = el.dataset.editTrancheVol;
       t.vol[key] = el.value === '' ? null : parseInt(el.value);
+    });
+    if (!t.vol_agree) t.vol_agree = {};
+    document.querySelectorAll('[data-edit-tranche-volagree]').forEach(el => {
+      const key = el.dataset.editTrancheVolagree;
+      t.vol_agree[key] = el.value === '' ? null : parseInt(el.value);
     });
     if (!t.surfaces) t.surfaces = {};
     document.querySelectorAll('[data-edit-tranche-surface]').forEach(el => {
@@ -7846,6 +7852,15 @@ function renderTrancheDetail() {
       return editableVolCell(k, (t.vol && t.vol[k]) || null, t);
     }).join('');
 
+    const volAgreeCells = ['plai','plus','pls','pli','libre','autre'].map(k => {
+      const v = (t.vol_agree && t.vol_agree[k]) || null;
+      const label = k.toUpperCase();
+      if (editMode) {
+        return `<div class="vol-cell vol-cell-edit"><div class="vol-cell-label">${label}</div><div class="vol-cell-edit-row"><input type="number" min="0" class="editable-input vol-cell-input" data-edit-tranche-volagree="${k}" value="${v || ''}" placeholder="lgts" title="Logements agréés"><span class="vol-cell-edit-unit">lgts</span></div></div>`;
+      }
+      return `<div class="vol-cell${v ? '' : ' vol-cell-empty'}"><div class="vol-cell-label">${label}</div><div class="vol-cell-value">${v || '—'}</div></div>`;
+    }).join('');
+
     // Filter sub-entities for this tranche; attach original indices for save/delete
     const trancheKey = trCode;
     const subv = (op.subventions || []).map((s, idx) => ({...s, _originalIdx: idx})).filter(x => x.tranche === trancheKey);
@@ -7919,6 +7934,8 @@ function renderTrancheDetail() {
 
       <div class="section">
         <div class="section-label agr"><i class="ti ti-check"></i>Agrément</div>
+        <div style="font-size:11px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin:2px 0 6px;">Logements agréés par financement</div>
+        <div class="volumetrie-grid">${volAgreeCells}</div>
         ${editableKV('N° SIAP / IODA', t.n_siap, 'n_siap', 'text', 'tranche-field')}
         ${editableSelect('Statut agrément', t.statut_agrement, 'statut_agrement', getRef('statuts_agrement'), 'tranche-field')}
         ${editableKV('Date dépôt', t.date_depot_agr, 'date_depot_agr', 'text', 'tranche-field')}
@@ -7928,8 +7945,7 @@ function renderTrancheDetail() {
         ${editableSelect('ULS / RHVS', t.uls_rhvs, 'uls_rhvs', getRef('uls_rhvs'), 'tranche-field')}
         ${editableKV('Catégorie', t.categorie_agrement, 'categorie_agrement', 'text', 'tranche-field')}
         ${editableKV('Bénéficiaire', t.beneficiaire_agrement, 'beneficiaire_agrement', 'text', 'tranche-field')}
-        ${editableKV('PLAI adapté (nb logts)', t.plai_adapte, 'plai_adapte', 'number', 'tranche-field')}
-        ${editableKV('Droits réservataires État/délégataire', t.nb_droits_etat, 'nb_droits_etat', 'number', 'tranche-field')}
+        ${(t.vol_agree && Number(t.vol_agree.plai) > 0) ? editableKV('PLAI adapté (nb logts)', t.plai_adapte, 'plai_adapte', 'number', 'tranche-field') : ''}
         ${editableNotes(t.detail_logements, 'detail_logements', 'tranche-field', 'Ex: Dont 75 PLAI T1 prime · 22 PLAI T2 standard…')}
       </div>
 
@@ -15701,6 +15717,7 @@ function mapTrancheFromSupabase(t) {
     conv_loc_grille: t.conv_loc_grille || '',
     // Volumétrie par typologie (T1, T2, etc.)
     vol: t.vol || {},
+    vol_agree: t.vol_agree || {},
     // Sous-sections JSONB (bilan d'opération, surfaces)
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
@@ -16340,6 +16357,7 @@ function buildTranchePayload(t, operationId) {
     t4: t.vol?.['T4'] || null,
     t5_plus: t.vol?.['T5+'] || null,
     vol: t.vol || {},
+    vol_agree: t.vol_agree || {},
     notes: t.notes || '',
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
