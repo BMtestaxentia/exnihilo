@@ -3357,6 +3357,17 @@
   .jalon-pill.prev { background: var(--warning-bg); color: var(--warning-text); }
   .jalon-pill.reel { background: var(--success-bg); color: var(--success-text); }
   .jalon-pill:hover { filter: brightness(1.12); }
+  .ctrl-block { border: 1px solid var(--border-color); border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; }
+  .ctrl-block-title { font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 7px; margin-bottom: 12px; }
+  .ctrl-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .ctrl-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-tertiary); font-weight: 600; padding: 5px 8px; border-bottom: 1px solid var(--border-color); }
+  .ctrl-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+  .ctrl-table tfoot td { border-top: 2px solid var(--border-color); border-bottom: none; color: var(--text-primary); }
+  .ctrl-chip { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .ctrl-chip-over { background: rgba(216,90,48,0.16); color: #d85a30; }
+  .ctrl-chip-soon { background: var(--warning-bg); color: var(--warning-text); }
+  .ctrl-chip-ok { background: var(--success-bg); color: var(--success-text); }
+  .ctrl-chip-muted { color: var(--text-tertiary); }
   .jalon-montant {
     font-size: 10.5px; color: var(--text-secondary);
     margin-top: 1px; font-variant-numeric: tabular-nums;
@@ -4842,7 +4853,8 @@
       <div class="topnav-tab" data-view="carte"><i class="ti ti-map-pin"></i>Carte</div>
       <div class="topnav-tab" data-view="finances"><i class="ti ti-cash"></i>Finances</div>
       <div class="topnav-tab" data-view="tresorerie"><i class="ti ti-wallet"></i>Trésorerie</div>
-      <div class="topnav-tab" data-view="aap"><i class="ti ti-target"></i>AAP</div>
+      <div class="topnav-tab" data-view="aap"><i class="ti ti-bookmark"></i>AAP</div>
+      <div class="topnav-tab" data-view="controles"><i class="ti ti-list-check"></i>Contrôles</div>
     </div>
     <div class="topnav-spacer"></div>
   </div>
@@ -5161,6 +5173,14 @@
     <h1 class="dashboard-title">Appels à projets (AAP)</h1>
     <p class="dashboard-sub">Registre central des appels à projets : dates, modalités, prérequis. Les subventions et prêts pourront être tagués à un AAP pour suivre les opérations concernées.</p>
     <div id="aapContent"></div>
+  </div>
+</div>
+
+<div class="view" id="view-controles">
+  <div class="dashboard">
+    <h1 class="dashboard-title">Contrôles & pilotage</h1>
+    <p class="dashboard-sub">Vues transverses sur tout le portefeuille. D'autres contrôles (caducité des financements, clôtures d'agrément, go/no-go avant OS) viendront s'ajouter.</p>
+    <div id="controlesContent"></div>
   </div>
 </div>
 
@@ -6248,7 +6268,7 @@ function renderAapCard(a) {
           ${meta ? `<div class="entity-card-sub">${escapeHtml(meta)}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;">${a.lien ? sharepointIcon(a.lien) : ''}${a.statut ? statusBadge(a.statut) : ''}
-          <button class="icon-btn" onclick="editAap('${a._lid}')" title="Éditer"><i class="ti ti-edit"></i></button>
+          <button class="icon-btn" onclick="editAap('${a._lid}')" title="Éditer"><i class="ti ti-pencil"></i></button>
         </div>
       </div>
       ${dates ? `<div class="entity-card-meta"><span><i class="ti ti-calendar"></i>${escapeHtml(dates)}</span></div>` : ''}
@@ -6358,6 +6378,99 @@ async function deleteAap(lid) {
   AAPS = AAPS.filter(x => x._lid !== lid);
   editingAapLid = null;
   renderAAP();
+}
+
+// ============== CONTRÔLES & PILOTAGE ==============
+function ctrlActiveOps() {
+  return (DATA || []).filter(op => !op._deleted && !op.deleted && !op.is_deleted);
+}
+function ctrlParseFr(d) {
+  if (!d) return null;
+  const m = String(d).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  return new Date(+m[3], +m[2] - 1, +m[1]);
+}
+
+function renderControles() {
+  const view = document.getElementById('view-controles');
+  if (!view) return;
+  const c = view.querySelector('#controlesContent');
+  if (!c) return;
+  c.innerHTML = renderCtrlFinanceurs() + renderCtrlAapEcheances();
+  replaceTablerIcons();
+}
+
+function renderCtrlFinanceurs() {
+  const agg = {};
+  ctrlActiveOps().forEach(op => {
+    (op.prets || []).forEach(pp => {
+      const f = ((pp.financeur || '').trim()) || '—';
+      agg[f] = agg[f] || { pretN: 0, pretSum: 0, subvN: 0, subvSum: 0 };
+      agg[f].pretN++; agg[f].pretSum += (pp.montant_contrat || pp.montant_lo || pp.montant_sim || 0);
+    });
+    (op.subventions || []).forEach(sv => {
+      const f = ((sv.financeur || '').trim()) || '—';
+      agg[f] = agg[f] || { pretN: 0, pretSum: 0, subvN: 0, subvSum: 0 };
+      agg[f].subvN++; agg[f].subvSum += (sv.montant_notifie || sv.montant_demande || 0);
+    });
+  });
+  const rows = Object.entries(agg).map(([f, v]) => ({ f, ...v, total: v.pretSum + v.subvSum })).sort((a, b) => b.total - a.total);
+  if (rows.length === 0) return '<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-chart-pie"></i>Engagement par financeur</div><div class="subent-empty">Aucun prêt ni subvention.</div></div>';
+  const totPret = rows.reduce((s, r) => s + r.pretSum, 0), totSubv = rows.reduce((s, r) => s + r.subvSum, 0);
+  const body = rows.map(r => `
+    <tr>
+      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.f)}</td>
+      <td style="text-align:right;">${r.pretN || ''}</td>
+      <td style="text-align:right;">${r.pretSum ? fmtMontant(r.pretSum) : ''}</td>
+      <td style="text-align:right;">${r.subvN || ''}</td>
+      <td style="text-align:right;">${r.subvSum ? fmtMontant(r.subvSum) : ''}</td>
+      <td style="text-align:right;font-weight:600;color:var(--text-primary);">${fmtMontant(r.total)}</td>
+    </tr>`).join('');
+  return `
+    <div class="ctrl-block">
+      <div class="ctrl-block-title"><i class="ti ti-chart-pie"></i>Engagement par financeur · tout le portefeuille</div>
+      <table class="ctrl-table">
+        <thead><tr><th>Financeur</th><th style="text-align:right;">Nb prêts</th><th style="text-align:right;">&Sigma; prêts</th><th style="text-align:right;">Nb subv.</th><th style="text-align:right;">&Sigma; subv.</th><th style="text-align:right;">Total</th></tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr><td style="font-weight:700;">Total</td><td></td><td style="text-align:right;font-weight:700;">${fmtMontant(totPret)}</td><td></td><td style="text-align:right;font-weight:700;">${fmtMontant(totSubv)}</td><td style="text-align:right;font-weight:700;">${fmtMontant(totPret + totSubv)}</td></tr></tfoot>
+      </table>
+    </div>`;
+}
+
+function renderCtrlAapEcheances() {
+  if (!AAPS || AAPS.length === 0) {
+    return '<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-calendar"></i>Échéances des appels à projets</div><div class="subent-empty">Aucun appel à projets enregistré.</div></div>';
+  }
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const rows = AAPS.map(a => {
+    const lim = ctrlParseFr(a.date_limite);
+    const days = lim ? Math.round((lim - today) / 86400000) : null;
+    const nbOps = a._supabase_id != null ? aapConcernedRows(a._supabase_id).length : 0;
+    return { a, lim, days, nbOps };
+  }).sort((x, y) => { if (x.lim && y.lim) return x.lim - y.lim; if (x.lim) return -1; if (y.lim) return 1; return 0; });
+  const chip = (days) => {
+    if (days === null) return '<span class="ctrl-chip ctrl-chip-muted">—</span>';
+    if (days < 0) return `<span class="ctrl-chip ctrl-chip-over">Échu (J+${-days})</span>`;
+    if (days <= 30) return `<span class="ctrl-chip ctrl-chip-soon">J-${days}</span>`;
+    return `<span class="ctrl-chip ctrl-chip-ok">J-${days}</span>`;
+  };
+  const body = rows.map(r => `
+    <tr>
+      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.a.intitule || 'Sans intitulé')}</td>
+      <td>${escapeHtml(r.a.organisme || '')}</td>
+      <td>${escapeHtml(r.a.date_limite || '—')}</td>
+      <td>${chip(r.days)}</td>
+      <td>${r.a.statut ? statusBadge(r.a.statut) : ''}</td>
+      <td style="text-align:right;">${r.nbOps}</td>
+    </tr>`).join('');
+  return `
+    <div class="ctrl-block">
+      <div class="ctrl-block-title"><i class="ti ti-calendar"></i>Échéances des appels à projets</div>
+      <table class="ctrl-table">
+        <thead><tr><th>AAP</th><th>Organisme</th><th>Limite candidature</th><th>Échéance</th><th>Statut</th><th style="text-align:right;">Ops liées</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
 }
 
 function renderTrash() {
@@ -9070,7 +9183,7 @@ function renderSubvCard(i) {
           <div class="entity-card-title">${escapeHtml(i.financeur || '—')}${i.financement ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.financement)}</span>` : ''}</div>
           ${i.type ? `<div class="entity-card-sub">${escapeHtml(i.type)}</div>` : ''}
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${i.aap_id ? `<span class="badge-secondary"><i class="ti ti-target"></i> ${escapeHtml(aapLabelById(i.aap_id))}</span>` : ''}${statusBadge(i.statut)}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${i.aap_id ? `<span class="badge-secondary"><i class="ti ti-bookmark"></i> ${escapeHtml(aapLabelById(i.aap_id))}</span>` : ''}${statusBadge(i.statut)}</div>
       </div>
       <div class="jalons-timeline">${jalonsHtml}</div>
       ${i.contact ? `<div class="entity-card-meta"><span><i class="ti ti-user"></i>${escapeHtml(i.contact)}</span></div>` : ''}
@@ -9204,7 +9317,7 @@ function renderPretCard(i) {
           <div class="entity-card-title">${escapeHtml(i.ligne || '—')}${i.financeur ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.financeur)}</span>` : ''}</div>
           <div class="entity-card-sub">Simulation : ${fmtMontant(i.montant_sim)}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${i.aap_id ? `<span class="badge-secondary"><i class="ti ti-target"></i> ${escapeHtml(aapLabelById(i.aap_id))}</span>` : ''}${statusBadge(i.statut)}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${i.aap_id ? `<span class="badge-secondary"><i class="ti ti-bookmark"></i> ${escapeHtml(aapLabelById(i.aap_id))}</span>` : ''}${statusBadge(i.statut)}</div>
       </div>
       <div class="jalons-timeline">${jalonsHtml}</div>
       ${conditions ? `<div class="entity-card-meta"><span><i class="ti ti-settings"></i>${escapeHtml(conditions)}</span></div>` : ''}
@@ -9873,7 +9986,7 @@ function renderAvenantCard(i) {
     i.nouveau_taux || null,
   ].filter(Boolean).join(' · ');
   const garLine = i.gar_garant
-    ? `<div class="entity-card-meta" style="border-top:1px dashed var(--border-color);padding-top:6px;margin-top:8px;"><span><i class="ti ti-shield"></i>Garantie : ${escapeHtml(i.gar_garant)}${i.gar_quotite ? ' · ' + i.gar_quotite + ' %' : ''}${i.gar_statut ? ' · ' + escapeHtml(i.gar_statut) : ''}</span></div>`
+    ? `<div class="entity-card-meta" style="border-top:1px dashed var(--border-color);padding-top:6px;margin-top:8px;"><span><i class="ti ti-shield-check"></i>Garantie : ${escapeHtml(i.gar_garant)}${i.gar_quotite ? ' · ' + i.gar_quotite + ' %' : ''}${i.gar_statut ? ' · ' + escapeHtml(i.gar_statut) : ''}</span></div>`
     : '';
   return `
     <div class="entity-card${diffEntityClass('avenants', i)}" data-section="avenants" data-row-idx="${i._originalIdx}">
@@ -13750,6 +13863,7 @@ function switchToTab(viewName) {
   else if (viewName === 'trash') { renderTrash(); }
   else if (viewName === 'accueil') { renderAccueil(); }
   else if (viewName === 'aap') { renderAAP(); }
+  else if (viewName === 'controles') { renderControles(); }
   replaceTablerIcons();
 }
 // ============== END ACCUEIL ==============
@@ -15599,6 +15713,10 @@ document.querySelectorAll('.topnav-tab').forEach(tab => {
     }
     if (target === 'aap') {
       renderAAP();
+      replaceTablerIcons();
+    }
+    if (target === 'controles') {
+      renderControles();
       replaceTablerIcons();
     }
     if (target === 'suivi') {
