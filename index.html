@@ -7277,7 +7277,7 @@ function saveOpEdits() {
     document.querySelectorAll('[data-edit-tranche-field]').forEach(el => {
       const field = el.dataset.editTrancheField;
       let val = el.value;
-      const numFields = ['logements','budget_ttc','fonds_propres','accord_redevance'];
+      const numFields = ['logements','budget_ttc','fonds_propres','accord_redevance','duree_reconstitution_fp','taux_remuneration_fp','injection_pgerc'];
       if (numFields.includes(field)) {
         val = val === '' ? null : parseFloat(val);
       }
@@ -7914,6 +7914,15 @@ function renderTrancheDetail() {
         ${editableKV('Montant de loyer (€/m²)', t.conv_loc_montant_loyer, 'conv_loc_montant_loyer', 'number', 'tranche-field')}
         ${editableKV('Date valeur loyer', t.conv_loc_date_valeur, 'conv_loc_date_valeur', 'text', 'tranche-field')}
         ${editableSelect('Grille', t.conv_loc_grille, 'conv_loc_grille', getRef('grilles_loyer'), 'tranche-field')}
+      </div>
+
+      <div class="section">
+        <div class="section-label loyer"><i class="ti ti-coin"></i>Fonds propres</div>
+        ${editableKV('Montant fonds propres (€)', t.fonds_propres, 'fonds_propres', 'number', 'tranche-field')}
+        ${editableSelect('Nature des fonds propres', t.nature_fonds_propres, 'nature_fonds_propres', ['NR-NR', 'ATR', 'NR-R'], 'tranche-field')}
+        ${editableKV('Durée de reconstitution (ans)', t.duree_reconstitution_fp, 'duree_reconstitution_fp', 'number', 'tranche-field')}
+        ${editableKV('Taux de rémunération (%)', t.taux_remuneration_fp, 'taux_remuneration_fp', 'number', 'tranche-field')}
+        ${editableKV('Injection PGERC (€)', t.injection_pgerc, 'injection_pgerc', 'number', 'tranche-field')}
       </div>
 
       ${renderSubvSection(subv, op)}
@@ -15622,6 +15631,10 @@ function mapTrancheFromSupabase(t) {
     m2_utiles: t.m2_utiles,
     budget_ttc: t.budget_ttc,
     fonds_propres: t.fonds_propres,
+    nature_fonds_propres: t.nature_fonds_propres || '',
+    duree_reconstitution_fp: t.duree_reconstitution_fp,
+    taux_remuneration_fp: t.taux_remuneration_fp,
+    injection_pgerc: t.injection_pgerc,
     date_agrement: t.date_agrement || '',
     date_dfa: t.date_dfa || '',
     prix_revient_logt: t.prix_revient_logt,
@@ -16255,6 +16268,10 @@ function buildTranchePayload(t, operationId) {
     m2_utiles: t.m2_utiles,
     budget_ttc: trancheBudgetTTC(t), // Option A : sync vers somme du bilan
     fonds_propres: t.fonds_propres,
+    nature_fonds_propres: t.nature_fonds_propres || '',
+    duree_reconstitution_fp: t.duree_reconstitution_fp,
+    taux_remuneration_fp: t.taux_remuneration_fp,
+    injection_pgerc: t.injection_pgerc,
     date_agrement: t.date_agrement || null,
     date_dfa: t.date_dfa || null,
     prix_revient_logt: t.prix_revient_logt,
