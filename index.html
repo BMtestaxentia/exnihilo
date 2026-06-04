@@ -2073,30 +2073,6 @@
     flex-shrink: 0; margin-top: 2px;
   }
 
-  /* Print stylesheet for PDF export */
-  @media print {
-    body.printing-op-detail .topnav,
-    body.printing-op-detail .sidebar,
-    body.printing-op-detail .tranche-detail,
-    body.printing-op-detail .op-sticky-top .edit-toolbar,
-    body.printing-op-detail .icon-btn,
-    body.printing-op-detail .alerts-panel-head,
-    body.printing-op-detail .validation-panel-head,
-    body.printing-op-detail .stepper-advance,
-    body.printing-op-detail .toast,
-    body.printing-op-detail .history-modal-backdrop,
-    body.printing-op-detail .tag-linked-popover,
-    body.printing-op-detail #ganttSearchInput,
-    body.printing-op-detail .compare-row { display: none !important; }
-    body.printing-op-detail .ops-shell { display: block; }
-    body.printing-op-detail .op-detail { width: 100% !important; max-width: 100% !important; }
-    body.printing-op-detail .alerts-panel-list,
-    body.printing-op-detail .validation-panel-list { display: block !important; }
-    body.printing-op-detail .section { page-break-inside: avoid; }
-    body.printing-op-detail .entity-card { page-break-inside: avoid; }
-    body.printing-op-detail .op-sticky-top { position: static !important; }
-  }
-
   /* History modal */
   .history-modal-backdrop {
     position: fixed; inset: 0; z-index: 2000;
@@ -4866,6 +4842,7 @@
       <div class="topnav-tab" data-view="carte"><i class="ti ti-map-pin"></i>Carte</div>
       <div class="topnav-tab" data-view="finances"><i class="ti ti-cash"></i>Finances</div>
       <div class="topnav-tab" data-view="tresorerie"><i class="ti ti-wallet"></i>Trésorerie</div>
+      <div class="topnav-tab" data-view="aap"><i class="ti ti-target"></i>AAP</div>
     </div>
     <div class="topnav-spacer"></div>
   </div>
@@ -5176,6 +5153,14 @@
     <h1 class="dashboard-title">Corbeille</h1>
     <p class="dashboard-sub">Vue admin · Opérations supprimées (soft-delete). Restaurer pour les remettre dans la liste, ou supprimer définitivement.</p>
     <div id="trashContent"></div>
+  </div>
+</div>
+
+<div class="view" id="view-aap">
+  <div class="dashboard">
+    <h1 class="dashboard-title">Appels à projets (AAP)</h1>
+    <p class="dashboard-sub">Registre central des appels à projets : dates, modalités, prérequis. Les subventions et prêts pourront être tagués à un AAP pour suivre les opérations concernées.</p>
+    <div id="aapContent"></div>
   </div>
 </div>
 
@@ -5727,6 +5712,8 @@ function storageSet(key, value) {
 let selectedOpCode = DATA[0]?._uid || null;
 let selectedTrancheIdx = 0;
 let editMode = false;
+let AAPS = [];
+let editingAapLid = null;
 let searchQuery = '';
 
 // ============== PHASES SYSTEM ==============
@@ -6068,22 +6055,7 @@ function openSharepointLink(btn) {
 
 function findOp(uid) { return DATA.find(o => o._uid === uid) || DATA.find(o => o.code === uid) || DATA.find(o => o.sheet === uid); }
 
-// =========== Export PDF / Historique / Corbeille (skeletons, à raffiner) ===========
-
-// Export PDF: triggers browser's print dialog with print-only stylesheet
-// User can then "Save as PDF" from the print dialog
-function exportOpPdf() {
-  const op = findOp(selectedOpCode);
-  if (!op) return;
-  // Set a body class so print CSS can target only this op detail
-  document.body.classList.add('printing-op-detail');
-  // Use a brief timeout to ensure the class is applied
-  setTimeout(() => {
-    window.print();
-    // Remove the class after print dialog closes (user choice triggers focus return)
-    document.body.classList.remove('printing-op-detail');
-  }, 50);
-}
+// =========== Historique / Corbeille (skeletons, à raffiner) ===========
 
 // Audit log helpers
 // Each entry: { date, user, field, scope, old, new }
@@ -6210,6 +6182,168 @@ Cette action est irréversible.`)) return;
 }
 
 // Render trash view (admin panel)
+// ============== AAP (Appels à projets) — registre central ==============
+function aapHeaders() {
+  return { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
+}
+
+function mapAapFromSupabase(a) {
+  return {
+    _supabase_id: a.id, _lid: 'aap-' + a.id,
+    intitule: a.intitule || '', organisme: a.organisme || '', millesime: a.millesime || '',
+    type: a.type || '', enveloppe: a.enveloppe, statut: a.statut || '',
+    date_ouverture: a.date_ouverture || '', date_limite: a.date_limite || '',
+    date_notification: a.date_notification || '', date_butoir_af: a.date_butoir_af || '',
+    fonds_europeens: !!a.fonds_europeens, dispositif_fe: a.dispositif_fe || '',
+    modalites: a.modalites || '', prerequis: a.prerequis || '', lien: a.lien || '',
+  };
+}
+
+function renderAAP() {
+  const view = document.getElementById('view-aap');
+  if (!view) return;
+  const c = view.querySelector('#aapContent');
+  if (!c) return;
+  const cards = AAPS.length > 0
+    ? AAPS.map(a => editingAapLid === a._lid ? renderAapCardEdit(a) : renderAapCard(a)).join('')
+    : (editingAapLid === '__new__' ? '' : '<div class="subent-empty">Aucun appel à projets enregistré.</div>');
+  const tail = editingAapLid === '__new__'
+    ? renderAapCardEdit({ _lid: '__new__', fonds_europeens: false })
+    : `<button class="add-row-btn" onclick="newAap()"><i class="ti ti-plus"></i>Nouvel appel à projets</button>`;
+  c.innerHTML = `<div class="entity-list" style="max-width:920px;">${cards}${tail}</div>`;
+  replaceTablerIcons();
+}
+
+function renderAapCard(a) {
+  const meta = [a.organisme, a.millesime, a.type, a.enveloppe ? fmtMontant(a.enveloppe) : null].filter(Boolean).join(' · ');
+  const dates = [
+    a.date_ouverture ? 'Ouverture ' + a.date_ouverture : null,
+    a.date_limite ? 'Limite candidature ' + a.date_limite : null,
+    a.date_notification ? 'Notif. ' + a.date_notification : null,
+    a.date_butoir_af ? 'Butoir AF ' + a.date_butoir_af : null,
+  ].filter(Boolean).join(' · ');
+  return `
+    <div class="entity-card">
+      <div class="entity-card-head">
+        <div>
+          <div class="entity-card-title">${escapeHtml(a.intitule || 'Sans intitulé')}${a.fonds_europeens ? ' <span class="badge-secondary">Fonds européens</span>' : ''}</div>
+          ${meta ? `<div class="entity-card-sub">${escapeHtml(meta)}</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">${a.lien ? sharepointIcon(a.lien) : ''}${a.statut ? statusBadge(a.statut) : ''}
+          <button class="icon-btn" onclick="editAap('${a._lid}')" title="Éditer"><i class="ti ti-edit"></i></button>
+        </div>
+      </div>
+      ${dates ? `<div class="entity-card-meta"><span><i class="ti ti-calendar"></i>${escapeHtml(dates)}</span></div>` : ''}
+      ${a.dispositif_fe ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-flag"></i>${escapeHtml(a.dispositif_fe)}</span></div>` : ''}
+      ${a.modalites ? `<div class="entity-card-notes"><strong>Modalités :</strong> ${escapeHtml(a.modalites)}</div>` : ''}
+      ${a.prerequis ? `<div class="entity-card-notes"><strong>Prérequis :</strong> ${escapeHtml(a.prerequis)}</div>` : ''}
+      <div class="entity-card-meta" style="border-top:1px dashed var(--border-color);padding-top:6px;margin-top:8px;"><span style="color:var(--text-tertiary);"><i class="ti ti-link"></i>Opérations concernées : suivi disponible prochainement</span></div>
+    </div>
+  `;
+}
+
+function renderAapCardEdit(a) {
+  const isNew = a._lid === '__new__';
+  const typesAap = ['Subvention','Prêt bonifié','Dotation','Mixte','Autre'];
+  const statuts = ['À venir','Ouvert','Clôturé'];
+  return `
+    <div class="entity-card editing">
+      <div class="entity-card-head">
+        <div style="flex:1;font-size:11px;color:var(--text-tertiary);font-weight:600;">${isNew ? 'NOUVEL AAP' : 'AAP'}</div>
+        ${!isNew ? `<div class="entity-card-actions"><button class="danger" onclick="deleteAap('${a._lid}')" title="Supprimer"><i class="ti ti-trash"></i></button></div>` : ''}
+      </div>
+      <div class="card-edit-grid" data-aap-edit="${a._lid}">
+        <div class="card-edit-field wide"><label>Intitulé</label><input class="card-input" data-af="intitule" value="${escapeHtml(a.intitule || '')}"></div>
+        <div class="card-edit-field"><label>Organisme / financeur</label><input class="card-input" data-af="organisme" value="${escapeHtml(a.organisme || '')}"></div>
+        <div class="card-edit-field"><label>Millésime / année</label><input class="card-input" data-af="millesime" value="${escapeHtml(a.millesime || '')}"></div>
+        <div class="card-edit-field"><label>Type</label><select class="card-input" data-af="type"><option value=""></option>${(a.type && !typesAap.includes(a.type)) ? `<option value="${escapeHtml(a.type)}" selected>${escapeHtml(a.type)}</option>` : ''}${typesAap.map(t=>`<option value="${t}"${a.type===t?' selected':''}>${t}</option>`).join('')}</select></div>
+        <div class="card-edit-field"><label>Enveloppe (€)</label><input type="number" min="0" class="card-input" data-af="enveloppe" value="${a.enveloppe || ''}"></div>
+        <div class="card-edit-field"><label>Statut</label><select class="card-input" data-af="statut"><option value=""></option>${(a.statut && !statuts.includes(a.statut)) ? `<option value="${escapeHtml(a.statut)}" selected>${escapeHtml(a.statut)}</option>` : ''}${statuts.map(st=>`<option value="${st}"${a.statut===st?' selected':''}>${st}</option>`).join('')}</select></div>
+        <div class="card-edit-field"><label>Date ouverture</label><input class="card-input" data-af="date_ouverture" value="${escapeHtml(a.date_ouverture || '')}" placeholder="JJ/MM/AAAA"></div>
+        <div class="card-edit-field"><label>Date limite candidature</label><input class="card-input" data-af="date_limite" value="${escapeHtml(a.date_limite || '')}" placeholder="JJ/MM/AAAA"></div>
+        <div class="card-edit-field"><label>Date notification prévue</label><input class="card-input" data-af="date_notification" value="${escapeHtml(a.date_notification || '')}" placeholder="JJ/MM/AAAA"></div>
+        <div class="card-edit-field"><label>Date butoir appels de fonds</label><input class="card-input" data-af="date_butoir_af" value="${escapeHtml(a.date_butoir_af || '')}" placeholder="JJ/MM/AAAA"></div>
+        <div class="card-edit-field wide"><label class="toggle-row"><span class="toggle-switch"><input type="checkbox" data-af-bool="fonds_europeens" ${a.fonds_europeens ? 'checked' : ''}><span class="toggle-slider"></span></span><span class="toggle-label">Fonds européens</span></label></div>
+        <div class="card-edit-field wide"><label>Dispositif fonds européens</label><input class="card-input" data-af="dispositif_fe" value="${escapeHtml(a.dispositif_fe || '')}" placeholder="FEDER, FSE+…"></div>
+        <div class="card-edit-field wide"><label>Modalités</label><textarea class="card-input" data-af="modalites" rows="3">${escapeHtml(a.modalites || '')}</textarea></div>
+        <div class="card-edit-field wide"><label>Prérequis / éligibilité</label><textarea class="card-input" data-af="prerequis" rows="3">${escapeHtml(a.prerequis || '')}</textarea></div>
+        <div class="card-edit-field wide"><label>Lien (SharePoint / site)</label><input class="card-input" data-af="lien" value="${escapeHtml(a.lien || '')}"></div>
+        <div class="card-edit-field wide" style="display:flex;gap:8px;justify-content:flex-end;">
+          <button onclick="cancelAapEdit()" style="padding:7px 16px;border-radius:6px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:13px;">Annuler</button>
+          <button onclick="saveAap('${a._lid}')" style="padding:7px 16px;border-radius:6px;border:none;background:var(--info-accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600;">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function newAap() { editingAapLid = '__new__'; renderAAP(); }
+function editAap(lid) { editingAapLid = lid; renderAAP(); }
+function cancelAapEdit() { editingAapLid = null; renderAAP(); }
+
+function readAapForm(lid) {
+  const grid = document.querySelector(`[data-aap-edit="${lid}"]`);
+  if (!grid) return null;
+  const obj = {};
+  grid.querySelectorAll('[data-af]').forEach(el => {
+    const f = el.dataset.af;
+    let v = el.value;
+    if (f === 'enveloppe') v = (v === '' ? null : parseFloat(v));
+    obj[f] = (v === '' || v === undefined) ? null : v;
+  });
+  grid.querySelectorAll('[data-af-bool]').forEach(el => { obj[el.dataset.afBool] = !!el.checked; });
+  return obj;
+}
+
+function aapPayload(a) {
+  return {
+    intitule: a.intitule || '', organisme: a.organisme || '', millesime: a.millesime || '',
+    type: a.type || '', enveloppe: a.enveloppe, statut: a.statut || '',
+    date_ouverture: a.date_ouverture || null, date_limite: a.date_limite || null,
+    date_notification: a.date_notification || null, date_butoir_af: a.date_butoir_af || null,
+    fonds_europeens: !!a.fonds_europeens, dispositif_fe: a.dispositif_fe || '',
+    modalites: a.modalites || '', prerequis: a.prerequis || '', lien: a.lien || '',
+  };
+}
+
+async function saveAapToSupabase(aap) {
+  try {
+    const payload = aapPayload(aap);
+    if (aap._supabase_id) {
+      await fetch(`${SUPABASE_URL}/rest/v1/aap?id=eq.${aap._supabase_id}`, { method: 'PATCH', headers: aapHeaders(), body: JSON.stringify(payload) });
+    } else {
+      const ins = await fetch(`${SUPABASE_URL}/rest/v1/aap`, { method: 'POST', headers: aapHeaders(), body: JSON.stringify(payload) });
+      if (ins.ok) { const created = await ins.json(); const newId = Array.isArray(created) ? created[0]?.id : created.id; if (newId) { aap._supabase_id = newId; aap._lid = 'aap-' + newId; } }
+    }
+    showToast('Appel à projets enregistré', 'check');
+  } catch (e) { console.error('Erreur sauvegarde AAP :', e); showToast('Erreur Supabase AAP : ' + e.message, 'alert-triangle'); }
+}
+
+async function saveAap(lid) {
+  const data = readAapForm(lid);
+  if (!data) return;
+  let aap;
+  if (lid === '__new__') { aap = { _lid: 'aap-new-' + Date.now() }; AAPS.push(aap); }
+  else { aap = AAPS.find(x => x._lid === lid); if (!aap) return; }
+  Object.assign(aap, data);
+  editingAapLid = null;
+  renderAAP();
+  await saveAapToSupabase(aap);
+}
+
+async function deleteAap(lid) {
+  const aap = AAPS.find(x => x._lid === lid);
+  if (!aap) return;
+  if (!confirm('Supprimer cet appel à projets ?')) return;
+  if (aap._supabase_id) {
+    try { await fetch(`${SUPABASE_URL}/rest/v1/aap?id=eq.${aap._supabase_id}`, { method: 'DELETE', headers: aapHeaders() }); }
+    catch (e) { console.error(e); }
+  }
+  AAPS = AAPS.filter(x => x._lid !== lid);
+  editingAapLid = null;
+  renderAAP();
+}
+
 function renderTrash() {
   const view = document.getElementById('view-trash');
   if (!view) return;
@@ -7740,7 +7874,6 @@ function renderOpDetail() {
         </div>
       </div>
       <div style="display: flex; gap: 8px; align-self: center; flex-shrink: 0;">
-        ${!effectiveEditMode ? `<button class="icon-btn" onclick="exportOpPdf()" title="Exporter en PDF"><i class="ti ti-file-text"></i></button>` : ''}
         ${!effectiveEditMode ? `<button class="icon-btn" onclick="showOpHistory()" title="Historique des modifications"><i class="ti ti-history"></i></button>` : ''}
         ${op.lien_sharepoint && !effectiveEditMode ? `<a href="${escapeHtml(op.lien_sharepoint)}" target="_blank" class="icon-btn sharepoint-btn" title="Ouvrir dans SharePoint">
           <svg width="14" height="14" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -13598,6 +13731,7 @@ function switchToTab(viewName) {
   else if (viewName === 'referentiels') { renderReferentiels(); }
   else if (viewName === 'trash') { renderTrash(); }
   else if (viewName === 'accueil') { renderAccueil(); }
+  else if (viewName === 'aap') { renderAAP(); }
   replaceTablerIcons();
 }
 // ============== END ACCUEIL ==============
@@ -15445,6 +15579,10 @@ document.querySelectorAll('.topnav-tab').forEach(tab => {
       renderGantt();
       replaceTablerIcons();
     }
+    if (target === 'aap') {
+      renderAAP();
+      replaceTablerIcons();
+    }
     if (target === 'suivi') {
       renderSuivi();
       replaceTablerIcons();
@@ -15558,13 +15696,16 @@ async function loadFromSupabase() {
       fetch(`${SUPABASE_URL}/rest/v1/referentiels?select=*&is_active=eq.true&order=item_order`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/prefinancements?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/avenants?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/aap?select=*`, { headers }),
     ];
     const responses = await Promise.all(fetches);
     if (!responses[0].ok) throw new Error('Operations: ' + responses[0].status);
 
-    const [opsRows, tranchesRows, pretsRows, garantiesRows, subvRows, reservRows, comitesRows, wfRows, wfRecipRows, auditRows, tagsRows, snapsRows, refRows, prefinRows, avenantsRows] = await Promise.all(
+    const [opsRows, tranchesRows, pretsRows, garantiesRows, subvRows, reservRows, comitesRows, wfRows, wfRecipRows, auditRows, tagsRows, snapsRows, refRows, prefinRows, avenantsRows, aapRows] = await Promise.all(
       responses.map(async (r, i) => r.ok ? await r.json() : [])
     );
+
+    AAPS = Array.isArray(aapRows) ? aapRows.map(mapAapFromSupabase) : [];
 
     // Hydrate REFERENTIELS depuis Supabase (remplace les items en dur par les items de la DB)
     if (Array.isArray(refRows) && refRows.length > 0) {
