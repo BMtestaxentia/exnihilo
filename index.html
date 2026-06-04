@@ -6199,6 +6199,25 @@ function mapAapFromSupabase(a) {
   };
 }
 
+function aapLabelById(id) {
+  if (id === null || id === undefined || id === '') return '';
+  const a = AAPS.find(x => String(x._supabase_id) === String(id));
+  return a ? (a.intitule || ('AAP #' + id)) : '';
+}
+function aapSelectOptions(selectedId) {
+  return AAPS.filter(a => a._supabase_id != null)
+    .map(a => `<option value="${a._supabase_id}"${String(selectedId)===String(a._supabase_id)?' selected':''}>${escapeHtml(a.intitule || ('AAP #' + a._supabase_id))}</option>`).join('');
+}
+function aapConcernedRows(aapId) {
+  const rows = [];
+  (DATA || []).forEach(op => {
+    const opName = op.display_name || op.name || op.code || '';
+    (op.prets || []).forEach(pp => { if (pp.aap_id != null && String(pp.aap_id) === String(aapId)) rows.push({ op: opName, tranche: pp.tranche || '', kind: 'Prêt', label: pp.ligne || '', montant: pp.montant_contrat || pp.montant_lo || pp.montant_sim || null, statut: pp.statut || '' }); });
+    (op.subventions || []).forEach(sv => { if (sv.aap_id != null && String(sv.aap_id) === String(aapId)) rows.push({ op: opName, tranche: sv.tranche || '', kind: 'Subv.', label: sv.financement || sv.financeur || '', montant: sv.montant_notifie || sv.montant_demande || null, statut: sv.statut || '' }); });
+  });
+  return rows;
+}
+
 function renderAAP() {
   const view = document.getElementById('view-aap');
   if (!view) return;
@@ -6215,18 +6234,17 @@ function renderAAP() {
 }
 
 function renderAapCard(a) {
+  const concerned = a._supabase_id != null ? aapConcernedRows(a._supabase_id) : [];
   const meta = [a.organisme, a.millesime, a.type, a.enveloppe ? fmtMontant(a.enveloppe) : null].filter(Boolean).join(' · ');
   const dates = [
     a.date_ouverture ? 'Ouverture ' + a.date_ouverture : null,
     a.date_limite ? 'Limite candidature ' + a.date_limite : null,
-    a.date_notification ? 'Notif. ' + a.date_notification : null,
-    a.date_butoir_af ? 'Butoir AF ' + a.date_butoir_af : null,
   ].filter(Boolean).join(' · ');
   return `
     <div class="entity-card">
       <div class="entity-card-head">
         <div>
-          <div class="entity-card-title">${escapeHtml(a.intitule || 'Sans intitulé')}${a.fonds_europeens ? ' <span class="badge-secondary">Fonds européens</span>' : ''}</div>
+          <div class="entity-card-title">${escapeHtml(a.intitule || 'Sans intitulé')}</div>
           ${meta ? `<div class="entity-card-sub">${escapeHtml(meta)}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;">${a.lien ? sharepointIcon(a.lien) : ''}${a.statut ? statusBadge(a.statut) : ''}
@@ -6234,10 +6252,12 @@ function renderAapCard(a) {
         </div>
       </div>
       ${dates ? `<div class="entity-card-meta"><span><i class="ti ti-calendar"></i>${escapeHtml(dates)}</span></div>` : ''}
-      ${a.dispositif_fe ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-flag"></i>${escapeHtml(a.dispositif_fe)}</span></div>` : ''}
       ${a.modalites ? `<div class="entity-card-notes"><strong>Modalités :</strong> ${escapeHtml(a.modalites)}</div>` : ''}
       ${a.prerequis ? `<div class="entity-card-notes"><strong>Prérequis :</strong> ${escapeHtml(a.prerequis)}</div>` : ''}
-      <div class="entity-card-meta" style="border-top:1px dashed var(--border-color);padding-top:6px;margin-top:8px;"><span style="color:var(--text-tertiary);"><i class="ti ti-link"></i>Opérations concernées : suivi disponible prochainement</span></div>
+      ${a._supabase_id != null ? `<div class="entity-card-meta" style="border-top:1px dashed var(--border-color);padding-top:8px;margin-top:8px;display:block;">
+        <div style="font-size:11px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:5px;">Opérations concernées · ${concerned.length}</div>
+        ${concerned.length ? `<div style="display:flex;flex-direction:column;gap:4px;">${concerned.map(r => `<div style="font-size:12px;display:flex;justify-content:space-between;gap:12px;"><span>${escapeHtml(r.op)}${r.tranche?' · '+escapeHtml(r.tranche):''} · <span style="color:var(--text-tertiary);">${r.kind}</span> ${escapeHtml(r.label)}</span><span style="color:var(--text-secondary);white-space:nowrap;">${r.montant?fmtMontant(r.montant):''}${r.statut?' · '+escapeHtml(r.statut):''}</span></div>`).join('')}</div>` : '<span style="color:var(--text-tertiary);font-size:12px;">Aucune opération taguée</span>'}
+      </div>` : ''}
     </div>
   `;
 }
@@ -6261,10 +6281,6 @@ function renderAapCardEdit(a) {
         <div class="card-edit-field"><label>Statut</label><select class="card-input" data-af="statut"><option value=""></option>${(a.statut && !statuts.includes(a.statut)) ? `<option value="${escapeHtml(a.statut)}" selected>${escapeHtml(a.statut)}</option>` : ''}${statuts.map(st=>`<option value="${st}"${a.statut===st?' selected':''}>${st}</option>`).join('')}</select></div>
         <div class="card-edit-field"><label>Date ouverture</label><input class="card-input" data-af="date_ouverture" value="${escapeHtml(a.date_ouverture || '')}" placeholder="JJ/MM/AAAA"></div>
         <div class="card-edit-field"><label>Date limite candidature</label><input class="card-input" data-af="date_limite" value="${escapeHtml(a.date_limite || '')}" placeholder="JJ/MM/AAAA"></div>
-        <div class="card-edit-field"><label>Date notification prévue</label><input class="card-input" data-af="date_notification" value="${escapeHtml(a.date_notification || '')}" placeholder="JJ/MM/AAAA"></div>
-        <div class="card-edit-field"><label>Date butoir appels de fonds</label><input class="card-input" data-af="date_butoir_af" value="${escapeHtml(a.date_butoir_af || '')}" placeholder="JJ/MM/AAAA"></div>
-        <div class="card-edit-field wide"><label class="toggle-row"><span class="toggle-switch"><input type="checkbox" data-af-bool="fonds_europeens" ${a.fonds_europeens ? 'checked' : ''}><span class="toggle-slider"></span></span><span class="toggle-label">Fonds européens</span></label></div>
-        <div class="card-edit-field wide"><label>Dispositif fonds européens</label><input class="card-input" data-af="dispositif_fe" value="${escapeHtml(a.dispositif_fe || '')}" placeholder="FEDER, FSE+…"></div>
         <div class="card-edit-field wide"><label>Modalités</label><textarea class="card-input" data-af="modalites" rows="3">${escapeHtml(a.modalites || '')}</textarea></div>
         <div class="card-edit-field wide"><label>Prérequis / éligibilité</label><textarea class="card-input" data-af="prerequis" rows="3">${escapeHtml(a.prerequis || '')}</textarea></div>
         <div class="card-edit-field wide"><label>Lien (SharePoint / site)</label><input class="card-input" data-af="lien" value="${escapeHtml(a.lien || '')}"></div>
@@ -8961,8 +8977,8 @@ function sharepointEditField(lien) {
 // Sub-entity rendering: now CARDS instead of tables, with edit support
 
 const SECTION_FIELD_MAP = {
-  subventions: ['tranche','financement','financeur','montant_demande','date_demande','statut','montant_notifie','date_notification','contact','commentaires','lien_sharepoint','lien_sp_notif','n_arrete','date_conv'],
-  prets: ['tranche','ligne','financeur','montant_sim','date_demande','date_comite_banque','statut','date_lo','montant_lo','date_contrat','n_contrat','montant_contrat','contact','commentaires','source','taux','duree_emprunt','duree_prefi','revision','pieces_attendues','non_garanti','lien_sharepoint','lien_sp_lo','lien_sp_contrat','n_dossier','date_fin_prefi'],
+  subventions: ['tranche','financement','financeur','montant_demande','date_demande','statut','montant_notifie','date_notification','contact','commentaires','lien_sharepoint','lien_sp_notif','n_arrete','date_conv','aap_id'],
+  prets: ['tranche','ligne','financeur','montant_sim','date_demande','date_comite_banque','statut','date_lo','montant_lo','date_contrat','n_contrat','montant_contrat','contact','commentaires','source','taux','duree_emprunt','duree_prefi','revision','pieces_attendues','non_garanti','lien_sharepoint','lien_sp_lo','lien_sp_contrat','n_dossier','date_fin_prefi','aap_id'],
   garanties: ['tranche','pret_lie','garant','quotite','date_demande','statut','date_ap','date_comite','date_delib','date_conv','contact','commentaires','caution_relais','commission','lien_sharepoint','lien_sp_accord','lien_sp_delib'],
   prefinancements: ['tranche','banque','pret_lie','montant_couvert','montant_tire','pct_tire','date_debut','date_fin','statut','commentaires','taux','lien_sharepoint'],
   reservataires: ['tranche','financement','reservataire','nb_logements','pct_reserve','etape','commentaires','date_conv','lien_sharepoint'],
@@ -9054,7 +9070,7 @@ function renderSubvCard(i) {
           <div class="entity-card-title">${escapeHtml(i.financeur || '—')}${i.financement ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.financement)}</span>` : ''}</div>
           ${i.type ? `<div class="entity-card-sub">${escapeHtml(i.type)}</div>` : ''}
         </div>
-        ${statusBadge(i.statut)}
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${i.aap_id ? `<span class="badge-secondary"><i class="ti ti-target"></i> ${escapeHtml(aapLabelById(i.aap_id))}</span>` : ''}${statusBadge(i.statut)}</div>
       </div>
       <div class="jalons-timeline">${jalonsHtml}</div>
       ${i.contact ? `<div class="entity-card-meta"><span><i class="ti ti-user"></i>${escapeHtml(i.contact)}</span></div>` : ''}
@@ -9090,6 +9106,7 @@ function renderSubvCardEdit(i, op) {
         <div class="card-edit-field"><label>Date notification</label><input class="card-input" data-field="date_notification" value="${escapeHtml(i.date_notification || '')}" placeholder="JJ/MM/AAAA"></div>
         <div class="card-edit-field"><label>Contact</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
         <div class="card-edit-field"><label>Droits réservataires (financeur)</label><input type="number" min="0" class="card-input" data-field="nb_droits_reserves" value="${i.nb_droits_reserves || ''}"></div>
+        <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">— Aucun —</option>${aapSelectOptions(i.aap_id)}</select></div>
         <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
         ${sharepointEditFields([
           { field: 'lien_sp_notif', label: "Lien notification (SharePoint)", currentValue: i.lien_sp_notif || i.lien_sharepoint },
@@ -9187,7 +9204,7 @@ function renderPretCard(i) {
           <div class="entity-card-title">${escapeHtml(i.ligne || '—')}${i.financeur ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.financeur)}</span>` : ''}</div>
           <div class="entity-card-sub">Simulation : ${fmtMontant(i.montant_sim)}</div>
         </div>
-        ${statusBadge(i.statut)}
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${i.aap_id ? `<span class="badge-secondary"><i class="ti ti-target"></i> ${escapeHtml(aapLabelById(i.aap_id))}</span>` : ''}${statusBadge(i.statut)}</div>
       </div>
       <div class="jalons-timeline">${jalonsHtml}</div>
       ${conditions ? `<div class="entity-card-meta"><span><i class="ti ti-settings"></i>${escapeHtml(conditions)}</span></div>` : ''}
@@ -9302,6 +9319,7 @@ function renderPretCardEdit(i, op) {
           <div class="card-edit-field"><label>Contrat</label><input class="card-input" data-field="date_contrat" value="${escapeHtml(i.date_contrat || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
           <div class="card-edit-field"><label>N° dossier</label><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}"></div>
+          <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">— Aucun —</option>${aapSelectOptions(i.aap_id)}</select></div>
           <div class="card-edit-field"><label>Contact banque</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
         </div>
       </div>
@@ -16079,6 +16097,7 @@ function mapSubventionFromSupabase(s, trancheSuffixMap) {
     nb_droits_reserves: s.nb_droits_reserves,
     // Nouveau champ temporel (Livrable 1)
     date_versement_prevue: s.date_versement_prevue || '',
+    aap_id: (s.aap_id !== undefined && s.aap_id !== null) ? s.aap_id : null,
   };
 }
 
@@ -16259,6 +16278,7 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     jalons_reel: p.jalons_reel || {},
     n_dossier: p.n_dossier || '',
     date_fin_prefi: p.date_fin_prefi || '',
+    aap_id: (p.aap_id !== undefined && p.aap_id !== null) ? p.aap_id : null,
   };
 }
 
@@ -16541,6 +16561,7 @@ async function syncEntitiesToSupabase(op, operationId) {
       n_arrete: s.n_arrete || '',
       lien_sp_notif: s.lien_sp_notif || '',
       nb_droits_reserves: s.nb_droits_reserves,
+      aap_id: s.aap_id ? Number(s.aap_id) : null,
     }),
   });
 
@@ -16779,6 +16800,7 @@ function buildPretPayload(p, operationId, trancheId) {
     jalons_reel: p.jalons_reel || {},
     n_dossier: p.n_dossier || '',
     date_fin_prefi: p.date_fin_prefi || null,
+    aap_id: p.aap_id ? Number(p.aap_id) : null,
   };
 }
 
