@@ -7295,6 +7295,28 @@ function syncReservatairesFromSources(op, t) {
   });
 }
 
+// Dérivation : fait ressortir les infos de préfinancement saisies sur les prêts
+// dans la rubrique Préfinancement (idempotent par tranche + ligne de prêt).
+function syncPrefinancementsFromPrets(op, t) {
+  if (!t) return;
+  if (!op.prefinancements) op.prefinancements = [];
+  const trCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
+  (op.prets || []).filter(p => p.tranche === trCode).forEach(p => {
+    const hasPrefi = (Number(p.duree_prefi) > 0) || (p.date_fin_prefi && String(p.date_fin_prefi).trim());
+    if (!hasPrefi) return;
+    let pf = op.prefinancements.find(x => x.tranche === trCode && x.pret_lie === p.ligne);
+    if (!pf) {
+      pf = { tranche: trCode, pret_lie: p.ligne, banque: p.financeur || '', statut: 'En cours' };
+      op.prefinancements.push(pf);
+    }
+    // Ressortir les infos du prêt (sans écraser les montants saisis à la main)
+    if (p.date_fin_prefi) pf.date_fin = p.date_fin_prefi;
+    if (p.duree_prefi != null && p.duree_prefi !== '') pf.duree_prefi = Number(p.duree_prefi);
+    if (!pf.banque && p.financeur) pf.banque = p.financeur;
+    if (pf.montant_couvert == null) pf.montant_couvert = p.montant_contrat || p.montant_lo || p.montant_sim || null;
+  });
+}
+
 function saveOpEdits() {
   const op = findOp(selectedOpCode);
   if (!op) return;
@@ -7466,6 +7488,7 @@ function saveOpEdits() {
 
   // Dérivation auto des réservataires depuis les sources (ALS, agrément)
   syncReservatairesFromSources(op, op.tranches[selectedTrancheIdx]);
+  syncPrefinancementsFromPrets(op, op.tranches[selectedTrancheIdx]);
 
   editMode = false;
   editSessionSnap = null;
@@ -8806,7 +8829,7 @@ function sharepointEditField(lien) {
 
 const SECTION_FIELD_MAP = {
   subventions: ['tranche','financement','financeur','montant_demande','date_demande','statut','montant_notifie','date_notification','contact','commentaires','lien_sharepoint','lien_sp_notif','n_arrete','date_conv'],
-  prets: ['tranche','ligne','financeur','montant_sim','date_demande','date_comite_banque','statut','date_lo','montant_lo','date_contrat','n_contrat','montant_contrat','contact','commentaires','source','taux','duree_emprunt','duree_prefi','revision','pieces_attendues','non_garanti','lien_sharepoint','lien_sp_lo','lien_sp_contrat'],
+  prets: ['tranche','ligne','financeur','montant_sim','date_demande','date_comite_banque','statut','date_lo','montant_lo','date_contrat','n_contrat','montant_contrat','contact','commentaires','source','taux','duree_emprunt','duree_prefi','revision','pieces_attendues','non_garanti','lien_sharepoint','lien_sp_lo','lien_sp_contrat','n_dossier','date_fin_prefi'],
   garanties: ['tranche','pret_lie','garant','quotite','date_demande','statut','date_ap','date_comite','date_delib','date_conv','contact','commentaires','caution_relais','commission','lien_sharepoint','lien_sp_accord','lien_sp_delib'],
   prefinancements: ['tranche','banque','pret_lie','montant_couvert','montant_tire','pct_tire','date_debut','date_fin','statut','commentaires','taux','lien_sharepoint'],
   reservataires: ['tranche','financement','reservataire','nb_logements','pct_reserve','etape','commentaires','date_conv','lien_sharepoint'],
@@ -9036,6 +9059,7 @@ function renderPretCard(i) {
       <div class="jalons-timeline">${jalonsHtml}</div>
       ${conditions ? `<div class="entity-card-meta"><span><i class="ti ti-settings"></i>${escapeHtml(conditions)}</span></div>` : ''}
       ${i.contact ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-user"></i>${escapeHtml(i.contact)}</span></div>` : ''}
+      ${i.n_dossier ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-folder"></i>N° dossier : ${escapeHtml(i.n_dossier)}</span></div>` : ''}
       ${piecesHtml}
       ${i.commentaires ? `<div class="entity-card-notes">${escapeHtml(i.commentaires)}</div>` : ''}
     </div>
@@ -9117,13 +9141,21 @@ function renderPretCardEdit(i, op) {
             <input class="card-input" data-field="taux_libre" value="${escapeHtml(parsed.libre || '')}" placeholder="Ex: TEG 2,4% capé">
           </div>
           <div class="card-edit-field"><label>Durée emprunt (ans)</label><input type="number" min="0" class="card-input" data-field="duree_emprunt" value="${i.duree_emprunt || ''}"></div>
-          <div class="card-edit-field"><label>Durée préfi (mois)</label><input type="number" min="0" class="card-input" data-field="duree_prefi" value="${i.duree_prefi || ''}"></div>
           <div class="card-edit-field"><label>Révision</label>
             <select class="card-input" data-field="revision">
               <option value=""></option>
               ${getRef('revisions').map(s => `<option value="${s}"${i.revision===s?' selected':''}>${s}</option>`).join('')}
             </select>
           </div>
+        </div>
+      </div>
+
+      <!-- Group 3b — Préfinancement -->
+      <div class="card-edit-subgroup">
+        <div class="card-edit-subgroup-title">Préfinancement</div>
+        <div class="card-edit-grid">
+          <div class="card-edit-field"><label>Durée phase préfi (mois)</label><input type="number" min="0" class="card-input" data-field="duree_prefi" value="${i.duree_prefi || ''}"></div>
+          <div class="card-edit-field"><label>Date fin de préfi</label><input class="card-input" data-field="date_fin_prefi" value="${escapeHtml(i.date_fin_prefi || '')}" placeholder="JJ/MM/AAAA"></div>
         </div>
       </div>
 
@@ -9136,6 +9168,7 @@ function renderPretCardEdit(i, op) {
           <div class="card-edit-field"><label>Lettre d'offre <span class="auto-tag" data-lo-tag="${i._originalIdx}">${(!i.date_lo && i.date_comite_banque) ? '· prévisionnelle (comité +2sem.)' : ''}</span></label><input class="card-input ${(!i.date_lo && i.date_comite_banque) ? 'previsional-input' : ''}" data-field="date_lo" data-pret-lo value="${escapeHtml(i.date_lo || (i.date_comite_banque ? previsionalLOFromComite(i.date_comite_banque) || '' : ''))}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>Contrat</label><input class="card-input" data-field="date_contrat" value="${escapeHtml(i.date_contrat || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
+          <div class="card-edit-field"><label>N° dossier</label><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}"></div>
           <div class="card-edit-field"><label>Contact banque</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
         </div>
       </div>
@@ -9623,6 +9656,7 @@ function renderPrefinCard(i) {
         <div class="entity-card-stat"><span class="stat-label">Tiré</span><span class="stat-val">${fmtMontant(i.montant_tire)}</span></div>
         <div class="entity-card-stat"><span class="stat-label">% tiré</span><span class="stat-val">${pct}</span></div>
         <div class="entity-card-stat"><span class="stat-label">Période</span><span class="stat-val muted">${(i.date_debut || '?')} → ${(i.date_fin || '?')}</span></div>
+        ${i.duree_prefi ? `<div class="entity-card-stat"><span class="stat-label">Durée</span><span class="stat-val">${i.duree_prefi} mois</span></div>` : ''}
       </div>
       ${i.commentaires ? `<div class="entity-card-notes">${escapeHtml(i.commentaires)}</div>` : ''}
     </div>
@@ -15946,6 +15980,7 @@ function mapPrefinancementFromSupabase(pf, trancheSuffixMap, pretLigneMap) {
     date_fin: pf.date_fin || '',
     statut: pf.statut || '',
     taux: pf.taux || '',
+    duree_prefi: pf.duree_prefi,
     commentaires: pf.notes || '',
     notes: pf.notes || '',
     lien_sharepoint: pf.lien_sharepoint || '',
@@ -16081,6 +16116,8 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     date_premier_tirage: p.date_premier_tirage || '',
     date_mise_en_force: p.date_mise_en_force || '',
     jalons_reel: p.jalons_reel || {},
+    n_dossier: p.n_dossier || '',
+    date_fin_prefi: p.date_fin_prefi || '',
   };
 }
 
@@ -16409,6 +16446,7 @@ async function syncEntitiesToSupabase(op, operationId) {
       date_fin: pf.date_fin || null,
       statut: pf.statut || '',
       taux: pf.taux || '',
+      duree_prefi: pf.duree_prefi,
       notes: pf.commentaires || pf.notes || '',
       lien_sharepoint: pf.lien_sharepoint || '',
     }),
@@ -16598,6 +16636,8 @@ function buildPretPayload(p, operationId, trancheId) {
     lien_sharepoint: p.lien_sharepoint || '',
     nb_droits_reserves: p.nb_droits_reserves,
     jalons_reel: p.jalons_reel || {},
+    n_dossier: p.n_dossier || '',
+    date_fin_prefi: p.date_fin_prefi || null,
   };
 }
 
