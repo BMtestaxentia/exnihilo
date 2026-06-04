@@ -7226,6 +7226,34 @@ function isFieldModifiedInSession(scope, fieldName, opOrTr) {
   return false;
 }
 
+// Dérive automatiquement des lignes Réservataires à partir des sources :
+//  - prêt Action Logement / ligne ALS  -> ligne "Action Logement (ALS)" (nb saisi dans le bloc)
+//  - droits réservataires saisis dans l'Agrément (nb_droits_etat) -> ligne "État / Délégataire" (nb reporté)
+// Idempotent (match par nom + tranche) : tant que la source existe, la ligne réservataire existe.
+function syncReservatairesFromSources(op, t) {
+  if (!op || !t) return;
+  const trCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
+  op.reservataires = op.reservataires || [];
+  const findRes = (name) => op.reservataires.find(r => r.tranche === trCode && (r.reservataire || '') === name);
+
+  // ALS : un prêt Action Logement (ou ligne ALS) sur cette tranche
+  const hasALS = (op.prets || []).some(pp => pp.tranche === trCode &&
+    (((pp.financeur || '').toLowerCase().includes('action logement')) || ((pp.ligne || '').toUpperCase().includes('ALS'))));
+  if (hasALS && !findRes('Action Logement (ALS)')) {
+    op.reservataires.push({ tranche: trCode, reservataire: 'Action Logement (ALS)', financement: 'Contingent ALS', etape: 'À négocier' });
+  }
+
+  // État / délégataire : droits saisis dans l'agrément
+  if (t.nb_droits_etat) {
+    let r = findRes('État / Délégataire');
+    if (!r) {
+      r = { tranche: trCode, reservataire: 'État / Délégataire', financement: 'Contingent aides à la pierre', etape: 'À négocier' };
+      op.reservataires.push(r);
+    }
+    r.nb_logements = t.nb_droits_etat; // report du nombre saisi dans l'agrément
+  }
+}
+
 function saveOpEdits() {
   const op = findOp(selectedOpCode);
   if (!op) return;
@@ -7382,6 +7410,9 @@ function saveOpEdits() {
       }
     });
   }
+
+  // Dérivation auto des réservataires depuis les sources (ALS, agrément)
+  syncReservatairesFromSources(op, op.tranches[selectedTrancheIdx]);
 
   editMode = false;
   editSessionSnap = null;
@@ -9039,7 +9070,6 @@ function renderPretCardEdit(i, op) {
           <div class="card-edit-field"><label>Contrat</label><input class="card-input" data-field="date_contrat" value="${escapeHtml(i.date_contrat || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
           <div class="card-edit-field"><label>Contact banque</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
-          <div class="card-edit-field"><label>Droits réservataires (ALS)</label><input type="number" min="0" class="card-input" data-field="nb_droits_reserves" value="${i.nb_droits_reserves || ''}"></div>
         </div>
       </div>
 
