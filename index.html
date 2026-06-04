@@ -6372,7 +6372,7 @@ function makeNewOp() {
     vefa_mod: null, type_travaux: null,
     date_promesse: null, date_acte: null, date_depot_pc: null, date_obtention_pc: null,
     date_os: null, date_livraison: null, date_conv_loc: null, date_conv_apl: null,
-    date_ca_axentia: null, notes_libres: null, lien_sharepoint: null,
+    date_ca_axentia: null, notes_libres: null, lien_sharepoint: null, jalons_reel: {},
     total_surface: null,
     vol_consolidee: { plai: 0, plus: 0, pls: 0, pli: 0, libre: 0, autre: 0 },
     tranches: [makeNewTranche(code, '1')],
@@ -6849,6 +6849,35 @@ function editableKV(label, value, field, type='text', scope='op-field') {
   const displayed = diffifyKV(dash(value), value, field, scope);
   return `<div class="kv-row"><span class="kv-key">${label}</span><span class="kv-value">${displayed}</span></div>`;
 }
+
+// Bascule visuelle prévu/réel côté client (lue à l'enregistrement) — édition uniquement
+function flipJalonPill(el) {
+  const isReel = el.classList.toggle('reel');
+  el.classList.toggle('prev', !isReel);
+  const icon = el.querySelector('i'); if (icon) icon.className = 'ti ti-' + (isReel ? 'check' : 'clock');
+  const txt = el.querySelector('.jalon-pill-txt'); if (txt) txt.textContent = isReel ? 'réel' : 'prév.';
+}
+
+// Ligne date d'opération avec pastille prévu/réel (cliquable en mode modif seulement)
+function editableDateJalon(label, value, field, op) {
+  const reel = !!(op && op.jalons_reel && op.jalons_reel[field]);
+  const hasVal = value != null && value !== '';
+  const cls = reel ? 'reel' : 'prev', icon = reel ? 'check' : 'clock', txt = reel ? 'réel' : 'prév.';
+  if (editMode) {
+    const pill = `<span class="jalon-pill ${cls}" data-jalon-reel="${field}" onclick="flipJalonPill(this)" title="Basculer prévu / réel"><i class="ti ti-${icon}" aria-hidden="true"></i><span class="jalon-pill-txt">${txt}</span></span>`;
+    return `<div class="kv-row">
+      <span class="kv-key">${label}</span>
+      <span style="display:flex;align-items:center;gap:8px;min-width:0;">
+        <input type="text" class="editable-input" style="flex:1;min-width:0;" data-edit-op-field="${field}" value="${escapeHtml(value == null ? '' : value)}" data-validate="date-fr" placeholder="JJ/MM/AAAA">
+        ${pill}
+      </span>
+    </div>`;
+  }
+  const pill = hasVal ? `<span class="jalon-pill ${cls}" style="cursor:default;"><i class="ti ti-${icon}" aria-hidden="true"></i><span class="jalon-pill-txt">${txt}</span></span>` : '';
+  const displayed = diffifyKV(dash(value), value, field, 'op-field');
+  return `<div class="kv-row"><span class="kv-key">${label}</span><span class="kv-value" style="display:flex;align-items:center;gap:8px;">${displayed}${pill}</span></div>`;
+}
+
 function editableSelect(label, value, field, options, scope='op-field') {
   if (editMode) {
     const opts = options.map(o => `<option value="${escapeHtml(o)}"${o === value ? ' selected' : ''}>${escapeHtml(o)}</option>`).join('');
@@ -7311,6 +7340,13 @@ function saveOpEdits() {
     const field = el.dataset.editOpField;
     op[field] = el.value || null;
   });
+  // Jalons prévu/réel (calendrier travaux) — lus depuis les pastilles
+  if (!op.jalons_reel) op.jalons_reel = {};
+  document.querySelectorAll('[data-jalon-reel]').forEach(el => {
+    const f = el.dataset.jalonReel;
+    if (el.classList.contains('reel')) op.jalons_reel[f] = true;
+    else delete op.jalons_reel[f];
+  });
   // Tranche-level fields
   const t = op.tranches[selectedTrancheIdx];
   if (t) {
@@ -7768,15 +7804,15 @@ function renderOpDetail() {
 
     <div class="section">
       <div class="section-label cal"><i class="ti ti-clock"></i>Calendrier travaux</div>
-      ${editableKV('Signature promesse', op.date_promesse, 'date_promesse')}
-      ${editableKV('Signature acte authentique', op.date_acte, 'date_acte')}
-      ${editableKV('Dépôt PC', op.date_depot_pc, 'date_depot_pc')}
-      ${editableKV('Obtention PC', op.date_obtention_pc, 'date_obtention_pc')}
-      ${editableKV('Date OS', op.date_os, 'date_os')}
-      ${editableKV('Livraison prévue', op.date_livraison, 'date_livraison')}
-      ${editableKV('Convention location', op.date_conv_loc, 'date_conv_loc')}
-      ${editableKV('Convention APL', op.date_conv_apl, 'date_conv_apl')}
-      ${editableKV('Dernier CA Axentia', op.date_ca_axentia, 'date_ca_axentia')}
+      ${editableDateJalon('Signature promesse', op.date_promesse, 'date_promesse', op)}
+      ${editableDateJalon('Signature acte authentique', op.date_acte, 'date_acte', op)}
+      ${editableDateJalon('Dépôt PC', op.date_depot_pc, 'date_depot_pc', op)}
+      ${editableDateJalon('Obtention PC', op.date_obtention_pc, 'date_obtention_pc', op)}
+      ${editableDateJalon('Date OS', op.date_os, 'date_os', op)}
+      ${editableDateJalon('Livraison prévue', op.date_livraison, 'date_livraison', op)}
+      ${editableDateJalon('Convention location', op.date_conv_loc, 'date_conv_loc', op)}
+      ${editableDateJalon('Convention APL', op.date_conv_apl, 'date_conv_apl', op)}
+      ${editableDateJalon('Dernier CA Axentia', op.date_ca_axentia, 'date_ca_axentia', op)}
     </div>
 
     ${renderOpTimeline(op)}
@@ -8903,18 +8939,6 @@ function renderSubvCardEdit(i, op) {
   `;
 }
 
-// Bascule prévu / réel d'un jalon (système C) — flip + persistance immédiate
-function toggleJalonReel(section, rowIdx, field) {
-  const op = findOp(selectedOpCode);
-  if (!op || !op[section] || !op[section][rowIdx]) return;
-  const ent = op[section][rowIdx];
-  if (!ent.jalons_reel) ent.jalons_reel = {};
-  if (ent.jalons_reel[field]) delete ent.jalons_reel[field];
-  else ent.jalons_reel[field] = true;
-  renderTrancheDetail();
-  saveOpToSupabase(op);
-}
-
 // ============== PRÊTS ==============
 
 function renderPretsSection(items, op) {
@@ -8973,16 +8997,10 @@ function renderPretCard(i) {
     const spBtn = j.sp_link
       ? `<a class="jalon-sp-link" href="${escapeHtml(j.sp_link)}" target="_blank" rel="noopener" title="${escapeHtml(j.sp_label || 'Ouvrir document')}" onclick="event.stopPropagation();"><i class="ti ti-file-text"></i></a>`
       : '';
-    const jr = i.jalons_reel || {};
-    const reel = !!jr[j.field];
-    const pill = (j.field && j.date && !j.previsional)
-      ? `<span class="jalon-pill ${reel ? 'reel' : 'prev'}" onclick="event.stopPropagation(); toggleJalonReel('prets', ${i._originalIdx}, '${j.field}')" title="Basculer prévu / réel"><i class="ti ti-${reel ? 'check' : 'clock'}" aria-hidden="true"></i>${reel ? 'réel' : 'prév.'}</span>`
-      : '';
     return `
       <div class="jalon${j.previsional ? ' jalon-prev' : ''}">
         <div class="jalon-label">${j.label}${spBtn}</div>
         <div class="${dateClass}">${dateContent}</div>
-        ${pill}
         ${j.montant ? `<div class="jalon-montant">${fmtMontant(j.montant)}</div>` : ''}
         ${j.n ? `<div class="jalon-sub">N° ${escapeHtml(j.n)}</div>` : ''}
       </div>
@@ -15621,6 +15639,7 @@ async function loadFromSupabase() {
         date_conv_loc: row.date_conv_loc || '',
         date_ca_axentia: row.date_ca_axentia || '',
         notes_libres: row.notes_libres || '',
+        jalons_reel: row.jalons_reel || {},
         tranches: tranchesForOp,
         prets: pretsForOp,
         garanties: garantiesForOp,
@@ -16039,6 +16058,7 @@ async function saveOpToSupabase(op) {
       date_conv_loc: op.date_conv_loc,
       date_ca_axentia: op.date_ca_axentia,
       notes_libres: op.notes_libres,
+      jalons_reel: op.jalons_reel || {},
     };
     const opResponse = await fetch(`${SUPABASE_URL}/rest/v1/operations?id=eq.${supabaseId}`, {
       method: 'PATCH', headers, body: JSON.stringify(opPayload),
