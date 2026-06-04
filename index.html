@@ -3370,6 +3370,17 @@
     border-radius: 2px; font-weight: 600; font-style: normal;
     text-transform: uppercase; letter-spacing: 0.2px;
   }
+  .jalon-pill {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 9px; padding: 1px 5px; margin-top: 2px;
+    border-radius: 3px; font-weight: 600; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.2px;
+    user-select: none; line-height: 1.5; transition: filter .12s ease;
+  }
+  .jalon-pill i { font-size: 10px; }
+  .jalon-pill.prev { background: var(--warning-bg); color: var(--warning-text); }
+  .jalon-pill.reel { background: var(--success-bg); color: var(--success-text); }
+  .jalon-pill:hover { filter: brightness(1.12); }
   .jalon-montant {
     font-size: 10.5px; color: var(--text-secondary);
     margin-top: 1px; font-variant-numeric: tabular-nums;
@@ -8892,6 +8903,18 @@ function renderSubvCardEdit(i, op) {
   `;
 }
 
+// Bascule prévu / réel d'un jalon (système C) — flip + persistance immédiate
+function toggleJalonReel(section, rowIdx, field) {
+  const op = findOp(selectedOpCode);
+  if (!op || !op[section] || !op[section][rowIdx]) return;
+  const ent = op[section][rowIdx];
+  if (!ent.jalons_reel) ent.jalons_reel = {};
+  if (ent.jalons_reel[field]) delete ent.jalons_reel[field];
+  else ent.jalons_reel[field] = true;
+  renderTrancheDetail();
+  saveOpToSupabase(op);
+}
+
 // ============== PRÊTS ==============
 
 function renderPretsSection(items, op) {
@@ -8934,10 +8957,10 @@ function renderPretCard(i) {
 
   // Build jalons timeline (lecture mode)
   const jalons = [
-    { label: 'Demande', date: i.date_demande, montant: null },
-    { label: 'Comité banque', date: i.date_comite_banque, montant: null },
-    { label: "Lettre d'offre", date: i.date_lo || previsionLO, montant: i.montant_lo, previsional: !i.date_lo && !!previsionLO, sp_link: i.lien_sp_lo, sp_label: "Ouvrir la lettre d'offre" },
-    { label: 'Contrat', date: i.date_contrat, montant: i.montant_contrat, n: i.n_contrat, sp_link: i.lien_sp_contrat, sp_label: 'Ouvrir le contrat' },
+    { label: 'Demande', date: i.date_demande, montant: null, field: 'date_demande' },
+    { label: 'Comité banque', date: i.date_comite_banque, montant: null, field: 'date_comite_banque' },
+    { label: "Lettre d'offre", date: i.date_lo || previsionLO, montant: i.montant_lo, previsional: !i.date_lo && !!previsionLO, sp_link: i.lien_sp_lo, sp_label: "Ouvrir la lettre d'offre", field: 'date_lo' },
+    { label: 'Contrat', date: i.date_contrat, montant: i.montant_contrat, n: i.n_contrat, sp_link: i.lien_sp_contrat, sp_label: 'Ouvrir le contrat', field: 'date_contrat' },
   ];
   const jalonsHtml = jalons.map(j => {
     if (!j.date && !j.montant) {
@@ -8950,10 +8973,16 @@ function renderPretCard(i) {
     const spBtn = j.sp_link
       ? `<a class="jalon-sp-link" href="${escapeHtml(j.sp_link)}" target="_blank" rel="noopener" title="${escapeHtml(j.sp_label || 'Ouvrir document')}" onclick="event.stopPropagation();"><i class="ti ti-file-text"></i></a>`
       : '';
+    const jr = i.jalons_reel || {};
+    const reel = !!jr[j.field];
+    const pill = (j.field && j.date && !j.previsional)
+      ? `<span class="jalon-pill ${reel ? 'reel' : 'prev'}" onclick="event.stopPropagation(); toggleJalonReel('prets', ${i._originalIdx}, '${j.field}')" title="Basculer prévu / réel"><i class="ti ti-${reel ? 'check' : 'clock'}" aria-hidden="true"></i>${reel ? 'réel' : 'prév.'}</span>`
+      : '';
     return `
       <div class="jalon${j.previsional ? ' jalon-prev' : ''}">
         <div class="jalon-label">${j.label}${spBtn}</div>
         <div class="${dateClass}">${dateContent}</div>
+        ${pill}
         ${j.montant ? `<div class="jalon-montant">${fmtMontant(j.montant)}</div>` : ''}
         ${j.n ? `<div class="jalon-sub">N° ${escapeHtml(j.n)}</div>` : ''}
       </div>
@@ -15917,6 +15946,7 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     // Nouveaux champs temporels (Livrable 1)
     date_premier_tirage: p.date_premier_tirage || '',
     date_mise_en_force: p.date_mise_en_force || '',
+    jalons_reel: p.jalons_reel || {},
   };
 }
 
@@ -16406,6 +16436,7 @@ function buildPretPayload(p, operationId, trancheId) {
     lien_sp_contrat: p.lien_sp_contrat || '',
     lien_sharepoint: p.lien_sharepoint || '',
     nb_droits_reserves: p.nb_droits_reserves,
+    jalons_reel: p.jalons_reel || {},
   };
 }
 
