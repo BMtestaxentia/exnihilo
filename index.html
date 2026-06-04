@@ -6396,7 +6396,7 @@ function renderControles() {
   if (!view) return;
   const c = view.querySelector('#controlesContent');
   if (!c) return;
-  c.innerHTML = renderCtrlFinanceurs() + renderCtrlAapEcheances();
+  c.innerHTML = renderCtrlFinanceurs() + renderCtrlCaducite() + renderCtrlCloturesAgrement() + renderCtrlAapEcheances();
   replaceTablerIcons();
 }
 
@@ -6468,6 +6468,84 @@ function renderCtrlAapEcheances() {
       <div class="ctrl-block-title"><i class="ti ti-calendar"></i>Échéances des appels à projets</div>
       <table class="ctrl-table">
         <thead><tr><th>AAP</th><th>Organisme</th><th>Limite candidature</th><th>Échéance</th><th>Statut</th><th style="text-align:right;">Ops liées</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
+}
+
+function ctrlChip(days) {
+  if (days === null) return '<span class="ctrl-chip ctrl-chip-muted">—</span>';
+  if (days < 0) return `<span class="ctrl-chip ctrl-chip-over">Échu (J+${-days})</span>`;
+  if (days <= 30) return `<span class="ctrl-chip ctrl-chip-soon">J-${days}</span>`;
+  return `<span class="ctrl-chip ctrl-chip-ok">J-${days}</span>`;
+}
+
+function renderCtrlCaducite() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const rows = [];
+  ctrlActiveOps().forEach(op => {
+    const opName = op.display_name || op.name || op.code || '';
+    (op.prets || []).forEach(pp => {
+      const signed = (pp.statut || '').toLowerCase().includes('contrat sign');
+      if (pp.date_caducite_lo) {
+        const d = ctrlParseFr(pp.date_caducite_lo);
+        rows.push({ opName, tranche: pp.tranche || '', pret: pp.ligne || '', type: "Lettre d'offre", date: pp.date_caducite_lo, days: d ? Math.round((d - today) / 86400000) : null, levee: signed, statut: pp.statut || '' });
+      }
+      if (pp.date_caducite_contrat) {
+        const d = ctrlParseFr(pp.date_caducite_contrat);
+        rows.push({ opName, tranche: pp.tranche || '', pret: pp.ligne || '', type: 'Contrat', date: pp.date_caducite_contrat, days: d ? Math.round((d - today) / 86400000) : null, levee: false, statut: pp.statut || '' });
+      }
+    });
+  });
+  rows.sort((a, b) => { const x = ctrlParseFr(a.date), y = ctrlParseFr(b.date); if (x && y) return x - y; if (x) return -1; if (y) return 1; return 0; });
+  if (rows.length === 0) return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-alert-triangle"></i>Caducité des financements</div><div class="subent-empty">Aucune date de caducité renseignée sur les prêts.</div></div>`;
+  const body = rows.map(r => `
+    <tr>
+      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}</td>
+      <td>${escapeHtml(r.tranche)}</td>
+      <td>${escapeHtml(r.pret)}</td>
+      <td>${escapeHtml(r.type)}</td>
+      <td>${escapeHtml(r.date)}</td>
+      <td>${r.levee ? '<span class="ctrl-chip ctrl-chip-ok">Levée (contrat signé)</span>' : ctrlChip(r.days)}</td>
+      <td>${r.statut ? statusBadge(r.statut) : ''}</td>
+    </tr>`).join('');
+  return `
+    <div class="ctrl-block">
+      <div class="ctrl-block-title"><i class="ti ti-alert-triangle"></i>Caducité des financements</div>
+      <table class="ctrl-table">
+        <thead><tr><th>Opération</th><th>Tranche</th><th>Prêt</th><th>Type</th><th>Caducité</th><th>Échéance</th><th>Statut prêt</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderCtrlCloturesAgrement() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const rows = [];
+  ctrlActiveOps().forEach(op => {
+    const opName = op.display_name || op.name || op.code || '';
+    (op.tranches || []).forEach(t => {
+      if (!t.date_cloture_agrement) return;
+      const d = ctrlParseFr(t.date_cloture_agrement);
+      const code = t.code_full ? t.code_full.split('-').slice(1).join('-') : (t.id || '');
+      rows.push({ opName, tranche: code, statut: t.statut_agrement || '', date: t.date_cloture_agrement, days: d ? Math.round((d - today) / 86400000) : null });
+    });
+  });
+  rows.sort((a, b) => { const x = ctrlParseFr(a.date), y = ctrlParseFr(b.date); if (x && y) return x - y; if (x) return -1; if (y) return 1; return 0; });
+  if (rows.length === 0) return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-calendar"></i>Clôtures d'agrément</div><div class="subent-empty">Aucune date de clôture d'agrément renseignée.</div></div>`;
+  const body = rows.map(r => `
+    <tr>
+      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}</td>
+      <td>${escapeHtml(r.tranche)}</td>
+      <td>${r.statut ? statusBadge(r.statut) : ''}</td>
+      <td>${escapeHtml(r.date)}</td>
+      <td>${ctrlChip(r.days)}</td>
+    </tr>`).join('');
+  return `
+    <div class="ctrl-block">
+      <div class="ctrl-block-title"><i class="ti ti-calendar"></i>Clôtures d'agrément</div>
+      <table class="ctrl-table">
+        <thead><tr><th>Opération</th><th>Tranche</th><th>Statut agrément</th><th>Date clôture</th><th>Échéance</th></tr></thead>
         <tbody>${body}</tbody>
       </table>
     </div>`;
@@ -8274,6 +8352,7 @@ function renderTrancheDetail() {
         ${editableKV('Date dépôt', t.date_depot_agr, 'date_depot_agr', 'text', 'tranche-field')}
         ${editableKV('Date butoir dépôt', t.date_butoir_depot, 'date_butoir_depot', 'text', 'tranche-field')}
         ${editableKV('Date DFA', t.date_dfa, 'date_dfa', 'text', 'tranche-field')}
+        ${editableKV('Date clôture agrément', t.date_cloture_agrement, 'date_cloture_agrement', 'text', 'tranche-field')}
         ${editableSelect('Famille agrément', t.famille_agrement, 'famille_agrement', getRef('familles_agrement'), 'tranche-field')}
         ${editableSelect('ULS / RHVS', t.uls_rhvs, 'uls_rhvs', getRef('uls_rhvs'), 'tranche-field')}
         ${editableKV('Catégorie', t.categorie_agrement, 'categorie_agrement', 'text', 'tranche-field')}
@@ -9091,7 +9170,7 @@ function sharepointEditField(lien) {
 
 const SECTION_FIELD_MAP = {
   subventions: ['tranche','financement','financeur','montant_demande','date_demande','statut','montant_notifie','date_notification','contact','commentaires','lien_sharepoint','lien_sp_notif','n_arrete','date_conv','aap_id'],
-  prets: ['tranche','ligne','financeur','montant_sim','date_demande','date_comite_banque','statut','date_lo','montant_lo','date_contrat','n_contrat','montant_contrat','contact','commentaires','source','taux','duree_emprunt','duree_prefi','revision','pieces_attendues','non_garanti','lien_sharepoint','lien_sp_lo','lien_sp_contrat','n_dossier','date_fin_prefi','aap_id'],
+  prets: ['tranche','ligne','financeur','montant_sim','date_demande','date_comite_banque','statut','date_lo','montant_lo','date_contrat','n_contrat','montant_contrat','contact','commentaires','source','taux','duree_emprunt','duree_prefi','revision','pieces_attendues','non_garanti','lien_sharepoint','lien_sp_lo','lien_sp_contrat','n_dossier','date_fin_prefi','aap_id','date_caducite_lo','date_caducite_contrat'],
   garanties: ['tranche','pret_lie','garant','quotite','date_demande','statut','date_ap','date_comite','date_delib','date_conv','contact','commentaires','caution_relais','commission','lien_sharepoint','lien_sp_accord','lien_sp_delib'],
   prefinancements: ['tranche','banque','pret_lie','montant_couvert','montant_tire','pct_tire','date_debut','date_fin','statut','commentaires','taux','lien_sharepoint'],
   reservataires: ['tranche','financement','reservataire','nb_logements','pct_reserve','etape','commentaires','date_conv','lien_sharepoint'],
@@ -9323,6 +9402,7 @@ function renderPretCard(i) {
       ${conditions ? `<div class="entity-card-meta"><span><i class="ti ti-settings"></i>${escapeHtml(conditions)}</span></div>` : ''}
       ${i.contact ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-user"></i>${escapeHtml(i.contact)}</span></div>` : ''}
       ${i.n_dossier ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-folder"></i>N° dossier : ${escapeHtml(i.n_dossier)}</span></div>` : ''}
+      ${(i.date_caducite_lo || i.date_caducite_contrat) ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-alert-triangle"></i>Caducité${i.date_caducite_lo ? ' LO ' + escapeHtml(i.date_caducite_lo) : ''}${i.date_caducite_contrat ? ' · contrat ' + escapeHtml(i.date_caducite_contrat) : ''}</span></div>` : ''}
       ${piecesHtml}
       ${i.commentaires ? `<div class="entity-card-notes">${escapeHtml(i.commentaires)}</div>` : ''}
     </div>
@@ -9432,6 +9512,8 @@ function renderPretCardEdit(i, op) {
           <div class="card-edit-field"><label>Contrat</label><input class="card-input" data-field="date_contrat" value="${escapeHtml(i.date_contrat || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
           <div class="card-edit-field"><label>N° dossier</label><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}"></div>
+          <div class="card-edit-field"><label>Caducité LO</label><input class="card-input" data-field="date_caducite_lo" value="${escapeHtml(i.date_caducite_lo || '')}" placeholder="JJ/MM/AAAA"></div>
+          <div class="card-edit-field"><label>Caducité contrat</label><input class="card-input" data-field="date_caducite_contrat" value="${escapeHtml(i.date_caducite_contrat || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">— Aucun —</option>${aapSelectOptions(i.aap_id)}</select></div>
           <div class="card-edit-field"><label>Contact banque</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
         </div>
@@ -16170,6 +16252,7 @@ function mapTrancheFromSupabase(t) {
     // Volumétrie par typologie (T1, T2, etc.)
     vol: t.vol || {},
     vol_agree: t.vol_agree || {},
+    date_cloture_agrement: t.date_cloture_agrement || '',
     // Sous-sections JSONB (bilan d'opération, surfaces)
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
@@ -16397,6 +16480,8 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     n_dossier: p.n_dossier || '',
     date_fin_prefi: p.date_fin_prefi || '',
     aap_id: (p.aap_id !== undefined && p.aap_id !== null) ? p.aap_id : null,
+    date_caducite_lo: p.date_caducite_lo || '',
+    date_caducite_contrat: p.date_caducite_contrat || '',
   };
 }
 
@@ -16869,6 +16954,7 @@ function buildTranchePayload(t, operationId) {
     t5_plus: t.vol?.['T5+'] || null,
     vol: t.vol || {},
     vol_agree: t.vol_agree || {},
+    date_cloture_agrement: t.date_cloture_agrement || null,
     notes: t.notes || '',
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
@@ -16919,6 +17005,8 @@ function buildPretPayload(p, operationId, trancheId) {
     n_dossier: p.n_dossier || '',
     date_fin_prefi: p.date_fin_prefi || null,
     aap_id: p.aap_id ? Number(p.aap_id) : null,
+    date_caducite_lo: p.date_caducite_lo || null,
+    date_caducite_contrat: p.date_caducite_contrat || null,
   };
 }
 
