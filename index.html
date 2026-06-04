@@ -6376,7 +6376,7 @@ function makeNewOp() {
     total_surface: null,
     vol_consolidee: { plai: 0, plus: 0, pls: 0, pli: 0, libre: 0, autre: 0 },
     tranches: [makeNewTranche(code, '1')],
-    subventions: [], prets: [], garanties: [], prefinancements: [], reservataires: [],
+    subventions: [], prets: [], garanties: [], prefinancements: [], avenants: [], reservataires: [],
   };
 }
 
@@ -7397,7 +7397,7 @@ function saveOpEdits() {
         t.code_full = (op.code || '') + '-' + newCode;
         t.id = newCode;
         // Cascade: update all sub-entities that referenced the old code
-        ['subventions','prets','garanties','prefinancements','reservataires'].forEach(section => {
+        ['subventions','prets','garanties','prefinancements','reservataires','avenants'].forEach(section => {
           (op[section] || []).forEach(item => {
             if (item.tranche === oldCode) item.tranche = newCode;
           });
@@ -7407,7 +7407,7 @@ function saveOpEdits() {
   }
 
   // Sub-entity cards: each card has data-section + data-row-idx (original index in op[section])
-  ['subventions','prets','garanties','prefinancements','reservataires'].forEach(section => {
+  ['subventions','prets','garanties','prefinancements','reservataires','avenants'].forEach(section => {
     document.querySelectorAll(`.entity-card.editing[data-section="${section}"]`).forEach(card => {
       const idx = parseInt(card.dataset.rowIdx, 10);
       if (!op[section] || !op[section][idx]) return;
@@ -7915,6 +7915,7 @@ function renderTrancheDetail() {
     const garanties = (op.garanties || []).map((s, idx) => ({...s, _originalIdx: idx})).filter(x => x.tranche === trancheKey);
     const prefin = (op.prefinancements || []).map((s, idx) => ({...s, _originalIdx: idx})).filter(x => x.tranche === trancheKey);
     const reservataires = (op.reservataires || []).map((s, idx) => ({...s, _originalIdx: idx})).filter(x => x.tranche === trancheKey);
+    const avenants = (op.avenants || []).map((s, idx) => ({...s, _originalIdx: idx})).filter(x => x.tranche === trancheKey);
 
     const titleHtml = editMode
       ? `<input type="text" class="editable-input" style="font-size:17px;font-weight:600;text-align:left;width:100%;min-width:0;" list="types-structure-list" data-edit-tranche-field="type_structure" value="${escapeHtml(t.type_structure || '')}" placeholder="Type d'établissement (FJT, EHPAD, MAS…)"><datalist id="types-structure-list">${getRef('types_structure').map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist>`
@@ -8015,6 +8016,7 @@ function renderTrancheDetail() {
       ${renderPretsSection(prets, op)}
       ${renderGarantiesSection(garanties, op)}
       ${renderPrefinSection(prefin, op)}
+      ${renderAvenantsSection(avenants, op)}
       ${renderReservatairesSection(reservataires, op)}
     `;
   }
@@ -8808,11 +8810,13 @@ const SECTION_FIELD_MAP = {
   garanties: ['tranche','pret_lie','garant','quotite','date_demande','statut','date_ap','date_comite','date_delib','date_conv','contact','commentaires','caution_relais','commission','lien_sharepoint','lien_sp_accord','lien_sp_delib'],
   prefinancements: ['tranche','banque','pret_lie','montant_couvert','montant_tire','pct_tire','date_debut','date_fin','statut','commentaires','taux','lien_sharepoint'],
   reservataires: ['tranche','financement','reservataire','nb_logements','pct_reserve','etape','commentaires','date_conv','lien_sharepoint'],
+  avenants: ['tranche','pret_lie','n_avenant','date_avenant','objet','nouveau_montant','nouvelle_duree','nouveau_taux','statut','commentaires','lien_sharepoint','gar_garant','gar_quotite','gar_statut','gar_date_demande','gar_date_conv'],
 };
 const NUMERIC_FIELDS = new Set([
   'montant_demande','montant_notifie','montant_sim','montant_lo','montant_contrat',
   'quotite','montant_couvert','montant_tire','pct_tire','nb_logements','pct_reserve',
-  'duree_emprunt','duree_prefi','taux_spread','commission','nb_droits_reserves'
+  'duree_emprunt','duree_prefi','taux_spread','commission','nb_droits_reserves',
+  'nouveau_montant','nouvelle_duree','gar_quotite'
 ]);
 
 function addEntityRow(section) {
@@ -9651,6 +9655,85 @@ function renderPrefinCardEdit(i, op) {
             ${getRef('statuts_prefin').map(s => `<option value="${s}"${i.statut===s?' selected':''}>${s}</option>`).join('')}
           </select>
         </div>
+        <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
+        ${sharepointEditField(i.lien_sharepoint)}
+      </div>
+    </div>
+  `;
+}
+
+// ============== AVENANTS ==============
+
+function renderAvenantsSection(items, op) {
+  if (!editMode && items.length === 0) return '';
+  const body = items.length > 0
+    ? items.map(i => editMode ? renderAvenantCardEdit(i, op) : renderAvenantCard(i)).join('')
+    : '<div class="subent-empty">Aucun avenant enregistré.</div>';
+  const addBtn = editMode ? `<button class="add-row-btn" onclick="addEntityRow('avenants')"><i class="ti ti-plus"></i>Ajouter un avenant</button>` : '';
+  return `
+    <div class="section">
+      <div class="subent-header">
+        <div class="subent-title prefin"><i class="ti ti-file-text"></i>Avenants · ${items.length}</div>
+      </div>
+      <div class="entity-list">${body}${addBtn}</div>
+    </div>
+  `;
+}
+
+function renderAvenantCard(i) {
+  const recap = [
+    i.objet,
+    i.nouveau_montant ? 'montant ' + fmtMontant(i.nouveau_montant) : null,
+    i.nouvelle_duree ? i.nouvelle_duree + ' ans' : null,
+    i.nouveau_taux || null,
+  ].filter(Boolean).join(' · ');
+  const garLine = i.gar_garant
+    ? `<div class="entity-card-meta" style="border-top:1px dashed var(--border-color);padding-top:6px;margin-top:8px;"><span><i class="ti ti-shield"></i>Garantie : ${escapeHtml(i.gar_garant)}${i.gar_quotite ? ' · ' + i.gar_quotite + ' %' : ''}${i.gar_statut ? ' · ' + escapeHtml(i.gar_statut) : ''}</span></div>`
+    : '';
+  return `
+    <div class="entity-card${diffEntityClass('avenants', i)}" data-section="avenants" data-row-idx="${i._originalIdx}">
+      <div class="entity-card-head">
+        <div>
+          <div class="entity-card-title">Avenant${i.n_avenant ? ' n° ' + escapeHtml(i.n_avenant) : ''}${i.pret_lie ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.pret_lie)}</span>` : ''}</div>
+          ${i.date_avenant ? `<div class="entity-card-sub">${escapeHtml(i.date_avenant)}</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">${sharepointIcon(i.lien_sharepoint)}${statusBadge(i.statut)}</div>
+      </div>
+      ${recap ? `<div class="entity-card-meta"><span><i class="ti ti-settings"></i>${escapeHtml(recap)}</span></div>` : ''}
+      ${garLine}
+      ${i.commentaires ? `<div class="entity-card-notes">${escapeHtml(i.commentaires)}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderAvenantCardEdit(i, op) {
+  const tranchePrets = (op.prets || []).filter(p => p.tranche === i.tranche);
+  const pretCustom = (i.pret_lie && !tranchePrets.some(p => p.ligne === i.pret_lie)) ? `<option value="${escapeHtml(i.pret_lie)}" selected>${escapeHtml(i.pret_lie)}</option>` : '';
+  const objets = ['Révision de durée','Révision de montant','Révision de taux','Réaménagement','Consolidation','Autre'];
+  return `
+    <div class="entity-card editing${diffEntityClass('avenants', i)}" data-section="avenants" data-row-idx="${i._originalIdx}">
+      <div class="entity-card-head">
+        <div style="flex:1;font-size:11px;color:var(--text-tertiary);font-weight:600;">AVENANT</div>
+        <div class="entity-card-actions">
+          <button class="danger" onclick="deleteEntityRow('avenants', ${i._originalIdx})" title="Supprimer"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      <div class="card-edit-grid">
+        <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
+        <div class="card-edit-field"><label>Prêt concerné</label><select class="card-input" data-field="pret_lie"><option value=""></option>${pretCustom}${tranchePrets.map(pp=>`<option value="${escapeHtml(pp.ligne)}"${i.pret_lie===pp.ligne?' selected':''}>${escapeHtml(pp.ligne)}</option>`).join('')}</select></div>
+        <div class="card-edit-field"><label>N° avenant</label><input class="card-input" data-field="n_avenant" value="${escapeHtml(i.n_avenant || '')}"></div>
+        <div class="card-edit-field"><label>Date avenant</label><input class="card-input" data-field="date_avenant" value="${escapeHtml(i.date_avenant || '')}" placeholder="JJ/MM/AAAA"></div>
+        <div class="card-edit-field"><label>Objet / motif</label><select class="card-input" data-field="objet"><option value=""></option>${(i.objet && !objets.includes(i.objet)) ? `<option value="${escapeHtml(i.objet)}" selected>${escapeHtml(i.objet)}</option>` : ''}${objets.map(o=>`<option value="${o}"${i.objet===o?' selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="card-edit-field"><label>Statut</label><input class="card-input" data-field="statut" value="${escapeHtml(i.statut || '')}" placeholder="À demander, Signé…"></div>
+        <div class="card-edit-field"><label>Nouveau montant (€)</label><input type="number" min="0" class="card-input" data-field="nouveau_montant" value="${i.nouveau_montant || ''}"></div>
+        <div class="card-edit-field"><label>Nouvelle durée (ans)</label><input type="number" min="0" class="card-input" data-field="nouvelle_duree" value="${i.nouvelle_duree || ''}"></div>
+        <div class="card-edit-field"><label>Nouveau taux</label><input class="card-input" data-field="nouveau_taux" value="${escapeHtml(i.nouveau_taux || '')}" placeholder="ex: TLA +0,60%"></div>
+        <div class="card-edit-field wide" style="border-top:1px dashed var(--border-color);padding-top:8px;margin-top:4px;"><label style="color:var(--text-secondary);font-weight:600;">Garantie de l'avenant</label></div>
+        <div class="card-edit-field"><label>Garant</label><input class="card-input" data-field="gar_garant" value="${escapeHtml(i.gar_garant || '')}"></div>
+        <div class="card-edit-field"><label>Quotité (%)</label><input type="number" min="0" max="100" class="card-input" data-field="gar_quotite" value="${i.gar_quotite || ''}"></div>
+        <div class="card-edit-field"><label>Statut garantie</label><input class="card-input" data-field="gar_statut" value="${escapeHtml(i.gar_statut || '')}"></div>
+        <div class="card-edit-field"><label>Date demande gar.</label><input class="card-input" data-field="gar_date_demande" value="${escapeHtml(i.gar_date_demande || '')}" placeholder="JJ/MM/AAAA"></div>
+        <div class="card-edit-field"><label>Date convention gar.</label><input class="card-input" data-field="gar_date_conv" value="${escapeHtml(i.gar_date_conv || '')}" placeholder="JJ/MM/AAAA"></div>
         <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
         ${sharepointEditField(i.lien_sharepoint)}
       </div>
@@ -15440,11 +15523,12 @@ async function loadFromSupabase() {
       fetch(`${SUPABASE_URL}/rest/v1/phase_snapshots?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/referentiels?select=*&is_active=eq.true&order=item_order`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/prefinancements?select=*`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/avenants?select=*`, { headers }),
     ];
     const responses = await Promise.all(fetches);
     if (!responses[0].ok) throw new Error('Operations: ' + responses[0].status);
 
-    const [opsRows, tranchesRows, pretsRows, garantiesRows, subvRows, reservRows, comitesRows, wfRows, wfRecipRows, auditRows, tagsRows, snapsRows, refRows, prefinRows] = await Promise.all(
+    const [opsRows, tranchesRows, pretsRows, garantiesRows, subvRows, reservRows, comitesRows, wfRows, wfRecipRows, auditRows, tagsRows, snapsRows, refRows, prefinRows, avenantsRows] = await Promise.all(
       responses.map(async (r, i) => r.ok ? await r.json() : [])
     );
 
@@ -15503,6 +15587,7 @@ async function loadFromSupabase() {
       subventions: [],
       reservataires: [],
       prefinancements: [],
+      avenants: [],
       comites: [],
       workflows: [],
       tags: [],
@@ -15560,6 +15645,11 @@ async function loadFromSupabase() {
       const prefinancementsForOp = prefinRows
         .filter(pf => pf.operation_id === row.id)
         .map(pf => mapPrefinancementFromSupabase(pf, trancheSuffixMap, pretLigneMap));
+
+      // Avenants
+      const avenantsForOp = avenantsRows
+        .filter(a => a.operation_id === row.id)
+        .map(a => mapAvenantFromSupabase(a, trancheSuffixMap, pretLigneMap));
 
       // Comités
       const comitesForOp = comitesRows
@@ -15646,6 +15736,7 @@ async function loadFromSupabase() {
         subventions: subventionsForOp,
         reservataires: reservataresForOp,
         prefinancements: prefinancementsForOp,
+        avenants: avenantsForOp,
         comites: comitesForOp,
         workflows: workflowsForOp,
         audit_log: auditForOp,
@@ -15858,6 +15949,30 @@ function mapPrefinancementFromSupabase(pf, trancheSuffixMap, pretLigneMap) {
     commentaires: pf.notes || '',
     notes: pf.notes || '',
     lien_sharepoint: pf.lien_sharepoint || '',
+  };
+}
+
+function mapAvenantFromSupabase(a, trancheSuffixMap, pretLigneMap) {
+  return {
+    _supabase_id: a.id,
+    id: 'av-supabase-' + a.id,
+    tranche: a.tranche_id ? (trancheSuffixMap[a.tranche_id] || '') : '',
+    pret_lie: (pretLigneMap && a.pret_id) ? (pretLigneMap[a.pret_id] || '') : '',
+    n_avenant: a.n_avenant || '',
+    date_avenant: a.date_avenant || '',
+    objet: a.objet || '',
+    nouveau_montant: a.nouveau_montant,
+    nouvelle_duree: a.nouvelle_duree,
+    nouveau_taux: a.nouveau_taux || '',
+    statut: a.statut || '',
+    commentaires: a.notes || '',
+    notes: a.notes || '',
+    lien_sharepoint: a.lien_sharepoint || '',
+    gar_garant: a.gar_garant || '',
+    gar_quotite: a.gar_quotite,
+    gar_statut: a.gar_statut || '',
+    gar_date_demande: a.gar_date_demande || '',
+    gar_date_conv: a.gar_date_conv || '',
   };
 }
 
@@ -16296,6 +16411,32 @@ async function syncEntitiesToSupabase(op, operationId) {
       taux: pf.taux || '',
       notes: pf.commentaires || pf.notes || '',
       lien_sharepoint: pf.lien_sharepoint || '',
+    }),
+  });
+
+  // === AVENANTS ===
+  await syncSimpleEntity({
+    op, operationId, headers,
+    tableName: 'avenants',
+    localItems: op.avenants || [],
+    buildPayload: (a) => ({
+      operation_id: operationId,
+      tranche_id: findTrancheSupabaseIdFromSuffix(op, a.tranche),
+      pret_id: pretLigneToSupabaseId[a.pret_lie] || null,
+      n_avenant: a.n_avenant || '',
+      date_avenant: a.date_avenant || null,
+      objet: a.objet || '',
+      nouveau_montant: a.nouveau_montant,
+      nouvelle_duree: a.nouvelle_duree,
+      nouveau_taux: a.nouveau_taux || '',
+      statut: a.statut || '',
+      notes: a.commentaires || a.notes || '',
+      lien_sharepoint: a.lien_sharepoint || '',
+      gar_garant: a.gar_garant || '',
+      gar_quotite: a.gar_quotite,
+      gar_statut: a.gar_statut || '',
+      gar_date_demande: a.gar_date_demande || null,
+      gar_date_conv: a.gar_date_conv || null,
     }),
   });
 
