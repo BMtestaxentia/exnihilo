@@ -6396,45 +6396,8 @@ function renderControles() {
   if (!view) return;
   const c = view.querySelector('#controlesContent');
   if (!c) return;
-  c.innerHTML = renderCtrlFinanceurs() + renderCtrlCaducite() + renderCtrlCloturesAgrement() + renderCtrlAapEcheances();
+  c.innerHTML = renderCtrlCaducite() + renderCtrlCloturesAgrement() + renderCtrlAapEcheances();
   replaceTablerIcons();
-}
-
-function renderCtrlFinanceurs() {
-  const agg = {};
-  ctrlActiveOps().forEach(op => {
-    (op.prets || []).forEach(pp => {
-      const f = ((pp.financeur || '').trim()) || '—';
-      agg[f] = agg[f] || { pretN: 0, pretSum: 0, subvN: 0, subvSum: 0 };
-      agg[f].pretN++; agg[f].pretSum += (pp.montant_contrat || pp.montant_lo || pp.montant_sim || 0);
-    });
-    (op.subventions || []).forEach(sv => {
-      const f = ((sv.financeur || '').trim()) || '—';
-      agg[f] = agg[f] || { pretN: 0, pretSum: 0, subvN: 0, subvSum: 0 };
-      agg[f].subvN++; agg[f].subvSum += (sv.montant_notifie || sv.montant_demande || 0);
-    });
-  });
-  const rows = Object.entries(agg).map(([f, v]) => ({ f, ...v, total: v.pretSum + v.subvSum })).sort((a, b) => b.total - a.total);
-  if (rows.length === 0) return '<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-chart-pie"></i>Engagement par financeur</div><div class="subent-empty">Aucun prêt ni subvention.</div></div>';
-  const totPret = rows.reduce((s, r) => s + r.pretSum, 0), totSubv = rows.reduce((s, r) => s + r.subvSum, 0);
-  const body = rows.map(r => `
-    <tr>
-      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.f)}</td>
-      <td style="text-align:right;">${r.pretN || ''}</td>
-      <td style="text-align:right;">${r.pretSum ? fmtMontant(r.pretSum) : ''}</td>
-      <td style="text-align:right;">${r.subvN || ''}</td>
-      <td style="text-align:right;">${r.subvSum ? fmtMontant(r.subvSum) : ''}</td>
-      <td style="text-align:right;font-weight:600;color:var(--text-primary);">${fmtMontant(r.total)}</td>
-    </tr>`).join('');
-  return `
-    <div class="ctrl-block">
-      <div class="ctrl-block-title"><i class="ti ti-chart-pie"></i>Engagement par financeur · tout le portefeuille</div>
-      <table class="ctrl-table">
-        <thead><tr><th>Financeur</th><th style="text-align:right;">Nb prêts</th><th style="text-align:right;">&Sigma; prêts</th><th style="text-align:right;">Nb subv.</th><th style="text-align:right;">&Sigma; subv.</th><th style="text-align:right;">Total</th></tr></thead>
-        <tbody>${body}</tbody>
-        <tfoot><tr><td style="font-weight:700;">Total</td><td></td><td style="text-align:right;font-weight:700;">${fmtMontant(totPret)}</td><td></td><td style="text-align:right;font-weight:700;">${fmtMontant(totSubv)}</td><td style="text-align:right;font-weight:700;">${fmtMontant(totPret + totSubv)}</td></tr></tfoot>
-      </table>
-    </div>`;
 }
 
 function renderCtrlAapEcheances() {
@@ -6490,10 +6453,6 @@ function renderCtrlCaducite() {
       if (pp.date_caducite_lo) {
         const d = ctrlParseFr(pp.date_caducite_lo);
         rows.push({ opName, tranche: pp.tranche || '', pret: pp.ligne || '', type: "Lettre d'offre", date: pp.date_caducite_lo, days: d ? Math.round((d - today) / 86400000) : null, levee: signed, statut: pp.statut || '' });
-      }
-      if (pp.date_caducite_contrat) {
-        const d = ctrlParseFr(pp.date_caducite_contrat);
-        rows.push({ opName, tranche: pp.tranche || '', pret: pp.ligne || '', type: 'Contrat', date: pp.date_caducite_contrat, days: d ? Math.round((d - today) / 86400000) : null, levee: false, statut: pp.statut || '' });
       }
     });
   });
@@ -9170,7 +9129,7 @@ function sharepointEditField(lien) {
 
 const SECTION_FIELD_MAP = {
   subventions: ['tranche','financement','financeur','montant_demande','date_demande','statut','montant_notifie','date_notification','contact','commentaires','lien_sharepoint','lien_sp_notif','n_arrete','date_conv','aap_id'],
-  prets: ['tranche','ligne','financeur','montant_sim','date_demande','date_comite_banque','statut','date_lo','montant_lo','date_contrat','n_contrat','montant_contrat','contact','commentaires','source','taux','duree_emprunt','duree_prefi','revision','pieces_attendues','non_garanti','lien_sharepoint','lien_sp_lo','lien_sp_contrat','n_dossier','date_fin_prefi','aap_id','date_caducite_lo','date_caducite_contrat'],
+  prets: ['tranche','ligne','financeur','montant_sim','date_demande','date_comite_banque','statut','date_lo','montant_lo','date_contrat','n_contrat','montant_contrat','contact','commentaires','source','taux','duree_emprunt','duree_prefi','revision','pieces_attendues','non_garanti','lien_sharepoint','lien_sp_lo','lien_sp_contrat','n_dossier','date_fin_prefi','aap_id','date_caducite_lo'],
   garanties: ['tranche','pret_lie','garant','quotite','date_demande','statut','date_ap','date_comite','date_delib','date_conv','contact','commentaires','caution_relais','commission','lien_sharepoint','lien_sp_accord','lien_sp_delib'],
   prefinancements: ['tranche','banque','pret_lie','montant_couvert','montant_tire','pct_tire','date_debut','date_fin','statut','commentaires','taux','lien_sharepoint'],
   reservataires: ['tranche','financement','reservataire','nb_logements','pct_reserve','etape','commentaires','date_conv','lien_sharepoint'],
@@ -9402,7 +9361,7 @@ function renderPretCard(i) {
       ${conditions ? `<div class="entity-card-meta"><span><i class="ti ti-settings"></i>${escapeHtml(conditions)}</span></div>` : ''}
       ${i.contact ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-user"></i>${escapeHtml(i.contact)}</span></div>` : ''}
       ${i.n_dossier ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-folder"></i>N° dossier : ${escapeHtml(i.n_dossier)}</span></div>` : ''}
-      ${(i.date_caducite_lo || i.date_caducite_contrat) ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-alert-triangle"></i>Caducité${i.date_caducite_lo ? ' LO ' + escapeHtml(i.date_caducite_lo) : ''}${i.date_caducite_contrat ? ' · contrat ' + escapeHtml(i.date_caducite_contrat) : ''}</span></div>` : ''}
+      ${i.date_caducite_lo ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-alert-triangle"></i>Caducité LO ${escapeHtml(i.date_caducite_lo)}</span></div>` : ''}
       ${piecesHtml}
       ${i.commentaires ? `<div class="entity-card-notes">${escapeHtml(i.commentaires)}</div>` : ''}
     </div>
@@ -9513,7 +9472,6 @@ function renderPretCardEdit(i, op) {
           <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
           <div class="card-edit-field"><label>N° dossier</label><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}"></div>
           <div class="card-edit-field"><label>Caducité LO</label><input class="card-input" data-field="date_caducite_lo" value="${escapeHtml(i.date_caducite_lo || '')}" placeholder="JJ/MM/AAAA"></div>
-          <div class="card-edit-field"><label>Caducité contrat</label><input class="card-input" data-field="date_caducite_contrat" value="${escapeHtml(i.date_caducite_contrat || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">— Aucun —</option>${aapSelectOptions(i.aap_id)}</select></div>
           <div class="card-edit-field"><label>Contact banque</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
         </div>
@@ -16481,7 +16439,6 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     date_fin_prefi: p.date_fin_prefi || '',
     aap_id: (p.aap_id !== undefined && p.aap_id !== null) ? p.aap_id : null,
     date_caducite_lo: p.date_caducite_lo || '',
-    date_caducite_contrat: p.date_caducite_contrat || '',
   };
 }
 
@@ -17006,7 +16963,6 @@ function buildPretPayload(p, operationId, trancheId) {
     date_fin_prefi: p.date_fin_prefi || null,
     aap_id: p.aap_id ? Number(p.aap_id) : null,
     date_caducite_lo: p.date_caducite_lo || null,
-    date_caducite_contrat: p.date_caducite_contrat || null,
   };
 }
 
