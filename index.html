@@ -7917,15 +7917,6 @@ function renderTrancheDetail() {
         ${editableSelect('Grille', t.conv_loc_grille, 'conv_loc_grille', getRef('grilles_loyer'), 'tranche-field')}
       </div>
 
-      <div class="section">
-        <div class="section-label loyer"><i class="ti ti-coin"></i>Fonds propres</div>
-        ${editableKV('Montant fonds propres (€)', t.fonds_propres, 'fonds_propres', 'number', 'tranche-field')}
-        ${editableSelect('Nature des fonds propres', t.nature_fonds_propres, 'nature_fonds_propres', ['NR-NR', 'ATR', 'NR-R'], 'tranche-field')}
-        ${editableKV('Durée de reconstitution (ans)', t.duree_reconstitution_fp, 'duree_reconstitution_fp', 'number', 'tranche-field')}
-        ${editableKV('Taux de rémunération (%)', t.taux_remuneration_fp, 'taux_remuneration_fp', 'number', 'tranche-field')}
-        ${editableKV('Injection PGERC (€)', t.injection_pgerc, 'injection_pgerc', 'number', 'tranche-field')}
-      </div>
-
       ${renderSubvSection(subv, op)}
       ${renderPretsSection(prets, op)}
       ${renderGarantiesSection(garanties, op)}
@@ -8246,6 +8237,11 @@ function renderPlanFinancementSection(t, op, trCode, trancheSource) {
   const fpEdit = editMode
     ? `<input type="number" min="0" step="100" class="editable-input" style="text-align:right;width:140px;" data-edit-tranche-field="fonds_propres" value="${fondsPropres || ''}" placeholder="€">`
     : `<span class="pf-line-value">${fmtMontant(fondsPropres)}</span>`;
+  const fpRecap = [
+    t.nature_fonds_propres,
+    t.duree_reconstitution_fp ? t.duree_reconstitution_fp + ' ans' : null,
+    t.taux_remuneration_fp ? t.taux_remuneration_fp + ' %' : null,
+  ].filter(Boolean).join(' · ');
 
   return `
     <div class="section">
@@ -8267,9 +8263,24 @@ function renderPlanFinancementSection(t, op, trCode, trancheSource) {
         </div>
         <div class="pf-category">
           <div class="pf-line pf-line-cat">
-            <span class="pf-line-label">Fonds propres</span>
+            <span class="pf-line-label">Fonds propres${(!editMode && fpRecap) ? ` <span style="color:var(--text-tertiary);font-weight:400;font-size:11px;margin-left:6px;">${escapeHtml(fpRecap)}</span>` : ''}</span>
             ${fpEdit}
           </div>
+          ${editMode ? `
+          <div style="display:flex;gap:12px;flex-wrap:wrap;padding:6px 0 2px 12px;">
+            <label style="display:flex;flex-direction:column;gap:2px;font-size:10.5px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;"><span>Nature</span>
+              <select class="editable-input" style="width:130px;" data-edit-tranche-field="nature_fonds_propres">
+                <option value=""></option>
+                ${['NR-NR','ATR','NR-R'].map(o => `<option value="${o}"${t.nature_fonds_propres===o?' selected':''}>${o}</option>`).join('')}
+              </select>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:2px;font-size:10.5px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;"><span>Durée reconstitution</span>
+              <input type="number" min="0" class="editable-input" style="width:130px;" data-edit-tranche-field="duree_reconstitution_fp" value="${t.duree_reconstitution_fp || ''}" placeholder="ans">
+            </label>
+            <label style="display:flex;flex-direction:column;gap:2px;font-size:10.5px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;"><span>Taux rémunération</span>
+              <input type="number" min="0" step="0.01" class="editable-input" style="width:130px;" data-edit-tranche-field="taux_remuneration_fp" value="${t.taux_remuneration_fp || ''}" placeholder="%">
+            </label>
+          </div>` : ''}
         </div>
         <div class="pf-totals">
           <div class="pf-line pf-total-line">
