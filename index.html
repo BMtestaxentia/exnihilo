@@ -2457,7 +2457,7 @@
   /* Geo panel inside Localisation section */
   .loc-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 18px;
     margin-bottom: 10px;
   }
@@ -3598,7 +3598,7 @@
     align-items: baseline;
   }
   .kv-key { color: var(--text-secondary); }
-  .kv-value { color: var(--text-primary); font-weight: 500; text-align: left; word-break: break-word; min-width: 0; }
+  .kv-value { color: var(--text-primary); font-weight: 500; text-align: left; overflow-wrap: break-word; word-break: normal; min-width: 0; }
   .kv-value-empty { color: var(--text-tertiary); font-weight: 400; }
 
   .notes-block { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 10px 12px; font-size: 12px; color: var(--text-secondary); white-space: pre-wrap; }
@@ -6396,7 +6396,7 @@ function renderControles() {
   if (!view) return;
   const c = view.querySelector('#controlesContent');
   if (!c) return;
-  c.innerHTML = renderCtrlCaducite() + renderCtrlCloturesAgrement() + renderCtrlAapEcheances();
+  c.innerHTML = renderCtrlGoNoGo() + renderCtrlGaranties() + renderCtrlCaducite() + renderCtrlCloturesAgrement() + renderCtrlAapEcheances();
   replaceTablerIcons();
 }
 
@@ -6505,6 +6505,79 @@ function renderCtrlCloturesAgrement() {
       <div class="ctrl-block-title"><i class="ti ti-calendar"></i>Clôtures d'agrément</div>
       <table class="ctrl-table">
         <thead><tr><th>Opération</th><th>Tranche</th><th>Statut agrément</th><th>Date clôture</th><th>Échéance</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
+}
+
+function ctrlGarantieCoverage(op, pp) {
+  return (op.garanties || [])
+    .filter(g => g.tranche === pp.tranche && (g.pret_lie || '') === (pp.ligne || ''))
+    .reduce((sum, g) => sum + (Number(g.quotite) || 0), 0);
+}
+
+function renderCtrlGaranties() {
+  const rows = [];
+  ctrlActiveOps().forEach(op => {
+    const opName = op.display_name || op.name || op.code || '';
+    (op.prets || []).forEach(pp => {
+      if (pp.non_garanti) return;
+      const cov = ctrlGarantieCoverage(op, pp);
+      if (cov >= 100) return; // couverture complète → alerte levée
+      rows.push({ opName, tranche: pp.tranche || '', pret: pp.ligne || '', montant: pp.montant_contrat || pp.montant_lo || pp.montant_sim || null, cov, manque: Math.max(0, 100 - cov) });
+    });
+  });
+  rows.sort((a, b) => b.manque - a.manque);
+  if (rows.length === 0) return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-shield-check"></i>Garanties manquantes / incomplètes</div><div class="subent-empty">Toutes les garanties sont complètes (ou prêts non garantis).</div></div>`;
+  const chip = (cov) => cov === 0 ? '<span class="ctrl-chip ctrl-chip-over">Aucune garantie</span>' : `<span class="ctrl-chip ctrl-chip-soon">${cov}% couvert</span>`;
+  const body = rows.map(r => `
+    <tr>
+      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}</td>
+      <td>${escapeHtml(r.tranche)}</td>
+      <td>${escapeHtml(r.pret)}</td>
+      <td style="text-align:right;">${r.montant ? fmtMontant(r.montant) : ''}</td>
+      <td>${chip(r.cov)}</td>
+      <td style="text-align:right;font-weight:600;color:var(--text-primary);">${r.manque}%</td>
+    </tr>`).join('');
+  return `
+    <div class="ctrl-block">
+      <div class="ctrl-block-title"><i class="ti ti-shield-check"></i>Garanties manquantes / incomplètes</div>
+      <table class="ctrl-table">
+        <thead><tr><th>Opération</th><th>Tranche</th><th>Prêt</th><th style="text-align:right;">Montant</th><th>Couverture</th><th style="text-align:right;">Manque</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderCtrlGoNoGo() {
+  const rows = [];
+  ctrlActiveOps().forEach(op => {
+    if (op.date_os) return; // OS déjà donné → contrôle levé
+    const tranches = op.tranches || [];
+    const prets = op.prets || [];
+    const agrOk = tranches.length > 0 && tranches.every(t => /obtenu|dfa|sign/i.test(t.statut_agrement || ''));
+    const finOk = prets.length > 0 && prets.every(pp => !!(pp.date_lo || pp.date_contrat) || /offre|contrat/i.test(pp.statut || ''));
+    const garOk = prets.filter(pp => !pp.non_garanti).every(pp => ctrlGarantieCoverage(op, pp) >= 100);
+    const pcOk = !!op.date_obt_pc;
+    const allOk = agrOk && finOk && garOk && pcOk;
+    rows.push({ opName: op.display_name || op.name || op.code || '', agrOk, finOk, garOk, pcOk, allOk });
+  });
+  if (rows.length === 0) return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-list-check"></i>Go / no-go avant OS</div><div class="subent-empty">Aucune opération en attente d'OS.</div></div>`;
+  const yn = (ok) => ok ? '<span class="ctrl-chip ctrl-chip-ok">OK</span>' : '<span class="ctrl-chip ctrl-chip-over">Non</span>';
+  const body = rows.map(r => `
+    <tr>
+      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}</td>
+      <td>${yn(r.agrOk)}</td>
+      <td>${yn(r.finOk)}</td>
+      <td>${yn(r.garOk)}</td>
+      <td>${yn(r.pcOk)}</td>
+      <td>${r.allOk ? '<span class="ctrl-chip ctrl-chip-ok">GO</span>' : '<span class="ctrl-chip ctrl-chip-over">NO-GO</span>'}</td>
+    </tr>`).join('');
+  return `
+    <div class="ctrl-block">
+      <div class="ctrl-block-title"><i class="ti ti-list-check"></i>Go / no-go avant OS</div>
+      <table class="ctrl-table">
+        <thead><tr><th>Opération</th><th>Agrément</th><th>LO / contrats</th><th>Garanties</th><th>PC</th><th>Verdict</th></tr></thead>
         <tbody>${body}</tbody>
       </table>
     </div>`;
@@ -7617,6 +7690,15 @@ function syncPrefinancementsFromPrets(op, t) {
   });
 }
 
+// Dérivation : un AAP tagué sur un prêt/subvention devient un tag général de l'opération (idempotent)
+function syncAapTagsFromEntities(op) {
+  if (!Array.isArray(op.tags)) op.tags = [];
+  const labels = new Set();
+  (op.prets || []).forEach(p => { if (p.aap_id != null && p.aap_id !== '') { const l = aapLabelById(p.aap_id); if (l) labels.add(l); } });
+  (op.subventions || []).forEach(sv => { if (sv.aap_id != null && sv.aap_id !== '') { const l = aapLabelById(sv.aap_id); if (l) labels.add(l); } });
+  labels.forEach(l => { if (!op.tags.some(t => String(t).toLowerCase() === l.toLowerCase())) op.tags.push(l); });
+}
+
 function saveOpEdits() {
   const op = findOp(selectedOpCode);
   if (!op) return;
@@ -7789,6 +7871,7 @@ function saveOpEdits() {
   // Dérivation auto des réservataires depuis les sources (ALS, agrément)
   syncReservatairesFromSources(op, op.tranches[selectedTrancheIdx]);
   syncPrefinancementsFromPrets(op, op.tranches[selectedTrancheIdx]);
+  syncAapTagsFromEntities(op);
 
   editMode = false;
   editSessionSnap = null;
@@ -8330,16 +8413,16 @@ function renderTrancheDetail() {
       <div class="section">
         <div class="section-label conv-loc"><i class="ti ti-file-text"></i>Convention de location</div>
         ${editableSelect('Convention signée', t.conv_loc_signee === true ? 'Oui' : (t.conv_loc_signee === false ? 'Non' : ''), 'conv_loc_signee', ['Oui', 'Non'], 'tranche-field')}
-        ${editableKV('Montant de loyer (€/m²)', t.conv_loc_montant_loyer, 'conv_loc_montant_loyer', 'number', 'tranche-field')}
-        ${editableKV('Date valeur loyer', t.conv_loc_date_valeur, 'conv_loc_date_valeur', 'text', 'tranche-field')}
+        ${editableKV('Accord redevance', t.conv_loc_montant_loyer, 'conv_loc_montant_loyer', 'number', 'tranche-field')}
+        ${editableKV('Date valeur redevance', t.conv_loc_date_valeur, 'conv_loc_date_valeur', 'text', 'tranche-field')}
         ${editableSelect('Grille', t.conv_loc_grille, 'conv_loc_grille', getRef('grilles_loyer'), 'tranche-field')}
       </div>
 
       ${renderSubvSection(subv, op)}
       ${renderPretsSection(prets, op)}
       ${renderGarantiesSection(garanties, op)}
-      ${renderPrefinSection(prefin, op)}
       ${renderAvenantsSection(avenants, op)}
+      ${renderPrefinSection(prefin, op)}
       ${renderReservatairesSection(reservataires, op)}
     `;
   }
