@@ -3392,6 +3392,13 @@
   .com-cal-li-op { color: var(--text-primary); font-weight: 500; flex: 1; min-width: 120px; }
   .com-cal-li-lieu { color: var(--text-tertiary); font-size: 11.5px; display: inline-flex; align-items: center; gap: 3px; }
   .com-cal-empty-msg { color: var(--text-tertiary); font-size: 12.5px; font-style: italic; padding: 6px 0; }
+  .charge-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .charge-sel-label { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+  .charge-chart-wrap { border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; background: var(--bg-secondary); }
+  .charge-svg { width: 100%; height: auto; display: block; }
+  .charge-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; justify-content: center; }
+  .charge-leg { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .charge-leg-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .jalon-montant {
     font-size: 10.5px; color: var(--text-secondary);
     margin-top: 1px; font-variant-numeric: tabular-nums;
@@ -4886,6 +4893,7 @@
       <div class="topnav-tab" data-view="tresorerie"><i class="ti ti-wallet"></i>Trésorerie</div>
       <div class="topnav-tab" data-view="aap"><i class="ti ti-bookmark"></i>AAP</div>
       <div class="topnav-tab" data-view="controles"><i class="ti ti-list-check"></i>Contrôles</div>
+      <div class="topnav-tab" data-view="charge"><i class="ti ti-chart-line"></i>Plan de charge</div>
     </div>
     <div class="topnav-spacer"></div>
   </div>
@@ -5212,6 +5220,14 @@
     <h1 class="dashboard-title">Contrôles & pilotage</h1>
     <p class="dashboard-sub">Vues transverses sur tout le portefeuille. D'autres contrôles (caducité des financements, clôtures d'agrément, go/no-go avant OS) viendront s'ajouter.</p>
     <div id="controlesContent"></div>
+  </div>
+</div>
+
+<div class="view" id="view-charge">
+  <div class="dashboard">
+    <h1 class="dashboard-title">Plan de charge</h1>
+    <p class="dashboard-sub">Nombre d'opérations actives par personne et par année. Une opération pèse de son démarrage (promesse / acte) à sa livraison.</p>
+    <div id="chargeContent"></div>
   </div>
 </div>
 
@@ -5766,6 +5782,7 @@ let editMode = false;
 let AAPS = [];
 let editingAapLid = null;
 let comitesCalMonth = null;
+let chargeRole = 'resp_op';
 let searchQuery = '';
 
 // ============== PHASES SYSTEM ==============
@@ -6613,6 +6630,94 @@ function renderCtrlGoNoGo() {
         <tbody>${body}</tbody>
       </table>
     </div>`;
+}
+
+// ============== PLAN DE CHARGE ==============
+function chargeYear(val) { const d = ctrlParseFr(val); return d ? d.getFullYear() : null; }
+function chargeStartYear(op) {
+  return chargeYear(op.date_promesse) || chargeYear(op.date_acte) || chargeYear(op.date_acte_auth) || chargeYear(op.date_depot_pc) || chargeYear(op.date_os) || null;
+}
+function chargeEndYear(op, sY) {
+  return chargeYear(op.date_livraison) || chargeYear(op.date_conv_loc) || (sY != null ? sY + 2 : null);
+}
+function chargePlanData(roleField) {
+  const ops = (DATA || []).filter(op => !op._deleted && !op.deleted && !op.is_deleted);
+  const rows = [];
+  let minY = Infinity, maxY = -Infinity;
+  ops.forEach(op => {
+    const person = ((op[roleField] || '').trim()) || '— Non attribué';
+    const sY = chargeStartYear(op);
+    if (sY == null) return;
+    const eY = chargeEndYear(op, sY) || sY;
+    rows.push({ person, sY, eY: Math.max(eY, sY) });
+    minY = Math.min(minY, sY); maxY = Math.max(maxY, eY);
+  });
+  if (!isFinite(minY)) { const y = new Date().getFullYear(); minY = y; maxY = y; }
+  if (maxY - minY > 9) maxY = minY + 9;
+  const years = []; for (let y = minY; y <= maxY; y++) years.push(y);
+  const counts = {}; const people = new Set();
+  rows.forEach(r => {
+    people.add(r.person);
+    counts[r.person] = counts[r.person] || {};
+    for (let y = Math.max(r.sY, minY); y <= Math.min(r.eY, maxY); y++) counts[r.person][y] = (counts[r.person][y] || 0) + 1;
+  });
+  return { years, people: [...people].sort(), counts };
+}
+
+function renderChargeChart(years, people, counts) {
+  const W = 820, H = 300, padL = 40, padR = 16, padT = 16, padB = 40;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  let maxC = 0;
+  people.forEach(p => years.forEach(y => { maxC = Math.max(maxC, counts[p]?.[y] || 0); }));
+  if (maxC === 0) maxC = 1;
+  const palette = ['#d85a30','#185fa5','#1d9e75','#b8860b','#7b5ea7','#c0392b','#2c7fb8','#16a085','#e67e22','#8e44ad'];
+  const xFor = (i) => padL + (years.length <= 1 ? plotW / 2 : i * plotW / (years.length - 1));
+  const yFor = (v) => padT + plotH - (v / maxC) * plotH;
+  const ticks = Math.min(maxC, 5);
+  let grid = '';
+  for (let t = 0; t <= ticks; t++) {
+    const v = Math.round(maxC * t / ticks);
+    const y = yFor(v);
+    grid += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" style="stroke:var(--border-color);" stroke-width="1"/>`;
+    grid += `<text x="${padL - 6}" y="${y + 3}" text-anchor="end" style="fill:var(--text-tertiary);font-size:10px;">${v}</text>`;
+  }
+  let xlab = '';
+  years.forEach((yr, i) => { xlab += `<text x="${xFor(i)}" y="${H - padB + 16}" text-anchor="middle" style="fill:var(--text-tertiary);font-size:10px;">${yr}</text>`; });
+  let lines = '';
+  people.forEach((p, pi) => {
+    const col = palette[pi % palette.length];
+    const pts = years.map((yr, i) => `${xFor(i).toFixed(1)},${yFor(counts[p]?.[yr] || 0).toFixed(1)}`);
+    lines += `<polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="2"/>`;
+    years.forEach((yr, i) => { lines += `<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(counts[p]?.[yr] || 0).toFixed(1)}" r="2.5" fill="${col}"/>`; });
+  });
+  const legend = people.map((p, pi) => `<span class="charge-leg"><span class="charge-leg-dot" style="background:${palette[pi % palette.length]};"></span>${escapeHtml(p)}</span>`).join('');
+  return `<div class="charge-chart-wrap"><svg viewBox="0 0 ${W} ${H}" class="charge-svg" preserveAspectRatio="xMidYMid meet">${grid}${xlab}${lines}</svg><div class="charge-legend">${legend}</div></div>`;
+}
+
+function renderCharge() {
+  const host = document.getElementById('chargeContent');
+  if (!host) return;
+  const roleLabels = { resp_op: "Chargé d'opération", charge_fin: 'Chargé de financement', developpeur: 'Développeur' };
+  if (!roleLabels[chargeRole]) chargeRole = 'resp_op';
+  const { years, people, counts } = chargePlanData(chargeRole);
+  const sel = `<div class="charge-toolbar">
+    <span class="charge-sel-label">Rôle :</span>
+    <select class="synth-filter-select" onchange="chargeRole=this.value; renderCharge();">
+      ${Object.entries(roleLabels).map(([k, v]) => `<option value="${k}"${chargeRole === k ? ' selected' : ''}>${v}</option>`).join('')}
+    </select>
+  </div>`;
+  let body;
+  if (people.length === 0) {
+    body = '<div class="subent-empty">Aucune opération avec ce rôle renseigné et des dates exploitables.</div>';
+  } else {
+    const chart = renderChargeChart(years, people, counts);
+    const head = `<tr><th>${escapeHtml(roleLabels[chargeRole])}</th>${years.map(y => `<th style="text-align:right;">${y}</th>`).join('')}</tr>`;
+    const trows = people.map(p => `<tr><td style="font-weight:600;color:var(--text-primary);">${escapeHtml(p)}</td>${years.map(y => `<td style="text-align:right;">${counts[p]?.[y] || ''}</td>`).join('')}</tr>`).join('');
+    const totals = `<tr><td style="font-weight:700;">Total</td>${years.map(y => { const t = people.reduce((sm, p) => sm + (counts[p]?.[y] || 0), 0); return `<td style="text-align:right;font-weight:700;">${t || ''}</td>`; }).join('')}</tr>`;
+    body = chart + `<table class="ctrl-table" style="margin-top:16px;"><thead>${head}</thead><tbody>${trows}</tbody><tfoot>${totals}</tfoot></table>`;
+  }
+  host.innerHTML = sel + body;
+  replaceTablerIcons(host);
 }
 
 function renderTrash() {
@@ -14082,6 +14187,7 @@ function switchToTab(viewName) {
   else if (viewName === 'accueil') { renderAccueil(); }
   else if (viewName === 'aap') { renderAAP(); }
   else if (viewName === 'controles') { renderControles(); }
+  else if (viewName === 'charge') { renderCharge(); }
   replaceTablerIcons();
 }
 // ============== END ACCUEIL ==============
@@ -15979,6 +16085,10 @@ document.querySelectorAll('.topnav-tab').forEach(tab => {
     }
     if (target === 'controles') {
       renderControles();
+      replaceTablerIcons();
+    }
+    if (target === 'charge') {
+      renderCharge();
       replaceTablerIcons();
     }
     if (target === 'suivi') {
