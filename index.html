@@ -15012,6 +15012,12 @@ function synthData(op) {
     agrCategorie: synthPerTranche(tranches, t => t.categorie_agrement),
     agrBeneficiaire: synthPerTranche(tranches, t => t.beneficiaire_agrement),
     agrLgts: synthAgrLgts(tranches),
+    convTypeRedevance: synthPerTranche(tranches, t => t.type_redevance),
+    convMontantRedevance: synthPerTranche(tranches, t => t.montant_redevance),
+    convAccordRedevance: synthPerTranche(tranches, t => t.conv_loc_montant_loyer),
+    convDateValeur: synthPerTranche(tranches, t => t.conv_loc_date_valeur),
+    convGrille: synthPerTranche(tranches, t => t.conv_loc_grille),
+    convDateAccordRedev: synthPerTranche(tranches, t => t.date_accord_redev),
     subvNb: subv.length, subvDem, subvNotif, subvNbNotif,
     pretsNb: prets.length, pretsSim, pretsLO, pretsContrat, pretsADem, pretsInstr, pretsLOObt, pretsSignes, pretsBanques,
     garNb: gar.length, garADem, garDem, garAccord, garDelib, garConv,
@@ -15164,6 +15170,18 @@ const SYNTH_TABS = [
       { label: '% réservé', get: d => PCT(d.resPctSum), align: 'num' },
       { label: 'Validés', get: d => NUM(d.resValid), align: 'num' },
       { label: 'En négo.', get: d => NUM(d.resNego), align: 'num' },
+    ]
+  },
+  { id: 'conv_loc', label: 'Conv. loc.', icon: 'receipt',
+    cols: [
+      { label: 'Conv. location', get: d => TXT(d.op.date_conv_loc) },
+      { label: 'Conv. APL', get: d => TXT(d.op.date_conv_apl) },
+      { label: 'Type redevance', get: d => TXT(d.convTypeRedevance) },
+      { label: 'Redevance (€/mois)', get: d => TXT(d.convMontantRedevance), align: 'num' },
+      { label: 'Accord redevance', get: d => TXT(d.convAccordRedevance) },
+      { label: 'Date valeur', get: d => TXT(d.convDateValeur) },
+      { label: 'Date accord redev.', get: d => TXT(d.convDateAccordRedev) },
+      { label: 'Grille', get: d => TXT(d.convGrille) },
     ]
   },
 ];
