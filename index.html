@@ -6443,7 +6443,7 @@ function searchMove(d) { if (!_searchRes.length) return; _searchIdx = (_searchId
 function searchSelect() { const i = _searchRes[_searchIdx]; if (i) { searchClose(); i.act(); } }
 function searchClose() { const box = document.getElementById('cmdpResults'); if (box) box.style.display = 'none'; }
 function searchGoView(v) { const tab = document.querySelector('.topnav-tab[data-view="' + v + '"]'); if (tab) tab.click(); const inp = document.getElementById('cmdpInput'); if (inp) inp.value = ''; }
-function searchOpenOp(uid) { const tab = document.querySelector('.topnav-tab[data-view="operations"]'); if (tab) tab.click(); selectOp(uid); const inp = document.getElementById('cmdpInput'); if (inp) inp.value = ''; }
+function searchOpenOp(uid) { const op = (DATA || []).find(o => o._uid === uid); if (!op) return; selectedOpCode = op._uid; selectedTrancheIdx = 0; switchView('ops'); renderAll(); searchClose(); const inp = document.getElementById('cmdpInput'); if (inp) inp.value = ''; }
 (function bindSearch() {
   const inp = document.getElementById('cmdpInput');
   if (inp) {
