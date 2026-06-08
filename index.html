@@ -3375,7 +3375,9 @@
   .com-cal-nav:hover { background: var(--bg-tertiary); }
   .com-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
   .com-cal-dow { text-align: center; font-size: 10px; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; padding-bottom: 4px; }
-  .com-cal-day { min-height: 44px; border-radius: 6px; border: 1px solid transparent; padding: 3px 5px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-primary); }
+  .com-cal-day { min-height: 46px; border-radius: 6px; border: 1px solid transparent; padding: 3px 4px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px; background: var(--bg-primary); }
+  .com-cal-tags { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+  .com-cal-tag { font-size: 9.5px; font-weight: 600; padding: 1px 4px; border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1.45; }
   .com-cal-day.com-cal-empty { background: transparent; }
   .com-cal-num { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
   .com-cal-day.has-com { border-color: var(--border-color-strong); background: var(--bg-tertiary); }
@@ -11604,8 +11606,11 @@ function renderComitesCalendar() {
   for (let day = 1; day <= daysInMonth; day++) {
     const items = byDay[day] || [];
     const isToday = new Date(y, m, day).getTime() === today.getTime();
-    const dots = items.slice(0, 4).map(it => `<span class="com-cal-dot" style="background:${comiteTypeConfig(it.comite.type).accent};" title="${escapeHtml(comiteTypeConfig(it.comite.type).full)} · ${escapeHtml(it.op.display_name || it.op.code || '')}"></span>`).join('');
-    cells += `<div class="com-cal-day${items.length ? ' has-com' : ''}${isToday ? ' today' : ''}"><span class="com-cal-num">${day}</span><span class="com-cal-dots">${dots}</span></div>`;
+    const tags = items.map(it => {
+      const conf = comiteTypeConfig(it.comite.type);
+      return `<span class="com-cal-tag" style="border-left:3px solid ${conf.accent};background:${conf.bg};color:${conf.txt};" title="${escapeHtml(conf.full)} · ${escapeHtml(it.op.display_name || it.op.code || '')}${it.comite.lieu ? ' · ' + escapeHtml(it.comite.lieu) : ''}">${escapeHtml(it.op.display_name || it.op.code || '?')}</span>`;
+    }).join('');
+    cells += `<div class="com-cal-day${items.length ? ' has-com' : ''}${isToday ? ' today' : ''}"><span class="com-cal-num">${day}</span><div class="com-cal-tags">${tags}</div></div>`;
   }
   const listHtml = monthList.length
     ? monthList.map(it => {
@@ -11622,7 +11627,6 @@ function renderComitesCalendar() {
         <button class="com-cal-nav" onclick="comitesCalNav(1)" title="Mois suivant">&rsaquo;</button>
       </div>
       <div class="com-cal-grid">${cells}</div>
-      <div class="com-cal-list">${listHtml}</div>
     </div>`;
   replaceTablerIcons(host);
 }
@@ -15003,13 +15007,36 @@ function synthData(op) {
       ? null
       : (totalBudget(op) - ((opTotalPrets(op) || 0) + (opTotalSubv(op) || 0) + (totalFondsPropres(op) || 0))),
     typeEtab, gestionnaire,
+    gestionnaireDetail: synthPerTranche(tranches, t => t.gestionnaire),
     yearProg, nSiap, agrStatut,
+    agrCategorie: synthPerTranche(tranches, t => t.categorie_agrement),
+    agrBeneficiaire: synthPerTranche(tranches, t => t.beneficiaire_agrement),
+    agrLgts: synthAgrLgts(tranches),
     subvNb: subv.length, subvDem, subvNotif, subvNbNotif,
     pretsNb: prets.length, pretsSim, pretsLO, pretsContrat, pretsADem, pretsInstr, pretsLOObt, pretsSignes, pretsBanques,
     garNb: gar.length, garADem, garDem, garAccord, garDelib, garConv,
     prefinNb: prefin.length, prefinCouvert, prefinTire, prefinPctTire, prefinEnCours, prefinSoldes, prefinDateFin,
     resNb: res.length, resLgts, resPctSum, resValid, resNego,
   };
+}
+
+function synthTrCode(t) { return t.code_full ? t.code_full.split('-').slice(1).join('-') : (t.id || ''); }
+function synthPerTranche(tranches, getVal) {
+  const parts = tranches.map(t => ({ code: synthTrCode(t), val: getVal(t) })).filter(p => p.val != null && p.val !== '' && p.val !== '—');
+  if (parts.length === 0) return '—';
+  const distinct = [...new Set(parts.map(p => String(p.val)))];
+  if (distinct.length === 1) return distinct[0];
+  return parts.map(p => `${p.val} (${p.code})`).join(' · ');
+}
+function synthVolBreakdown(t) {
+  const va = (t.vol_agree && Object.values(t.vol_agree).some(x => Number(x) > 0)) ? t.vol_agree : (t.vol || {});
+  return ['plai','plus','pls','pli','libre','autre'].filter(k => Number(va[k]) > 0).map(k => `${va[k]} ${k.toUpperCase()}`).join(' / ');
+}
+function synthAgrLgts(tranches) {
+  const parts = tranches.map(t => ({ code: synthTrCode(t), bd: synthVolBreakdown(t) })).filter(p => p.bd);
+  if (parts.length === 0) return '—';
+  if (parts.length === 1) return parts[0].bd;
+  return parts.map(p => `${p.code}: ${p.bd}`).join(' · ');
 }
 
 const TXT = (v) => (v == null || v === '' ? '—' : String(v));
@@ -15035,7 +15062,7 @@ const SYNTH_TABS = [
       { label: 'Resp. op', get: d => TXT(d.op.resp_op) },
       { label: 'Chargé fin', get: d => TXT(d.op.charge_fin) },
       { label: 'Promoteur', get: d => TXT(d.op.promoteur) },
-      { label: 'Gestionnaire', get: d => TXT(d.gestionnaire) },
+      { label: 'Gestionnaire', get: d => TXT(d.gestionnaireDetail) },
     ]
   },
   { id: 'travaux', label: 'Travaux & Calendrier', icon: 'clock',
@@ -15068,6 +15095,9 @@ const SYNTH_TABS = [
       { label: 'Année prog.', get: d => TXT(d.yearProg) },
       { label: 'N° SIAP / IODA', get: d => TXT(d.nSiap) },
       { label: 'Statut agrément', get: d => statusBadge(d.agrStatut), raw: true },
+      { label: 'Catégorie', get: d => TXT(d.agrCategorie) },
+      { label: 'Bénéficiaire', get: d => TXT(d.agrBeneficiaire) },
+      { label: 'Logements agréés', get: d => TXT(d.agrLgts) },
     ]
   },
   { id: 'financier', label: 'Financier', icon: 'cash',
