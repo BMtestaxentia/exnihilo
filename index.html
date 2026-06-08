@@ -2897,7 +2897,8 @@
   .topnav-tabs {
     display: flex; gap: 0; flex: 1; margin-left: 24px; align-items: center;
     min-width: 0;
-    overflow: visible;
+    overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: thin;
   }
   .topnav-tabs::-webkit-scrollbar { height: 4px; }
   .topnav-tabs::-webkit-scrollbar-thumb { background: var(--border-color-strong); border-radius: 2px; }
@@ -3050,7 +3051,7 @@
   .topnav-search:focus-within { background: var(--bg-primary); border-color: var(--info-accent); box-shadow: 0 0 0 2px rgba(24,95,165,0.12); }
   .topnav-search-input { flex: 1; border: none; background: transparent; outline: none; font-size: 13px; color: var(--text-primary); min-width: 0; }
   .topnav-search-kbd { font-size: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 1px 5px; color: var(--text-tertiary); }
-  .topnav-search-results { position: absolute; top: calc(100% + 6px); right: 0; width: 480px; max-width: 84vw; max-height: 64vh; overflow-y: auto; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 20px 50px -12px rgba(0,0,0,0.35); z-index: 1200; padding: 6px; }
+  .cmdp-dropdown { position: fixed; width: 460px; max-width: 90vw; max-height: 64vh; overflow-y: auto; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 20px 50px -12px rgba(0,0,0,0.35); z-index: 100001; padding: 6px; }
   @media (max-width: 1280px) { .topnav-search { width: 190px; } .topnav-search-kbd { display: none; } }
   .cmdp-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; cursor: pointer; }
   .cmdp-item.active { background: var(--info-bg); }
@@ -4545,20 +4546,14 @@
       <div class="topnav-tab" data-view="comites"><i class="ti ti-users"></i>Comités</div>
     </div>
     <div class="topnav-sep"></div>
-    <div class="topnav-group topnav-dropdown" id="analysesDropdown">
-      <div class="topnav-dropdown-trigger">
-        <i class="ti ti-chart-pie"></i>Analyses
-        <i class="ti ti-chevron-down topnav-dropdown-chevron"></i>
-      </div>
-      <div class="topnav-dropdown-menu">
-        <div class="topnav-tab" data-view="gantt"><i class="ti ti-clock"></i>Gantt</div>
-        <div class="topnav-tab" data-view="carte"><i class="ti ti-map-pin"></i>Carte</div>
-        <div class="topnav-tab" data-view="finances"><i class="ti ti-cash"></i>Finances</div>
-        <div class="topnav-tab" data-view="tresorerie"><i class="ti ti-wallet"></i>Trésorerie</div>
-        <div class="topnav-tab" data-view="aap"><i class="ti ti-bookmark"></i>AAP</div>
-        <div class="topnav-tab" data-view="controles"><i class="ti ti-list-check"></i>Contrôles</div>
-        <div class="topnav-tab" data-view="charge"><i class="ti ti-chart-line"></i>Plan de charge</div>
-      </div>
+    <div class="topnav-group topnav-group-analyses">
+      <div class="topnav-tab" data-view="gantt"><i class="ti ti-clock"></i>Gantt</div>
+      <div class="topnav-tab" data-view="carte"><i class="ti ti-map-pin"></i>Carte</div>
+      <div class="topnav-tab" data-view="finances"><i class="ti ti-cash"></i>Finances</div>
+      <div class="topnav-tab" data-view="tresorerie"><i class="ti ti-wallet"></i>Trésorerie</div>
+      <div class="topnav-tab" data-view="aap"><i class="ti ti-bookmark"></i>AAP</div>
+      <div class="topnav-tab" data-view="controles"><i class="ti ti-list-check"></i>Contrôles</div>
+      <div class="topnav-tab" data-view="charge"><i class="ti ti-chart-line"></i>Plan de charge</div>
     </div>
     <div class="topnav-spacer"></div>
   </div>
@@ -4576,7 +4571,6 @@
     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input id="cmdpInput" class="topnav-search-input" placeholder="Rechercher…" autocomplete="off">
     <kbd class="topnav-search-kbd">Ctrl K</kbd>
-    <div id="cmdpResults" class="topnav-search-results" style="display:none;"></div>
   </div>
   <div class="topnav-user">
     <button class="theme-toggle" id="themeToggle" title="Basculer mode sombre / clair">
@@ -6429,14 +6423,23 @@ function searchFilter(q) {
   _searchIdx = 0;
   searchRenderList();
 }
+function positionSearchBox() {
+  const box = document.getElementById('cmdpResults');
+  const inp = document.getElementById('cmdpInput');
+  if (!box || !inp) return;
+  const r = inp.getBoundingClientRect();
+  box.style.top = (r.bottom + 6) + 'px';
+  box.style.right = (window.innerWidth - r.right) + 'px';
+  box.style.left = 'auto';
+}
 function searchRenderList() {
   const box = document.getElementById('cmdpResults'); if (!box) return;
+  positionSearchBox();
   if (_searchRes.length === 0) { box.innerHTML = '<div class="cmdp-empty">Aucun résultat</div>'; box.style.display = 'block'; return; }
   box.innerHTML = _searchRes.map((i, idx) => '<div class="cmdp-item' + (idx === _searchIdx ? ' active' : '') + '" data-idx="' + idx + '"><span class="cmdp-kind">' + escapeHtml(i.kind) + '</span><span class="cmdp-label">' + escapeHtml(i.label) + '</span>' + (i.ctx ? '<span class="cmdp-sub">' + escapeHtml(i.ctx) + '</span>' : '') + '</div>').join('');
   box.style.display = 'block';
   box.querySelectorAll('.cmdp-item').forEach(el => {
     el.addEventListener('mousemove', () => { _searchIdx = +el.dataset.idx; searchHighlight(); });
-    el.addEventListener('mousedown', (e) => { e.preventDefault(); });
     el.addEventListener('click', () => { _searchIdx = +el.dataset.idx; searchSelect(); });
   });
 }
@@ -6447,6 +6450,7 @@ function searchClose() { const box = document.getElementById('cmdpResults'); if 
 function searchGoView(v) { const tab = document.querySelector('.topnav-tab[data-view="' + v + '"]'); if (tab) tab.click(); const inp = document.getElementById('cmdpInput'); if (inp) inp.value = ''; }
 function searchOpenOp(uid) { const op = (DATA || []).find(o => o._uid === uid); if (!op) return; selectedOpCode = op._uid; selectedTrancheIdx = 0; switchView('ops'); renderAll(); searchClose(); const inp = document.getElementById('cmdpInput'); if (inp) inp.value = ''; }
 (function bindSearch() {
+  try {
   const inp = document.getElementById('cmdpInput');
   if (inp) {
     inp.addEventListener('input', (e) => { _searchIndex = buildSearchIndex(); searchFilter(e.target.value); });
@@ -6465,8 +6469,10 @@ function searchOpenOp(uid) { const op = (DATA || []).find(o => o._uid === uid); 
   });
   document.addEventListener('mousedown', (e) => {
     const wrap = document.getElementById('topSearch');
-    if (wrap && !wrap.contains(e.target)) searchClose();
+    const box = document.getElementById('cmdpResults');
+    if (wrap && !wrap.contains(e.target) && box && !box.contains(e.target)) searchClose();
   });
+  } catch (e) { console.error('[ExNihilo] search bind error:', e); }
 })();
 
 function renderTrash() {
@@ -17103,5 +17109,6 @@ window.addEventListener('beforeunload', (e) => {
 });
 </script>
 
+<div id="cmdpResults" class="cmdp-dropdown" style="display:none;"></div>
 </body>
 </html>
