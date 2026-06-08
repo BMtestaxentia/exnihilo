@@ -4584,44 +4584,57 @@
 
 <script>
 (function(){
-  function showErr(msg){
-    try {
-      var b=document.getElementById('exnErr');
-      if(!b){
-        b=document.createElement('div'); b.id='exnErr';
-        b.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:200000;background:#b91c1c;color:#fff;font:12px/1.45 monospace;padding:10px 14px;white-space:pre-wrap;max-height:35vh;overflow:auto;box-shadow:0 -2px 12px rgba(0,0,0,.35)';
-        (document.body||document.documentElement).appendChild(b);
-      }
-      b.textContent='\u26A0 Erreur JS (copie-moi ce texte) :\n'+msg;
-    } catch(_){}
+  function mkBanner(id,bg,pos){
+    var b=document.getElementById(id);
+    if(!b){ b=document.createElement('div'); b.id=id;
+      b.style.cssText='position:fixed;left:0;right:0;z-index:200000;color:#fff;font:12px/1.5 monospace;padding:10px 14px;white-space:pre-wrap;max-height:42vh;overflow:auto;background:'+bg+';'+pos+':0';
+      (document.body||document.documentElement).appendChild(b);
+    }
+    return b;
   }
-  window.addEventListener('error', function(ev){
-    var where = ev.lineno ? (' [ligne '+ev.lineno+(ev.colno?':'+ev.colno:'')+']') : '';
-    showErr((ev.message||'erreur inconnue')+where);
-  });
-  window.addEventListener('unhandledrejection', function(ev){
-    showErr('Promise: '+((ev.reason&&ev.reason.message)||ev.reason||'?'));
-  });
-  // Navigation de secours : indépendante du binding principal, sans double-déclenchement
+  function showErr(msg){ try{ mkBanner('exnErr','#b91c1c','bottom').textContent='\u26A0 Erreur JS :\n'+msg; }catch(_){} }
+  function showInfo(msg){ try{ mkBanner('exnInfo','#0b6bcb','top').textContent='\u2139 Diagnostic (copie-moi tout ce texte) :\n'+msg; }catch(_){} }
+  window.addEventListener('error', function(ev){ showErr((ev.message||'?')+(ev.lineno?' [ligne '+ev.lineno+']':'')); });
+  window.addEventListener('unhandledrejection', function(ev){ showErr('Promise: '+((ev.reason&&ev.reason.message)||ev.reason||'?')); });
+
   document.addEventListener('click', function(e){
-    var tab = (e.target && e.target.closest) ? e.target.closest('.topnav-tab') : null;
-    if(!tab || !tab.dataset.view) return;
-    if(tab.classList.contains('active')) return;           // le handler principal a déjà basculé
-    var target = tab.dataset.view;
-    if(!document.getElementById('view-'+target)) return;
-    try {
-      if (typeof switchToTab === 'function') {
-        switchToTab(target);
-        if (target==='dashboard' && typeof renderDashboard==='function') renderDashboard();
-        if (target==='operations' && typeof renderOperations==='function') renderOperations();
-      } else {
+    var tab=(e.target&&e.target.closest)?e.target.closest('.topnav-tab'):null;
+    if(!tab||!tab.dataset.view) return;
+    if(tab.classList.contains('active')) return;
+    var target=tab.dataset.view;
+    var view=document.getElementById('view-'+target);
+    if(!view) return;
+    try{
+      if(typeof switchToTab==='function'){ switchToTab(target); }
+      else{
         document.querySelectorAll('.topnav-tab').forEach(function(t){t.classList.remove('active');});
         document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
-        tab.classList.add('active');
-        document.getElementById('view-'+target).classList.add('active');
+        tab.classList.add('active'); view.classList.add('active');
       }
-    } catch(err){ showErr('bascule '+target+' : '+((err&&err.message)||err)); }
+    }catch(err){ showErr('bascule '+target+' : '+((err&&err.message)||err)); }
   }, false);
+
+  window.addEventListener('load', function(){
+    setTimeout(function(){
+      try{
+        var L=[];
+        try { L.push('switchToTab='+(typeof switchToTab)); } catch(e){ L.push('switchToTab=REFERENCE_ERROR'); }
+        try { L.push('renderAccueil='+(typeof renderAccueil)); } catch(e){ L.push('renderAccueil=REFERENCE_ERROR'); }
+        var tabs=document.querySelectorAll('.topnav-tab');
+        L.push('nb_onglets='+tabs.length);
+        var op=document.querySelector('.topnav-tab[data-view=\"operations\"]');
+        if(op){
+          var r=op.getBoundingClientRect();
+          L.push('rect_onglet_ops='+Math.round(r.left)+','+Math.round(r.top)+' '+Math.round(r.width)+'x'+Math.round(r.height));
+          var el=document.elementFromPoint(r.left+r.width/2, r.top+r.height/2);
+          L.push('ELEMENT_AU_CLIC='+(el?(el.tagName.toLowerCase()+'.'+String(el.className||'').slice(0,60)):'null'));
+        } else { L.push('onglet_ops=INTROUVABLE'); }
+        var splash=document.querySelector('.loading-splash');
+        L.push('splash='+(splash?(splash.className.indexOf('hidden')>=0?'cache(ok)':'VISIBLE!!'):'absent'));
+        showInfo(L.join('\n'));
+      }catch(err){ showErr('diag: '+((err&&err.message)||err)); }
+    }, 1500);
+  });
 })();
 </script>
 
