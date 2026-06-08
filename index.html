@@ -2826,7 +2826,7 @@
 
   .topnav {
     background: var(--bg-primary); border-bottom: 1px solid var(--border-color);
-    padding: 0 24px; display: flex; align-items: center; gap: 24px;
+    padding: 0 24px; display: flex; align-items: center; gap: 16px;
     height: 56px; position: sticky; top: 0; z-index: 100;
   }
   .topnav-brand { font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 8px; }
@@ -3045,7 +3045,8 @@
   }
   /* Trigger marqué actif si une des sous-options est active */
   .topnav-dropdown:has(.topnav-tab.active) .topnav-dropdown-trigger { color: var(--info-text); font-weight: 600; }
-  .topnav-search { position: relative; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-tertiary); flex-shrink: 0; width: 260px; }
+  .topnav-search { position: relative; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-tertiary); flex-shrink: 1; min-width: 130px; width: 240px; }
+  .topnav-user { flex-shrink: 0; white-space: nowrap; }
   .topnav-search:focus-within { background: var(--bg-primary); border-color: var(--info-accent); box-shadow: 0 0 0 2px rgba(24,95,165,0.12); }
   .topnav-search-input { flex: 1; border: none; background: transparent; outline: none; font-size: 13px; color: var(--text-primary); min-width: 0; }
   .topnav-search-kbd { font-size: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 1px 5px; color: var(--text-tertiary); }
@@ -6435,7 +6436,8 @@ function searchRenderList() {
   box.style.display = 'block';
   box.querySelectorAll('.cmdp-item').forEach(el => {
     el.addEventListener('mousemove', () => { _searchIdx = +el.dataset.idx; searchHighlight(); });
-    el.addEventListener('mousedown', (e) => { e.preventDefault(); _searchIdx = +el.dataset.idx; searchSelect(); });
+    el.addEventListener('mousedown', (e) => { e.preventDefault(); });
+    el.addEventListener('click', () => { _searchIdx = +el.dataset.idx; searchSelect(); });
   });
 }
 function searchHighlight() { document.querySelectorAll('#cmdpResults .cmdp-item').forEach((el, i) => el.classList.toggle('active', i === _searchIdx)); }
