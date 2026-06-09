@@ -15172,6 +15172,19 @@ function synthData(op) {
   const garAccord = gar.filter(x => x.statut === 'Accord de principe reçu').length;
   const garDelib = gar.filter(x => x.statut === 'Délibération votée').length;
   const garConv = gar.filter(x => x.statut === 'Convention signée').length;
+  // Couverture garantie (%) : prévisionnelle (>= accord de principe) et actée (convention signée)
+  const _garantissable = prets.filter(p => !p.non_garanti && !/^\s*als\b/i.test(p.ligne || ''));
+  const _garBase = _garantissable.reduce((s, p) => s + (Number(p.montant_contrat) || Number(p.montant_lo) || Number(p.montant_sim) || 0), 0);
+  const _garMontant = (g) => {
+    if (Number(g.montant_couvert)) return Number(g.montant_couvert);
+    const p = prets.find(pp => (pp.ligne || '') === (g.pret_lie || '') && (pp.tranche || '') === (g.tranche || ''));
+    const m = p ? (Number(p.montant_contrat) || Number(p.montant_lo) || Number(p.montant_sim) || 0) : 0;
+    const q = Number(g.quotite) || 0;
+    return m * (q > 1 ? q / 100 : q);
+  };
+  const _garPrevStatuts = new Set(['Accord de principe reçu', 'Délibération votée', 'Convention signée']);
+  const garPctPrev = _garBase > 0 ? Math.min(gar.filter(x => _garPrevStatuts.has(x.statut)).reduce((s, g) => s + _garMontant(g), 0) / _garBase, 1) : 0;
+  const garPctActe = _garBase > 0 ? Math.min(gar.filter(x => x.statut === 'Convention signée').reduce((s, g) => s + _garMontant(g), 0) / _garBase, 1) : 0;
 
   // Préfinancements
   const prefinCouvert = prefin.reduce((s, x) => s + (Number(x.montant_couvert) || 0), 0);
@@ -15224,7 +15237,7 @@ function synthData(op) {
     convDateAccordRedev: synthPerTranche(tranches, t => t.date_accord_redev),
     subvNb: subv.length, subvDem, subvNotif, subvNbNotif,
     pretsNb: prets.length, pretsSim, pretsLO, pretsContrat, pretsADem, pretsInstr, pretsLOObt, pretsSignes, pretsBanques,
-    garNb: gar.length, garADem, garDem, garAccord, garDelib, garConv,
+    garNb: gar.length, garADem, garDem, garAccord, garDelib, garConv, garPctPrev, garPctActe,
     prefinNb: prefin.length, prefinCouvert, prefinTire, prefinPctTire, prefinEnCours, prefinSoldes, prefinDateFin,
     resNb: new Set(res.map(x => (x.reservataire || x.entite || '').trim().toLowerCase()).filter(Boolean)).size, resLgts, resPctSum, resValid, resNego,
   };
@@ -15354,6 +15367,8 @@ const SYNTH_TABS = [
       { label: 'Accord principe', get: d => NUM(d.garAccord), align: 'num' },
       { label: 'Délib votée', get: d => NUM(d.garDelib), align: 'num' },
       { label: 'Conv. signée', get: d => NUM(d.garConv), align: 'num' },
+      { label: 'Gar. prévis. (%)', get: d => PCT(d.garPctPrev), align: 'num' },
+      { label: 'Gar. actée (%)', get: d => PCT(d.garPctActe), align: 'num' },
     ]
   },
   { id: 'prefinancements', label: 'Préfinancements', icon: 'clock',
