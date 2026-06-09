@@ -15067,6 +15067,7 @@ function setupGanttDragHandlers() {
 let synthActiveTab = storageGet('synthTab') || 'identite';
 let synthFilter = '';
 let synthFilters = { phase: '', region: '', equipe: '', type_travaux: '' };
+let synthDateFilter = { field: 'date_os', from: '', to: '' };
 let synthSort = { tabId: null, colIdx: null, direction: null };
 let synthSavedViews = (() => {
   try {
@@ -15423,6 +15424,7 @@ function renderSynthTabs() {
         Object.keys(synthFilters).forEach(k => {
           if (!common.includes(k)) delete synthFilters[k];
         });
+        synthDateFilter = { field: 'date_os', from: '', to: '' };
       }
       synthActiveTab = el.dataset.synthTab;
       storageSet('synthTab', synthActiveTab);
@@ -15432,6 +15434,12 @@ function renderSynthTabs() {
       replaceTablerIcons();
     });
   });
+}
+
+function synthDateToYM(v) {
+  if (!v) return null;
+  const m = String(v).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return m ? (m[3] + '-' + m[2].padStart(2, '0')) : null;
 }
 
 function renderSynthTable() {
@@ -15462,6 +15470,13 @@ function renderSynthTable() {
     for (const f of tabFilters) {
       const val = synthFilters[f.id];
       if (val && !f.match(op, val)) return false;
+    }
+    // Filtre de période (onglet Travaux & Calendrier)
+    if (synthActiveTab === 'travaux' && synthDateFilter.field && (synthDateFilter.from || synthDateFilter.to)) {
+      const ym = synthDateToYM(op[synthDateFilter.field]);
+      if (!ym) return false;
+      if (synthDateFilter.from && ym < synthDateFilter.from) return false;
+      if (synthDateFilter.to && ym > synthDateFilter.to) return false;
     }
     return true;
   });
@@ -15573,17 +15588,30 @@ function renderSynthContextFilters() {
   const container = document.getElementById('synthContextFilters');
   if (!container) return;
   const filters = TAB_FILTERS[synthActiveTab] || [];
-  if (filters.length === 0) {
-    container.innerHTML = '';
-    return;
-  }
-  container.innerHTML = filters.map(f => {
+  let html = filters.map(f => {
     const opts = f.source();
     const optsHtml = ['<option value="">— ' + escapeHtml(f.label) + ' —</option>']
       .concat(opts.map(o => `<option value="${escapeHtml(o)}"${synthFilters[f.id] === o ? ' selected' : ''}>${escapeHtml(o)}</option>`))
       .join('');
     return `<select class="synth-filter-select synth-filter-contextual" data-filter="${f.id}">${optsHtml}</select>`;
   }).join('');
+
+  // Filtre de période (onglet Travaux & Calendrier)
+  if (synthActiveTab === 'travaux') {
+    const dateFields = [
+      ['date_os', 'Date OS'], ['date_livraison', 'Livraison'],
+      ['date_depot_pc', 'Dépôt PC'], ['date_obt_pc', 'Obt. PC'],
+      ['date_promesse', 'Promesse'], ['date_acte_auth', 'Acte auth.'],
+    ];
+    const fieldOpts = dateFields.map(([k, lbl]) => `<option value="${k}"${synthDateFilter.field === k ? ' selected' : ''}>${escapeHtml(lbl)}</option>`).join('');
+    html += `<select class="synth-filter-select synth-filter-contextual" id="synthDateField" title="Date filtrée">${fieldOpts}</select>`
+      + `<input type="month" class="synth-filter-select synth-filter-contextual" id="synthDateFrom" value="${synthDateFilter.from}" title="De (mois)">`
+      + `<input type="month" class="synth-filter-select synth-filter-contextual" id="synthDateTo" value="${synthDateFilter.to}" title="À (mois)">`;
+  }
+
+  if (!html) { container.innerHTML = ''; return; }
+  container.innerHTML = html;
+
   // Wire events on newly created selects
   container.querySelectorAll('select[data-filter]').forEach(sel => {
     sel.addEventListener('change', (e) => {
@@ -15591,6 +15619,12 @@ function renderSynthContextFilters() {
       renderSynthTable();
     });
   });
+  const dF = container.querySelector('#synthDateField');
+  const dFrom = container.querySelector('#synthDateFrom');
+  const dTo = container.querySelector('#synthDateTo');
+  if (dF) dF.addEventListener('change', e => { synthDateFilter.field = e.target.value; renderSynthTable(); });
+  if (dFrom) dFrom.addEventListener('change', e => { synthDateFilter.from = e.target.value; renderSynthTable(); });
+  if (dTo) dTo.addEventListener('change', e => { synthDateFilter.to = e.target.value; renderSynthTable(); });
 }
 
 // ============== SAVED VIEWS for Synthese ==============
@@ -15710,6 +15744,7 @@ function renderOpTable() {
     resetBtn.addEventListener('click', () => {
       synthFilter = '';
       synthFilters = { phase: '', region: '', equipe: '', type_travaux: '' };
+      synthDateFilter = { field: 'date_os', from: '', to: '' };
       if (filterInput) filterInput.value = '';
       document.querySelectorAll('.synth-filter-select[data-filter]').forEach(s => s.value = '');
       renderSynthContextFilters();
