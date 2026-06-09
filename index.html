@@ -2202,6 +2202,16 @@
     border-color: rgba(48, 200, 215, 0.4);
   }
   .op-row-tag i, .op-row-tag .tabler-svg-icon { font-size: 9.5px; }
+  .op-row-tag.op-row-aap {
+    background: rgba(176, 121, 31, 0.13);
+    color: #9a6614;
+    border-color: rgba(176, 121, 31, 0.4);
+  }
+  [data-theme="dark"] .op-row-tag.op-row-aap {
+    background: rgba(220, 170, 70, 0.16);
+    color: #e3b768;
+    border-color: rgba(220, 170, 70, 0.4);
+  }
   .op-tags-wrap {
     display: inline-flex; flex-wrap: wrap; align-items: center;
     gap: 4px; margin-left: 4px;
@@ -6362,6 +6372,12 @@ function aapLabelById(id) {
   const a = AAPS.find(x => String(x._supabase_id) === String(id));
   return a ? (a.intitule || ('AAP #' + id)) : '';
 }
+function aapTagById(id) {
+  if (id === null || id === undefined || id === '') return '';
+  const a = AAPS.find(x => String(x._supabase_id) === String(id));
+  if (!a) return '';
+  return a.tag || a.intitule || ('AAP #' + id);
+}
 function aapSelectOptions(selectedId) {
   return AAPS.filter(a => a._supabase_id != null)
     .map(a => `<option value="${a._supabase_id}"${String(selectedId)===String(a._supabase_id)?' selected':''}>${escapeHtml(a.intitule || ('AAP #' + a._supabase_id))}</option>`).join('');
@@ -8110,11 +8126,8 @@ function syncPrefinancementsFromPrets(op, t) {
 // Dérivation : un AAP tagué sur un prêt/subvention devient un tag général de l'opération (idempotent)
 function syncAapTagsFromEntities(op) {
   if (!Array.isArray(op.tags)) op.tags = [];
-  const labels = new Set();
-  if (op.aap_id != null && op.aap_id !== '') { const l = aapLabelById(op.aap_id); if (l) labels.add(l); }
-  (op.prets || []).forEach(p => { if (p.aap_id != null && p.aap_id !== '') { const l = aapLabelById(p.aap_id); if (l) labels.add(l); } });
-  (op.subventions || []).forEach(sv => { if (sv.aap_id != null && sv.aap_id !== '') { const l = aapLabelById(sv.aap_id); if (l) labels.add(l); } });
-  labels.forEach(l => { if (!op.tags.some(t => String(t).toLowerCase() === l.toLowerCase())) op.tags.push(l); });
+  // L'AAP tagué sur l'opération est affiché en direct (tag court) sur la fiche
+  // et dans la liste, sans être recopié dans les tags libres.
 }
 
 function saveOpEdits() {
@@ -8349,7 +8362,16 @@ function renderSidebar() {
           <span class="op-name">${escapeHtml(op.display_name)}</span>
           <span class="op-code">${escapeHtml(op.code || op.sheet)}</span>
         </div>
-        ${tags.length > 0 ? `<div class="op-row-tag-line">${tags.map(t => `<span class="op-row-tag"><i class="ti ti-tag"></i>${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+        ${(() => {
+          const aapT = (op.aap_id != null && op.aap_id !== '') ? aapTagById(op.aap_id) : '';
+          const chips = [];
+          if (aapT) {
+            const aapFull = ((AAPS.find(x => String(x._supabase_id) === String(op.aap_id)) || {}).intitule) || '';
+            chips.push(`<span class="op-row-tag op-row-aap" title="${escapeHtml(aapFull)}"><i class="ti ti-bookmark"></i>${escapeHtml(aapT)}${op.aap_tranche ? ' · ' + escapeHtml(op.aap_tranche) : ''}</span>`);
+          }
+          tags.forEach(t => chips.push(`<span class="op-row-tag"><i class="ti ti-tag"></i>${escapeHtml(t)}</span>`));
+          return chips.length ? `<div class="op-row-tag-line">${chips.join('')}</div>` : '';
+        })()}
         <div class="op-meta">
           <span style="width:8px;height:8px;border-radius:50%;background:${op.badge_dot};display:inline-block"></span>
           ${escapeHtml(op.statut)} · ${op.tranches.length} tr.
