@@ -15427,10 +15427,10 @@ function synthSortValue(col, d) {
 }
 
 // Per-op aggregation — computed fresh each render to reflect edits
-function synthData(op) {
+function synthData(op, pretsFilter) {
   const tranches = op.tranches || [];
   const subv = op.subventions || [];
-  const prets = op.prets || [];
+  const prets = (op.prets || []).filter(p => !pretsFilter || pretsFilter(p));
   const gar = op.garanties || [];
   const prefin = op.prefinancements || [];
   const res = op.reservataires || [];
@@ -15742,6 +15742,10 @@ function renderSynthTable() {
   // Free-text search filter
   const q = synthFilter.trim().toLowerCase();
   const tabFilters = TAB_FILTERS[synthActiveTab] || [];
+  // En vue Prêts filtrée par banque : ne garder, dans la ligne, que les prêts de la banque filtrée
+  const pretBankFilter = (synthActiveTab === 'prets' && synthFilters.pret_banque)
+    ? (p => _synthEq(p.financeur, synthFilters.pret_banque))
+    : null;
   let filtered = DATA.filter(op => {
     if (q) {
       const hay = [op.display_name, op.code, op.commune, op.departement,
@@ -15777,7 +15781,7 @@ function renderSynthTable() {
   if (sortActive) {
     const col = tab.cols[synthSort.colIdx];
     const dir = synthSort.direction === 'asc' ? 1 : -1;
-    filtered = filtered.slice().map(op => ({ op, d: synthData(op) }));
+    filtered = filtered.slice().map(op => ({ op, d: synthData(op, pretBankFilter) }));
     filtered.sort((a, b) => {
       const av = synthSortValue(col, a.d);
       const bv = synthSortValue(col, b.d);
@@ -15828,7 +15832,7 @@ function renderSynthTable() {
   }
 
   const bodyHtml = '<tbody>' + filtered.map(op => {
-    const d = synthData(op);
+    const d = synthData(op, pretBankFilter);
     return `
       <tr class="clickable" data-op="${op._uid}">
         <td class="sticky-left code-cell">${escapeHtml(op.code || op.sheet || '—')}</td>
