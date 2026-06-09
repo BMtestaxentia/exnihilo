@@ -2897,7 +2897,7 @@
   .topnav {
     background: var(--bg-primary); border-bottom: 1px solid var(--border-color);
     padding: 0 24px; display: flex; align-items: center; gap: 16px;
-    height: 56px; position: sticky; top: 0; z-index: 100;
+    height: 56px; position: sticky; top: 0; z-index: 1500;
   }
   .topnav-brand { font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 8px; }
   .topnav-brand i { color: var(--info-accent); }
@@ -15371,6 +15371,7 @@ let synthActiveViewId = null;
 
 // Contextual filters by synth tab (in addition to the common ones)
 // Each filter: { id, label, source(): array of options, match(op, val): boolean }
+function _synthEq(a, b) { return String(a == null ? '' : a).trim().toLowerCase() === String(b == null ? '' : b).trim().toLowerCase(); }
 const TAB_FILTERS = {
   agrements: [
     { id: 'annee_prog', label: 'Année prog.', source: () => {
@@ -15379,25 +15380,27 @@ const TAB_FILTERS = {
       return [...years].sort();
     }, match: (op, val) => (op.tranches || []).some(t => String(t.annee_prog) === val) },
     { id: 'statut_agrement', label: 'Statut agrément', source: () => getRef('statuts_agrement'),
-      match: (op, val) => (op.tranches || []).some(t => t.statut_agrement === val) },
+      match: (op, val) => (op.tranches || []).some(t => _synthEq(t.statut_agrement, val)) },
     { id: 'famille_agrement', label: 'Famille agrément', source: () => getRef('familles_agrement'),
-      match: (op, val) => (op.tranches || []).some(t => t.famille_agrement === val) },
+      match: (op, val) => (op.tranches || []).some(t => _synthEq(t.famille_agrement, val)) },
   ],
   prets: [
-    { id: 'pret_banque', label: 'Banque', source: () => getRef('banques'),
-      match: (op, val) => (op.prets || []).some(p => p.financeur === val) },
+    { id: 'pret_banque', label: 'Banque',
+      source: () => [...new Set((DATA || []).flatMap(op => (op.prets || []).map(p => (p.financeur || '').trim())).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+      match: (op, val) => (op.prets || []).some(p => _synthEq(p.financeur, val)) },
     { id: 'pret_statut', label: 'Statut prêt', source: () => getRef('statuts_pret'),
-      match: (op, val) => (op.prets || []).some(p => p.statut === val) },
+      match: (op, val) => (op.prets || []).some(p => _synthEq(p.statut, val)) },
   ],
   subventions: [
     { id: 'subv_statut', label: 'Statut subv.', source: () => getRef('statuts_subv'),
-      match: (op, val) => (op.subventions || []).some(s => s.statut === val) },
+      match: (op, val) => (op.subventions || []).some(s => _synthEq(s.statut, val)) },
   ],
   garanties: [
-    { id: 'garant', label: 'Garant', source: () => getRef('garants'),
-      match: (op, val) => (op.garanties || []).some(g => g.garant === val) },
+    { id: 'garant', label: 'Garant',
+      source: () => [...new Set((DATA || []).flatMap(op => (op.garanties || []).map(g => (g.garant || '').trim())).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+      match: (op, val) => (op.garanties || []).some(g => _synthEq(g.garant, val)) },
     { id: 'gar_statut', label: 'Statut garantie', source: () => getRef('statuts_garantie'),
-      match: (op, val) => (op.garanties || []).some(g => g.statut === val) },
+      match: (op, val) => (op.garanties || []).some(g => _synthEq(g.statut, val)) },
   ],
 };
 
