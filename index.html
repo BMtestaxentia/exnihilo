@@ -15184,11 +15184,9 @@ function synthData(op) {
 
   // Réservataires
   const resLgts = res.reduce((s, x) => s + (Number(x.nb_logements) || 0), 0);
-  const resPctSum = res.reduce((s, x) => {
-    const v = Number(x.pct_reserve);
-    if (!v) return s;
-    return s + (v <= 1 ? v : v / 100);
-  }, 0);
+  // % réservé = logements réservés / total logements de l'op (et non somme des % par tranche)
+  const _opLgtsRes = totalLgts(op) || 0;
+  const resPctSum = _opLgtsRes > 0 ? Math.min(resLgts / _opLgtsRes, 1) : 0;
   const resValid = res.filter(x => ['Validé','Conventionné','DU sur opération'].includes(x.etape)).length;
   const resNego = res.filter(x => ['À demander','En négociation'].includes(x.etape)).length;
 
@@ -15228,7 +15226,7 @@ function synthData(op) {
     pretsNb: prets.length, pretsSim, pretsLO, pretsContrat, pretsADem, pretsInstr, pretsLOObt, pretsSignes, pretsBanques,
     garNb: gar.length, garADem, garDem, garAccord, garDelib, garConv,
     prefinNb: prefin.length, prefinCouvert, prefinTire, prefinPctTire, prefinEnCours, prefinSoldes, prefinDateFin,
-    resNb: res.length, resLgts, resPctSum, resValid, resNego,
+    resNb: new Set(res.map(x => (x.reservataire || x.entite || '').trim().toLowerCase()).filter(Boolean)).size, resLgts, resPctSum, resValid, resNego,
   };
 }
 
