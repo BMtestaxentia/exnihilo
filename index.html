@@ -5298,6 +5298,7 @@ const REFERENTIELS = {
   zones_abc: { label: 'Zones ABC', items: [] },
   regions: { label: 'Régions', items: [] },
   oui_non: { label: 'Oui / Non', items: [] },
+  notaires: { label: 'Notaires', items: [] },
 
   // Agrément
   familles_agrement: { label: "Familles d'agrément", items: [] },
@@ -8090,7 +8091,7 @@ function saveOpEdits() {
   if (_beforeSnap) {
     const trackedOpFields = [
       'display_name','code','adresse','code_postal','commune','departement','region','zone_abc',
-      'developpeur','resp_op','charge_fin','promoteur','vefa_mod','type_travaux',
+      'developpeur','resp_op','charge_fin','promoteur','vefa_mod','type_travaux','notaire',
       'date_promesse','date_acte','date_depot_pc','date_obtention_pc','date_obt_pc',
       'date_os','date_livraison','date_conv_loc','date_conv_apl','date_ca_axentia',
       'phase_actuelle','label_certif','mode_constructif','mode_chauffage','nb_batiments',
@@ -8432,6 +8433,7 @@ function renderOpDetail() {
       ${editableKV('Resp opération', op.resp_op, 'resp_op')}
       ${editableKV('Chargé de fin', op.charge_fin, 'charge_fin')}
       ${editableKV('Promoteur', op.promoteur, 'promoteur')}
+      ${editableSelect('Notaire', op.notaire, 'notaire', (op.notaire && !getRef('notaires').includes(op.notaire)) ? [op.notaire, ...getRef('notaires')] : getRef('notaires'))}
     </div>
 
     <div class="section">
@@ -15287,6 +15289,7 @@ const SYNTH_TABS = [
       { label: 'Chargé fin', get: d => TXT(d.op.charge_fin) },
       { label: 'Promoteur', get: d => TXT(d.op.promoteur) },
       { label: 'Gestionnaire', get: d => TXT(d.gestionnaireDetail) },
+      { label: 'Notaire', get: d => TXT(d.op.notaire) },
     ]
   },
   { id: 'travaux', label: 'Travaux & Calendrier', icon: 'clock',
@@ -16539,6 +16542,7 @@ async function loadFromSupabase() {
         latitude: row.latitude,
         longitude: row.longitude,
         vefa_mod: row.vefa_mod || '',
+        notaire: row.notaire || '',
         type_travaux: row.type_travaux || '',
         maitrise_fonciere: row.maitrise_fonciere || '',
         anru: row.anru || '',
@@ -16992,6 +16996,7 @@ async function saveOpToSupabase(op) {
       latitude: op.latitude,
       longitude: op.longitude,
       vefa_mod: op.vefa_mod,
+      notaire: op.notaire,
       type_travaux: op.type_travaux,
       maitrise_fonciere: op.maitrise_fonciere,
       anru: op.anru,
