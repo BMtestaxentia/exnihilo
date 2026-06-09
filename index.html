@@ -5386,6 +5386,8 @@ const REFERENTIELS = {
   regions: { label: 'Régions', items: [] },
   oui_non: { label: 'Oui / Non', items: [] },
   notaires: { label: 'Notaires', items: [] },
+  public: { label: 'Public visé', items: [] },
+  nature: { label: "Nature de l'opération", items: [] },
 
   // Agrément
   familles_agrement: { label: "Familles d'agrément", items: [] },
@@ -6939,7 +6941,7 @@ function buildSearchIndex() {
     add('Code', op.code); add('Commune', op.commune); add('Département', op.departement); add('Région', op.region); add('Zone', op.zone_abc);
     add('Resp. op', op.resp_op); add('Chargé fin', op.charge_fin); add('Développeur', op.developpeur); add('Promoteur', op.promoteur);
     (op.tags || []).forEach(t => add('Tag', t));
-    (op.tranches || []).forEach(t => { add('Gestionnaire', t.gestionnaire); add('Type structure', t.type_structure); add('N° SIAP', t.n_siap); add('N° LÉON', t.n_leon); add('Catégorie agr.', t.categorie_agrement); add('Bénéficiaire', t.beneficiaire_agrement); });
+    (op.tranches || []).forEach(t => { add('Gestionnaire', t.gestionnaire); add('Type structure', t.type_structure); add('N° SIAP', t.n_siap); add('N° LÉON', t.n_leon); add('Nature', t.nature); add('Public', t.public_cible); });
     (op.prets || []).forEach(pp => { add('Financeur', pp.financeur); add('Ligne prêt', pp.ligne); add('N° contrat', pp.n_contrat); add('N° dossier', pp.n_dossier); add('Contact', pp.contact); });
     (op.garanties || []).forEach(g => { add('Garant', g.garant); add('Contact', g.contact); });
     (op.subventions || []).forEach(sv => { add('Financeur subv.', sv.financeur); add('Subvention', sv.financement); add('Contact', sv.contact); add('N° arrêté', sv.n_arrete); });
@@ -8842,11 +8844,11 @@ function renderTrancheDetail() {
         ${editableKV('Date dépôt', t.date_depot_agr, 'date_depot_agr', 'text', 'tranche-field')}
         ${editableKV('Date butoir dépôt', t.date_butoir_depot, 'date_butoir_depot', 'text', 'tranche-field')}
         ${editableKV('Date DFA', t.date_dfa, 'date_dfa', 'text', 'tranche-field')}
-        ${editableKV('Date clôture agrément', t.date_cloture_agrement, 'date_cloture_agrement', 'text', 'tranche-field')}
+        ${editableKV('Date butoir de clôture', t.date_cloture_agrement, 'date_cloture_agrement', 'text', 'tranche-field')}
         ${editableSelect('Famille agrément', t.famille_agrement, 'famille_agrement', getRef('familles_agrement'), 'tranche-field')}
         ${editableSelect('ULS / RHVS', t.uls_rhvs, 'uls_rhvs', getRef('uls_rhvs'), 'tranche-field')}
-        ${editableKV('Catégorie', t.categorie_agrement, 'categorie_agrement', 'text', 'tranche-field')}
-        ${editableKV('Bénéficiaire', t.beneficiaire_agrement, 'beneficiaire_agrement', 'text', 'tranche-field')}
+        ${editableSelect('Nature', t.nature, 'nature', (t.nature && !getRef('nature').includes(t.nature)) ? [t.nature, ...getRef('nature')] : getRef('nature'), 'tranche-field')}
+        ${editableSelect('Public', t.public_cible, 'public_cible', (t.public_cible && !getRef('public').includes(t.public_cible)) ? [t.public_cible, ...getRef('public')] : getRef('public'), 'tranche-field')}
         ${(t.vol_agree && Number(t.vol_agree.plai) > 0) ? editableKV('PLAI adapté (nb logts)', t.plai_adapte, 'plai_adapte', 'number', 'tranche-field') : ''}
         ${editableNotes(t.detail_logements, 'detail_logements', 'tranche-field', 'Ex: Dont 75 PLAI T1 prime · 22 PLAI T2 standard…')}
       </div>
@@ -14507,6 +14509,7 @@ const SUIVI_CATS = {
   'Préfinancement':   { color: '#0d7a86' },
   'Conventionnement': { color: '#b3437f' },
   'Comité':           { color: '#555e6d' },
+  'AAP':              { color: '#d4730a' },
 };
 
 function computeTasks(op) {
@@ -14575,6 +14578,10 @@ function computeTasks(op) {
       const d = parseDateStr(t.date_agrement || t.date_dfa); const dl = d ? addMonths(d, 18) : null;
       if (dl) add('Agrément', `Lancer l'OS avant caducité d'agrément${trc ? ' ' + trc : ''}`, dl, { detail: `caducité le ${fmt(dl)}` });
     }
+    if (t.date_cloture_agrement && !op.date_os) {
+      const dc = parseDateStr(t.date_cloture_agrement);
+      if (dc) add('Agrément', `Clôturer l'agrément avant la date butoir${trc ? ' ' + trc : ''}`, dc, { detail: `clôture le ${fmt(dc)}` });
+    }
   });
 
   // CALENDRIER
@@ -14609,6 +14616,18 @@ function computeTasks(op) {
       if (d && dAfter(d) >= -7) add('Comité', `Préparer le comité ${c.type || ''} du ${c.date}`, d);
     }
   });
+
+  // AAP — échéance de candidature de l'appel à projets tagué sur l'opération
+  if (op.aap_id != null && op.aap_id !== '' && !isDelivered && typeof AAPS !== 'undefined') {
+    const aap = AAPS.find(a => String(a._supabase_id) === String(op.aap_id));
+    if (aap && (aap.statut || '') !== 'Clôturé') {
+      const dl = parseDateStr(aap.date_limite);
+      if (dl) {
+        const tagLbl = aap.tag || aap.intitule || 'AAP';
+        add('AAP', `Déposer le dossier ${tagLbl}`, dl, { detail: `date limite de candidature : ${fmt(dl)}` });
+      }
+    }
+  }
 
   return tasks;
 }
@@ -15495,8 +15514,8 @@ function synthData(op) {
     typeEtab, gestionnaire,
     gestionnaireDetail: synthPerTranche(tranches, t => t.gestionnaire),
     yearProg, nSiap, agrStatut,
-    agrCategorie: synthPerTranche(tranches, t => t.categorie_agrement),
-    agrBeneficiaire: synthPerTranche(tranches, t => t.beneficiaire_agrement),
+    agrCategorie: synthPerTranche(tranches, t => t.nature),
+    agrBeneficiaire: synthPerTranche(tranches, t => t.public_cible),
     agrLgts: synthAgrLgts(tranches),
     convTypeRedevance: synthPerTranche(tranches, t => t.type_redevance),
     convMontantRedevance: synthPerTranche(tranches, t => t.montant_redevance),
@@ -15588,8 +15607,8 @@ const SYNTH_TABS = [
       { label: 'Année prog.', get: d => TXT(d.yearProg) },
       { label: 'N° SIAP / IODA', get: d => TXT(d.nSiap) },
       { label: 'Statut agrément', get: d => statusBadge(d.agrStatut), raw: true },
-      { label: 'Catégorie', get: d => TXT(d.agrCategorie) },
-      { label: 'Bénéficiaire', get: d => TXT(d.agrBeneficiaire) },
+      { label: 'Nature', get: d => TXT(d.agrCategorie) },
+      { label: 'Public', get: d => TXT(d.agrBeneficiaire) },
       { label: 'Logements agréés', get: d => TXT(d.agrLgts) },
     ]
   },
@@ -16951,6 +16970,7 @@ function mapTrancheFromSupabase(t) {
     gestionnaire: t.gestionnaire || '',
     n_siap: t.n_siap || '',
     public_cible: t.public_cible || '',
+    nature: t.nature || '',
     nb_chambres: t.nb_chambres,
     notes: t.notes || '',
     accord_redevance: t.accord_redevance,
@@ -17658,6 +17678,7 @@ function buildTranchePayload(t, operationId) {
     gestionnaire: t.gestionnaire || '',
     n_siap: t.n_siap || '',
     public_cible: t.public_cible || '',
+    nature: t.nature || null,
     nb_chambres: t.nb_chambres,
     t1: t.vol?.['T1'] || null,
     t2: t.vol?.['T2'] || null,
