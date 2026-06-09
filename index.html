@@ -4656,6 +4656,20 @@
   .chart-legend-dot {
     width: 14px; height: 3px; border-radius: 2px; display: inline-block;
   }
+  /* Plan de charge — graphe + légende */
+  .charge-chart-wrap { width: 100%; }
+  .charge-svg { width: 100%; height: auto; display: block; }
+  .charge-legend {
+    display: flex; flex-wrap: wrap; gap: 8px 18px;
+    margin-top: 14px; padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    font-size: 12.5px; color: var(--text-secondary);
+  }
+  .charge-leg { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .charge-leg-dot {
+    width: 11px; height: 11px; border-radius: 50%;
+    display: inline-block; flex-shrink: 0;
+  }
   .delta-summary {
     margin-top: 12px;
     background: var(--bg-secondary);
@@ -4930,8 +4944,14 @@
       <div class="topnav-tab" data-view="validations"><i class="ti ti-file-certificate"></i>Validations<span class="topnav-badge" id="navBadgePending" style="display:none;"></span></div>
       <div class="topnav-tab" data-view="comites"><i class="ti ti-users"></i>Comités</div>
     </div>
-    <div class="topnav-sep"></div>
-    <div class="topnav-group topnav-group-analyses">
+    <div class="topnav-spacer"></div>
+  </div>
+  <div class="topnav-group topnav-group-analyses topnav-dropdown" id="analysesDropdown">
+    <div class="topnav-dropdown-trigger">
+      <i class="ti ti-chart-line"></i>Analyses
+      <i class="ti ti-chevron-down topnav-dropdown-chevron"></i>
+    </div>
+    <div class="topnav-dropdown-menu">
       <div class="topnav-tab" data-view="gantt"><i class="ti ti-clock"></i>Gantt</div>
       <div class="topnav-tab" data-view="carte"><i class="ti ti-map-pin"></i>Carte</div>
       <div class="topnav-tab" data-view="finances"><i class="ti ti-cash"></i>Finances</div>
@@ -4940,7 +4960,6 @@
       <div class="topnav-tab" data-view="controles"><i class="ti ti-list-check"></i>Contrôles</div>
       <div class="topnav-tab" data-view="charge"><i class="ti ti-chart-line"></i>Plan de charge</div>
     </div>
-    <div class="topnav-spacer"></div>
   </div>
   <div class="topnav-group topnav-group-admin topnav-dropdown" id="adminDropdown">
     <div class="topnav-dropdown-trigger">
