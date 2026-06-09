@@ -6667,7 +6667,7 @@ function renderControles() {
   if (!view) return;
   const c = view.querySelector('#controlesContent');
   if (!c) return;
-  c.innerHTML = renderCtrlGoNoGo() + renderCtrlGaranties() + renderCtrlCaducite() + renderCtrlCloturesAgrement() + renderCtrlAapEcheances();
+  c.innerHTML = renderCtrlGoNoGo() + renderCtrlFinancements() + renderCtrlGaranties() + renderCtrlCaducite() + renderCtrlCloturesAgrement() + renderCtrlAapEcheances();
   replaceTablerIcons();
 }
 
@@ -6852,6 +6852,64 @@ function renderCtrlGoNoGo() {
         <tbody>${body}</tbody>
       </table>
     </div>`;
+}
+
+function renderCtrlFinancements() {
+  const ops = ctrlActiveOps();
+  const finChip = (statut) => {
+    const s = (statut || '').trim();
+    const l = s.toLowerCase();
+    let cls = 'ctrl-chip-muted';
+    if (/à demander|a demander|à déposer|a deposer/.test(l) || !s) cls = 'ctrl-chip-over';
+    else if (/sign|notifi|contrat|conventi|obtenu/.test(l)) cls = 'ctrl-chip-ok';
+    else if (/demand|instruction|dossier|accord|délib|delib|dépos|depos|offre|lettre|négoci|negoci|validé|valide/.test(l)) cls = 'ctrl-chip-soon';
+    return `<span class="ctrl-chip ${cls}">${escapeHtml(s || '—')}</span>`;
+  };
+  const pretMt = p => Number(p.montant_contrat) || Number(p.montant_lo) || Number(p.montant_sim) || 0;
+  const subvMt = s => Number(s.montant_notifie) || Number(s.montant_demande) || 0;
+
+  const blocks = ops.map(op => {
+    const prets = op.prets || [], subv = op.subventions || [], gar = op.garanties || [];
+    if (!prets.length && !subv.length && !gar.length) return '';
+    const trOf = i => (i.tranche || '').trim();
+    const codes = [];
+    (op.tranches || []).forEach(t => { const c = (typeof synthTrCode === 'function' ? synthTrCode(t) : '') || t.code_full || ''; if (c && !codes.includes(c)) codes.push(c); });
+    [...prets, ...subv, ...gar].forEach(i => { const c = trOf(i); if (c && !codes.includes(c)) codes.push(c); });
+    if (!codes.length) codes.push('');
+    const single = codes.length === 1;
+    const rows = [];
+    codes.forEach(code => {
+      const tp = prets.filter(p => single || trOf(p) === code);
+      const ts = subv.filter(s => single || trOf(s) === code);
+      const tg = gar.filter(g => single || trOf(g) === code);
+      const n = tp.length + ts.length + tg.length;
+      if (!n) return;
+      let first = true;
+      const row = (type, lib, statut, montant) => {
+        const tdTr = first ? `<td rowspan="${n}" style="font-weight:600;color:var(--text-primary);vertical-align:top;border-right:1px solid var(--border-color);">${escapeHtml(code || '—')}</td>` : '';
+        first = false;
+        return `<tr>${tdTr}<td style="color:var(--text-tertiary);">${type}</td><td>${escapeHtml(lib)}</td><td>${finChip(statut)}</td><td style="text-align:right;white-space:nowrap;">${montant}</td></tr>`;
+      };
+      tp.forEach(p => rows.push(row('Prêt', `${p.ligne || ''}${p.financeur ? ' · ' + p.financeur : ''}`, p.statut, fmtMontant(pretMt(p)))));
+      ts.forEach(s => rows.push(row('Subv.', `${s.financement || s.financeur || ''}`, s.statut, fmtMontant(subvMt(s)))));
+      tg.forEach(g => {
+        const q = Number(g.quotite) || 0;
+        const mt = Number(g.montant_couvert) ? fmtMontant(Number(g.montant_couvert)) : (q ? (q > 1 ? q : Math.round(q * 100)) + ' %' : '—');
+        rows.push(row('Garantie', `${g.garant || ''}${g.pret_lie ? ' · ' + g.pret_lie : ''}`, g.statut, mt));
+      });
+    });
+    if (!rows.length) return '';
+    return `<div style="margin-bottom:16px;">
+      <div style="font-size:12.5px;font-weight:700;color:var(--text-primary);margin:4px 0 6px;">${escapeHtml(op.display_name || op.code || '')}</div>
+      <table class="ctrl-table">
+        <thead><tr><th>Tranche</th><th>Type</th><th>Libellé</th><th>Statut / étape</th><th style="text-align:right;">Montant</th></tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  if (!blocks) return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-cash"></i>Mise en place des financements</div><div class="subent-empty">Aucun financement enregistré.</div></div>`;
+  return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-cash"></i>Mise en place des financements</div>${blocks}</div>`;
 }
 
 // ============== PLAN DE CHARGE ==============
