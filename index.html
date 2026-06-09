@@ -6347,6 +6347,7 @@ function aapHeaders() {
 function mapAapFromSupabase(a) {
   return {
     _supabase_id: a.id, _lid: 'aap-' + a.id,
+    tag: a.tag || '',
     intitule: a.intitule || '', organisme: a.organisme || '', millesime: a.millesime || '',
     type: a.type || '', enveloppe: a.enveloppe, statut: a.statut || '',
     date_ouverture: a.date_ouverture || '', date_limite: a.date_limite || '',
@@ -6375,6 +6376,95 @@ function aapConcernedRows(aapId) {
   return rows;
 }
 
+function openAapTagManager(aapId) {
+  document.querySelectorAll('.bilan-tranches-modal-backdrop').forEach(p => p.remove());
+  const aap = AAPS.find(a => String(a._supabase_id) === String(aapId));
+  const title = aap ? (aap.tag ? aap.tag + ' — ' : '') + (aap.intitule || 'AAP') : 'AAP';
+  const opsHtml = DATA.map(op => {
+    const lines = [];
+    (op.prets || []).forEach((p, idx) => lines.push({ kind: 'pret', idx, label: `Prêt — ${p.ligne || ''}${p.financeur ? ' · ' + p.financeur : ''}`, aap_id: p.aap_id }));
+    (op.subventions || []).forEach((s, idx) => lines.push({ kind: 'subv', idx, label: `Subv. — ${s.financement || s.financeur || ''}`, aap_id: s.aap_id }));
+    if (!lines.length) return '';
+    return `<div class="aaptag-op" data-opname="${escapeHtml((op.code || '') + ' ' + (op.display_name || ''))}">
+      <div style="font-weight:600;font-size:12px;color:var(--text-secondary);margin:10px 0 4px;border-top:1px solid var(--border-color);padding-top:8px;">${escapeHtml(op.code || '')} · ${escapeHtml(op.display_name || '')}</div>
+      ${lines.map(l => {
+        const checked = l.aap_id != null && String(l.aap_id) === String(aapId);
+        const otherTag = (l.aap_id != null && String(l.aap_id) !== String(aapId)) ? aapLabelById(l.aap_id) : '';
+        return `<label class="bilan-tranche-check">
+          <input type="checkbox" data-uid="${escapeHtml(op._uid)}" data-kind="${l.kind}" data-idx="${l.idx}" ${checked ? 'checked' : ''}>
+          <div class="bilan-tranche-check-info">
+            <div class="bilan-tranche-check-name">${escapeHtml(l.label)}</div>
+            ${otherTag ? `<div class="bilan-tranche-check-meta">déjà tagué : ${escapeHtml(otherTag)}</div>` : ''}
+          </div>
+        </label>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'bilan-tranches-modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="bilan-tranches-modal" style="max-width:560px;">
+      <div class="bilan-tranches-modal-head"><span>Opérations taguées — ${escapeHtml(title)}</span><button class="bilan-tranches-modal-close" type="button">×</button></div>
+      <div class="bilan-tranches-modal-body">
+        <p class="helper">Cochez les prêts / subventions concernés par cet AAP. Le tag est stocké au niveau de chaque ligne de financement.</p>
+        <input type="text" class="card-input" id="aaptagSearch" placeholder="Filtrer une opération…" style="margin-bottom:10px;width:100%;">
+        <div id="aaptagList" style="max-height:46vh;overflow:auto;">${opsHtml || '<p class="helper">Aucune ligne de financement.</p>'}</div>
+      </div>
+      <div class="bilan-tranches-modal-foot">
+        <span class="selection-count" id="aaptagCount"></span>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="cancel-btn">Annuler</button>
+          <button type="button" class="primary confirm-btn">Enregistrer</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(backdrop);
+  replaceTablerIcons();
+
+  const close = () => backdrop.remove();
+  const updateCount = () => {
+    const n = backdrop.querySelectorAll('#aaptagList input[type="checkbox"]:checked').length;
+    backdrop.querySelector('#aaptagCount').textContent = `${n} ligne${n > 1 ? 's' : ''} taguée${n > 1 ? 's' : ''}`;
+  };
+  updateCount();
+  backdrop.querySelectorAll('#aaptagList input[type="checkbox"]').forEach(cb => cb.addEventListener('change', updateCount));
+  backdrop.querySelector('.bilan-tranches-modal-close').addEventListener('click', close);
+  backdrop.querySelector('.cancel-btn').addEventListener('click', close);
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) close(); });
+
+  const search = backdrop.querySelector('#aaptagSearch');
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    backdrop.querySelectorAll('.aaptag-op').forEach(el => {
+      el.style.display = (!q || (el.dataset.opname || '').toLowerCase().includes(q)) ? '' : 'none';
+    });
+  });
+
+  backdrop.querySelector('.confirm-btn').addEventListener('click', async () => {
+    const affected = new Map();
+    backdrop.querySelectorAll('#aaptagList input[type="checkbox"]').forEach(cb => {
+      const op = DATA.find(o => o._uid === cb.dataset.uid); if (!op) return;
+      const arr = cb.dataset.kind === 'pret' ? op.prets : op.subventions;
+      const item = arr && arr[Number(cb.dataset.idx)]; if (!item) return;
+      const cur = item.aap_id != null ? Number(item.aap_id) : null;
+      if (cb.checked) {
+        if (cur !== Number(aapId)) { item.aap_id = Number(aapId); affected.set(op._uid, op); }
+      } else {
+        if (cur === Number(aapId)) { item.aap_id = null; affected.set(op._uid, op); }
+      }
+    });
+    if (affected.size === 0) { close(); return; }
+    const btn = backdrop.querySelector('.confirm-btn'); btn.disabled = true; btn.textContent = 'Enregistrement…';
+    try {
+      for (const op of affected.values()) { await saveOpToSupabase(op); }
+      showToast(`${affected.size} opération${affected.size > 1 ? 's' : ''} mise${affected.size > 1 ? 's' : ''} à jour`, 'check');
+    } catch (e) { console.error('Erreur tag AAP :', e); showToast('Erreur lors de l\'enregistrement', 'alert-triangle'); }
+    close();
+    renderAAP();
+  });
+}
+
 function renderAAP() {
   const view = document.getElementById('view-aap');
   if (!view) return;
@@ -6401,7 +6491,7 @@ function renderAapCard(a) {
     <div class="entity-card">
       <div class="entity-card-head">
         <div>
-          <div class="entity-card-title">${escapeHtml(a.intitule || 'Sans intitulé')}</div>
+          <div class="entity-card-title">${a.tag ? `<span class="badge-secondary" style="margin-right:7px;font-weight:700;">${escapeHtml(a.tag)}</span>` : ''}${escapeHtml(a.intitule || 'Sans intitulé')}</div>
           ${meta ? `<div class="entity-card-sub">${escapeHtml(meta)}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;">${a.lien ? sharepointIcon(a.lien) : ''}${a.statut ? statusBadge(a.statut) : ''}
@@ -6414,6 +6504,7 @@ function renderAapCard(a) {
       ${a._supabase_id != null ? `<div class="entity-card-meta" style="border-top:1px dashed var(--border-color);padding-top:8px;margin-top:8px;display:block;">
         <div style="font-size:11px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:5px;">Opérations concernées · ${concerned.length}</div>
         ${concerned.length ? `<div style="display:flex;flex-direction:column;gap:4px;">${concerned.map(r => `<div style="font-size:12px;display:flex;justify-content:space-between;gap:12px;"><span>${escapeHtml(r.op)}${r.tranche?' · '+escapeHtml(r.tranche):''} · <span style="color:var(--text-tertiary);">${r.kind}</span> ${escapeHtml(r.label)}</span><span style="color:var(--text-secondary);white-space:nowrap;">${r.montant?fmtMontant(r.montant):''}${r.statut?' · '+escapeHtml(r.statut):''}</span></div>`).join('')}</div>` : '<span style="color:var(--text-tertiary);font-size:12px;">Aucune opération taguée</span>'}
+        <button class="add-row-btn" style="margin-top:8px;" onclick="openAapTagManager(${a._supabase_id})"><i class="ti ti-tag"></i>Gérer les opérations taguées</button>
       </div>` : ''}
     </div>
   `;
@@ -6430,7 +6521,12 @@ function renderAapCardEdit(a) {
         ${!isNew ? `<div class="entity-card-actions"><button class="danger" onclick="deleteAap('${a._lid}')" title="Supprimer"><i class="ti ti-trash"></i></button></div>` : ''}
       </div>
       <div class="card-edit-grid" data-aap-edit="${a._lid}">
-        <div class="card-edit-field wide"><label>Intitulé</label><input class="card-input" data-af="intitule" value="${escapeHtml(a.intitule || '')}"></div>
+        <div class="card-edit-field wide"><label>Intitulé & tag</label>
+          <div style="display:flex;gap:8px;align-items:stretch;">
+            <input class="card-input" data-af="intitule" value="${escapeHtml(a.intitule || '')}" placeholder="Intitulé" style="flex:1;">
+            <input class="card-input" data-af="tag" value="${escapeHtml(a.tag || '')}" placeholder="Tag (ex. FV2026)" maxlength="10" style="width:150px;flex:none;text-transform:uppercase;font-weight:600;">
+          </div>
+        </div>
         <div class="card-edit-field"><label>Organisme / financeur</label><input class="card-input" data-af="organisme" value="${escapeHtml(a.organisme || '')}"></div>
         <div class="card-edit-field"><label>Millésime / année</label><input class="card-input" data-af="millesime" value="${escapeHtml(a.millesime || '')}"></div>
         <div class="card-edit-field"><label>Type</label><select class="card-input" data-af="type"><option value=""></option>${(a.type && !typesAap.includes(a.type)) ? `<option value="${escapeHtml(a.type)}" selected>${escapeHtml(a.type)}</option>` : ''}${typesAap.map(t=>`<option value="${t}"${a.type===t?' selected':''}>${t}</option>`).join('')}</select></div>
@@ -6470,6 +6566,7 @@ function readAapForm(lid) {
 
 function aapPayload(a) {
   return {
+    tag: a.tag || '',
     intitule: a.intitule || '', organisme: a.organisme || '', millesime: a.millesime || '',
     type: a.type || '', enveloppe: a.enveloppe, statut: a.statut || '',
     date_ouverture: a.date_ouverture || null, date_limite: a.date_limite || null,
