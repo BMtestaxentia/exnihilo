@@ -6369,9 +6369,10 @@ function aapSelectOptions(selectedId) {
 function aapConcernedRows(aapId) {
   const rows = [];
   (DATA || []).forEach(op => {
-    const opName = op.display_name || op.name || op.code || '';
-    (op.prets || []).forEach(pp => { if (pp.aap_id != null && String(pp.aap_id) === String(aapId)) rows.push({ op: opName, tranche: pp.tranche || '', kind: 'Prêt', label: pp.ligne || '', montant: pp.montant_contrat || pp.montant_lo || pp.montant_sim || null, statut: pp.statut || '' }); });
-    (op.subventions || []).forEach(sv => { if (sv.aap_id != null && String(sv.aap_id) === String(aapId)) rows.push({ op: opName, tranche: sv.tranche || '', kind: 'Subv.', label: sv.financement || sv.financeur || '', montant: sv.montant_notifie || sv.montant_demande || null, statut: sv.statut || '' }); });
+    if (op.aap_id != null && String(op.aap_id) === String(aapId)) {
+      const opName = (op.code ? op.code + ' · ' : '') + (op.display_name || op.name || '');
+      rows.push({ op: opName, tranche: op.aap_tranche || "Toute l'opération", phase: op.phase_actuelle || '' });
+    }
   });
   return rows;
 }
@@ -6380,36 +6381,33 @@ function openAapTagManager(aapId) {
   document.querySelectorAll('.bilan-tranches-modal-backdrop').forEach(p => p.remove());
   const aap = AAPS.find(a => String(a._supabase_id) === String(aapId));
   const title = aap ? (aap.tag ? aap.tag + ' — ' : '') + (aap.intitule || 'AAP') : 'AAP';
-  const opsHtml = DATA.map(op => {
-    const lines = [];
-    (op.prets || []).forEach((p, idx) => lines.push({ kind: 'pret', idx, label: `Prêt — ${p.ligne || ''}${p.financeur ? ' · ' + p.financeur : ''}`, aap_id: p.aap_id }));
-    (op.subventions || []).forEach((s, idx) => lines.push({ kind: 'subv', idx, label: `Subv. — ${s.financement || s.financeur || ''}`, aap_id: s.aap_id }));
-    if (!lines.length) return '';
-    return `<div class="aaptag-op" data-opname="${escapeHtml((op.code || '') + ' ' + (op.display_name || ''))}">
-      <div style="font-weight:600;font-size:12px;color:var(--text-secondary);margin:10px 0 4px;border-top:1px solid var(--border-color);padding-top:8px;">${escapeHtml(op.code || '')} · ${escapeHtml(op.display_name || '')}</div>
-      ${lines.map(l => {
-        const checked = l.aap_id != null && String(l.aap_id) === String(aapId);
-        const otherTag = (l.aap_id != null && String(l.aap_id) !== String(aapId)) ? aapLabelById(l.aap_id) : '';
-        return `<label class="bilan-tranche-check">
-          <input type="checkbox" data-uid="${escapeHtml(op._uid)}" data-kind="${l.kind}" data-idx="${l.idx}" ${checked ? 'checked' : ''}>
-          <div class="bilan-tranche-check-info">
-            <div class="bilan-tranche-check-name">${escapeHtml(l.label)}</div>
-            ${otherTag ? `<div class="bilan-tranche-check-meta">déjà tagué : ${escapeHtml(otherTag)}</div>` : ''}
-          </div>
-        </label>`;
-      }).join('')}
+  const opsHtml = (DATA || []).map(op => {
+    const checked = op.aap_id != null && String(op.aap_id) === String(aapId);
+    const otherTag = (op.aap_id != null && String(op.aap_id) !== String(aapId)) ? aapLabelById(op.aap_id) : '';
+    const tranches = op.tranches || [];
+    const trOpts = `<option value="">Toute l'opération</option>` + tranches.map((t, i) => {
+      const code = t.code_full || ('Tranche ' + (i + 1));
+      return `<option value="${escapeHtml(code)}"${(checked && (op.aap_tranche || '') === code) ? ' selected' : ''}>${escapeHtml(code)}</option>`;
+    }).join('');
+    return `<div class="bilan-tranche-check aaptag-op" data-opname="${escapeHtml((op.code || '') + ' ' + (op.display_name || ''))}" style="align-items:center;">
+      <input type="checkbox" data-uid="${escapeHtml(op._uid)}" ${checked ? 'checked' : ''}>
+      <div class="bilan-tranche-check-info" style="flex:1;min-width:0;">
+        <div class="bilan-tranche-check-name">${escapeHtml(op.code || '')} · ${escapeHtml(op.display_name || '')}</div>
+        ${otherTag ? `<div class="bilan-tranche-check-meta">déjà tagué : ${escapeHtml(otherTag)}</div>` : ''}
+      </div>
+      <select class="card-input aaptag-tr" data-uid-tr="${escapeHtml(op._uid)}" style="width:190px;flex:none;" ${checked ? '' : 'disabled'}>${trOpts}</select>
     </div>`;
   }).join('');
 
   const backdrop = document.createElement('div');
   backdrop.className = 'bilan-tranches-modal-backdrop';
   backdrop.innerHTML = `
-    <div class="bilan-tranches-modal" style="max-width:560px;">
+    <div class="bilan-tranches-modal" style="max-width:600px;">
       <div class="bilan-tranches-modal-head"><span>Opérations taguées — ${escapeHtml(title)}</span><button class="bilan-tranches-modal-close" type="button">×</button></div>
       <div class="bilan-tranches-modal-body">
-        <p class="helper">Cochez les prêts / subventions concernés par cet AAP. Le tag est stocké au niveau de chaque ligne de financement.</p>
+        <p class="helper">Cochez les opérations concernées par cet AAP. Vous pouvez préciser une tranche, sinon le tag porte sur toute l'opération.</p>
         <input type="text" class="card-input" id="aaptagSearch" placeholder="Filtrer une opération…" style="margin-bottom:10px;width:100%;">
-        <div id="aaptagList" style="max-height:46vh;overflow:auto;">${opsHtml || '<p class="helper">Aucune ligne de financement.</p>'}</div>
+        <div id="aaptagList" style="max-height:46vh;overflow:auto;">${opsHtml || '<p class="helper">Aucune opération.</p>'}</div>
       </div>
       <div class="bilan-tranches-modal-foot">
         <span class="selection-count" id="aaptagCount"></span>
@@ -6425,10 +6423,14 @@ function openAapTagManager(aapId) {
   const close = () => backdrop.remove();
   const updateCount = () => {
     const n = backdrop.querySelectorAll('#aaptagList input[type="checkbox"]:checked').length;
-    backdrop.querySelector('#aaptagCount').textContent = `${n} ligne${n > 1 ? 's' : ''} taguée${n > 1 ? 's' : ''}`;
+    backdrop.querySelector('#aaptagCount').textContent = `${n} opération${n > 1 ? 's' : ''} taguée${n > 1 ? 's' : ''}`;
   };
   updateCount();
-  backdrop.querySelectorAll('#aaptagList input[type="checkbox"]').forEach(cb => cb.addEventListener('change', updateCount));
+  backdrop.querySelectorAll('#aaptagList input[type="checkbox"]').forEach(cb => cb.addEventListener('change', () => {
+    const sel = cb.closest('.aaptag-op').querySelector('.aaptag-tr');
+    if (sel) { sel.disabled = !cb.checked; if (!cb.checked) sel.value = ''; }
+    updateCount();
+  }));
   backdrop.querySelector('.bilan-tranches-modal-close').addEventListener('click', close);
   backdrop.querySelector('.cancel-btn').addEventListener('click', close);
   backdrop.addEventListener('click', e => { if (e.target === backdrop) close(); });
@@ -6443,15 +6445,19 @@ function openAapTagManager(aapId) {
 
   backdrop.querySelector('.confirm-btn').addEventListener('click', async () => {
     const affected = new Map();
-    backdrop.querySelectorAll('#aaptagList input[type="checkbox"]').forEach(cb => {
+    backdrop.querySelectorAll('.aaptag-op').forEach(row => {
+      const cb = row.querySelector('input[type="checkbox"]');
+      const sel = row.querySelector('.aaptag-tr');
       const op = DATA.find(o => o._uid === cb.dataset.uid); if (!op) return;
-      const arr = cb.dataset.kind === 'pret' ? op.prets : op.subventions;
-      const item = arr && arr[Number(cb.dataset.idx)]; if (!item) return;
-      const cur = item.aap_id != null ? Number(item.aap_id) : null;
+      const curId = op.aap_id != null ? Number(op.aap_id) : null;
+      const curTr = op.aap_tranche || '';
       if (cb.checked) {
-        if (cur !== Number(aapId)) { item.aap_id = Number(aapId); affected.set(op._uid, op); }
-      } else {
-        if (cur === Number(aapId)) { item.aap_id = null; affected.set(op._uid, op); }
+        const newTr = sel ? (sel.value || '') : '';
+        if (curId !== Number(aapId) || curTr !== newTr) {
+          op.aap_id = Number(aapId); op.aap_tranche = newTr || null; affected.set(op._uid, op);
+        }
+      } else if (curId === Number(aapId)) {
+        op.aap_id = null; op.aap_tranche = null; affected.set(op._uid, op);
       }
     });
     if (affected.size === 0) { close(); return; }
@@ -6464,7 +6470,6 @@ function openAapTagManager(aapId) {
     renderAAP();
   });
 }
-
 function renderAAP() {
   const view = document.getElementById('view-aap');
   if (!view) return;
@@ -6503,7 +6508,7 @@ function renderAapCard(a) {
       ${a.prerequis ? `<div class="entity-card-notes"><strong>Prérequis :</strong> ${escapeHtml(a.prerequis)}</div>` : ''}
       ${a._supabase_id != null ? `<div class="entity-card-meta" style="border-top:1px dashed var(--border-color);padding-top:8px;margin-top:8px;display:block;">
         <div style="font-size:11px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:5px;">Opérations concernées · ${concerned.length}</div>
-        ${concerned.length ? `<div style="display:flex;flex-direction:column;gap:4px;">${concerned.map(r => `<div style="font-size:12px;display:flex;justify-content:space-between;gap:12px;"><span>${escapeHtml(r.op)}${r.tranche?' · '+escapeHtml(r.tranche):''} · <span style="color:var(--text-tertiary);">${r.kind}</span> ${escapeHtml(r.label)}</span><span style="color:var(--text-secondary);white-space:nowrap;">${r.montant?fmtMontant(r.montant):''}${r.statut?' · '+escapeHtml(r.statut):''}</span></div>`).join('')}</div>` : '<span style="color:var(--text-tertiary);font-size:12px;">Aucune opération taguée</span>'}
+        ${concerned.length ? `<div style="display:flex;flex-direction:column;gap:4px;">${concerned.map(r => `<div style="font-size:12px;display:flex;justify-content:space-between;gap:12px;"><span>${escapeHtml(r.op)}</span><span style="color:var(--text-secondary);white-space:nowrap;">${escapeHtml(r.tranche)}${r.phase?' · '+escapeHtml(r.phase):''}</span></div>`).join('')}</div>` : '<span style="color:var(--text-tertiary);font-size:12px;">Aucune opération taguée</span>'}
         <button class="add-row-btn" style="margin-top:8px;" onclick="openAapTagManager(${a._supabase_id})"><i class="ti ti-tag"></i>Gérer les opérations taguées</button>
       </div>` : ''}
     </div>
@@ -8106,6 +8111,7 @@ function syncPrefinancementsFromPrets(op, t) {
 function syncAapTagsFromEntities(op) {
   if (!Array.isArray(op.tags)) op.tags = [];
   const labels = new Set();
+  if (op.aap_id != null && op.aap_id !== '') { const l = aapLabelById(op.aap_id); if (l) labels.add(l); }
   (op.prets || []).forEach(p => { if (p.aap_id != null && p.aap_id !== '') { const l = aapLabelById(p.aap_id); if (l) labels.add(l); } });
   (op.subventions || []).forEach(sv => { if (sv.aap_id != null && sv.aap_id !== '') { const l = aapLabelById(sv.aap_id); if (l) labels.add(l); } });
   labels.forEach(l => { if (!op.tags.some(t => String(t).toLowerCase() === l.toLowerCase())) op.tags.push(l); });
@@ -16781,6 +16787,8 @@ async function loadFromSupabase() {
         longitude: row.longitude,
         vefa_mod: row.vefa_mod || '',
         notaire: row.notaire || '',
+        aap_id: (row.aap_id != null) ? row.aap_id : null,
+        aap_tranche: row.aap_tranche || '',
         type_travaux: row.type_travaux || '',
         maitrise_fonciere: row.maitrise_fonciere || '',
         anru: row.anru || '',
@@ -17235,6 +17243,8 @@ async function saveOpToSupabase(op) {
       longitude: op.longitude,
       vefa_mod: op.vefa_mod,
       notaire: op.notaire,
+      aap_id: (op.aap_id != null && op.aap_id !== '') ? Number(op.aap_id) : null,
+      aap_tranche: op.aap_tranche || null,
       type_travaux: op.type_travaux,
       maitrise_fonciere: op.maitrise_fonciere,
       anru: op.anru,
