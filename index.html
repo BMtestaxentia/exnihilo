@@ -4940,6 +4940,81 @@
   @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
   @media (max-width: 1024px) { .dashboard-grid, .kpi-grid { grid-template-columns: 1fr 1fr; } }
+  /* ============== SECTIONS REPLIABLES + CHRONOLOGIE (refonte onglet Opérations) ============== */
+  /* Sections repliables : clic sur le titre */
+  .section > .section-label, .section > .subent-header { cursor: pointer; user-select: none; }
+  .section > .section-label::after, .section > .subent-header .subent-title::after {
+    content: '▾'; font-size: 10px; color: var(--text-tertiary);
+    margin-left: 6px; display: inline-block;
+    transition: transform 0.15s ease;
+  }
+  .section.collapsed > .section-label::after, .section.collapsed > .subent-header .subent-title::after { transform: rotate(-90deg); }
+  .section.collapsed > *:not(.section-label):not(.subent-header) { display: none !important; }
+  .section.collapsed { padding-bottom: 2px; margin-bottom: 8px; }
+
+  /* Bouton d'ouverture de la chronologie (dans Calendrier travaux) */
+  .timeline-open-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    margin-top: 12px; padding: 8px 14px;
+    background: var(--bg-secondary); border: 1px solid var(--border-color);
+    border-radius: var(--radius-md); cursor: pointer;
+    font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+    font-family: inherit; transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .timeline-open-btn:hover { background: var(--info-bg); border-color: var(--info-accent); color: var(--info-text); }
+  .timeline-open-btn i { font-size: 15px; }
+  .timeline-open-count {
+    font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+    background: var(--info-accent); color: #fff;
+  }
+
+  /* Modale chronologie */
+  .timeline-modal-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 3000;
+    background: rgba(0,0,0,0.45); align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .timeline-modal-backdrop.open { display: flex; }
+  .timeline-modal {
+    background: var(--bg-primary); border-radius: 14px;
+    width: 720px; max-width: 96vw; max-height: 88vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 60px -12px rgba(0,0,0,0.45);
+    border: 1px solid var(--border-color);
+  }
+  .timeline-modal-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 20px; border-bottom: 1px solid var(--border-color); flex-shrink: 0;
+  }
+  .timeline-modal-head .ti { font-size: 19px; color: var(--info-accent); }
+  .timeline-modal-head .tm-titles { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .timeline-modal-head .tm-kicker { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); }
+  .timeline-modal-head .tm-title { font-size: 15px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .timeline-modal-close {
+    margin-left: auto; background: none; border: none; cursor: pointer;
+    width: 32px; height: 32px; border-radius: 8px; color: var(--text-tertiary);
+    display: inline-flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .timeline-modal-close:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .timeline-modal-body { padding: 8px 20px 20px; overflow-y: auto; }
+  .timeline-modal-filters {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 12px 0; position: sticky; top: 0; background: var(--bg-primary); z-index: 1;
+  }
+  .tmf-chip {
+    background: var(--bg-secondary); border: 1px solid transparent; border-radius: 999px;
+    padding: 4px 11px; cursor: pointer; font-size: 11.5px; font-weight: 600;
+    color: var(--text-secondary); font-family: inherit; transition: background 0.12s ease, color 0.12s ease;
+  }
+  .tmf-chip span { font-weight: 700; color: var(--text-tertiary); margin-left: 3px; }
+  .tmf-chip:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+  .tmf-chip.active { background: var(--info-bg); color: var(--info-text); border-color: var(--info-accent); }
+  .tmf-chip.active span { color: var(--info-text); }
+
+  body.printing-op-detail .timeline-open-btn { display: none !important; }
+  body.printing-op-detail .section.collapsed > * { display: block !important; }
+  #opDetail .section, #trancheDetail .section { scroll-margin-top: 16px; }
+  /* ============== FIN SECTIONS REPLIABLES + CHRONOLOGIE ============== */
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
@@ -8733,9 +8808,8 @@ function renderOpDetail() {
       ${editableDateJalon('Convention location', op.date_conv_loc, 'date_conv_loc', op)}
       ${editableDateJalon('Convention APL', op.date_conv_apl, 'date_conv_apl', op)}
       ${editableDateJalon('Dernier CA Axentia', op.date_ca_axentia, 'date_ca_axentia', op)}
+      ${(() => { const n = countOpTimelineEvents(op); return n ? `<button class="timeline-open-btn" onclick="openTimelineModal('${escapeHtml(op._uid)}')" type="button"><i class="ti ti-timeline-event"></i>Voir la chronologie de l'opération<span class="timeline-open-count">${n}</span></button>` : ''; })()}
     </div>
-
-    ${renderOpTimeline(op)}
 
     <div class="section">
       <div class="section-label batiment"><i class="ti ti-building-skyscraper"></i>Caractéristiques du bâtiment</div>
@@ -8747,11 +8821,11 @@ function renderOpDetail() {
 
     ${(op.notes_libres || editMode) ? `<div class="section"><div class="section-label notes"><i class="ti ti-message"></i>Notes libres</div>${editableNotes(op.notes_libres, 'notes_libres')}</div>` : ''}
 
-    ${renderAlertsPanel(displayedOp)}
-
     ${renderValidationPanel(displayedOp)}
 
     ${renderHistoryChart(op)}
+
+    ${renderAlertsPanel(displayedOp)}
   `;
   document.getElementById('opDetail').innerHTML = html;
   // Restore edit mode flag if temporarily cleared
@@ -14176,23 +14250,16 @@ Net : ${m.flux_net >= 0 ? '+' : ''}${fmtEuros(m.flux_net)}`;
 const CURRENT_USER = 'Bastien MERCIER';
 
 // Op chronological timeline (collapsible section under Calendar)
-let opTimelineOpen = {};
-function toggleOpTimeline(uid) {
-  opTimelineOpen[uid] = !opTimelineOpen[uid];
-  renderOpDetail();
-  replaceTablerIcons();
-}
+function toggleOpTimeline(uid) { openTimelineModal(uid); }
 
-function renderOpTimeline(op) {
-  // Collect all dated events from the op
+// === Chronologie de l'opération : collecte d'événements (partagée bouton + modale) ===
+function collectOpTimelineEvents(op) {
   const events = [];
   const addEvt = (date, type, label, detail, color) => {
     const d = parseDateStr(date);
     if (!d) return;
     events.push({ date: d, dateStr: date, type, label, detail, color });
   };
-
-  // Op-level milestones
   addEvt(op.date_promesse, 'Foncier', 'Promesse signée', 'Signature de la promesse de vente', 'success');
   addEvt(op.date_acte, 'Foncier', 'Acte authentique signé', 'Acquisition foncière', 'success');
   addEvt(op.date_depot_pc, 'Travaux', 'Dépôt du permis de construire', null, 'info');
@@ -14204,23 +14271,17 @@ function renderOpTimeline(op) {
   addEvt(op.date_conv_loc, 'Conventionnement', 'Convention de location', null, 'info');
   addEvt(op.date_conv_apl, 'Conventionnement', 'Convention APL', null, 'info');
   addEvt(op.date_ca_axentia, 'Gouvernance', 'Passage en CA Axentia', null, 'purple');
-
-  // Tranche-level events (agréments, DFA, etc.)
   (op.tranches || []).forEach(t => {
     const tCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
     addEvt(t.date_agrement, 'Agrément', `Agrément ${tCode}`, t.financement || null, 'info');
     addEvt(t.date_dfa, 'Agrément', `DFA ${tCode}`, 'Décision de financement', 'success');
   });
-
-  // Prêts events
   (op.prets || []).forEach(p => {
     const label = `${p.ligne || 'Prêt'} ${p.financeur || ''}`.trim();
     addEvt(p.date_demande, 'Prêt', `Demande de prêt ${label}`, fmtMontant(p.montant_sim), 'info');
     addEvt(p.date_lo, 'Prêt', `Lettre d'offre ${label}`, fmtMontant(p.montant_lo), 'warning');
     addEvt(p.date_contrat, 'Prêt', `Contrat signé ${label}`, fmtMontant(p.montant_contrat), 'success');
   });
-
-  // Garanties events
   (op.garanties || []).forEach(g => {
     const label = g.garant || 'Garantie';
     addEvt(g.date_demande, 'Garantie', `Demande de garantie ${label}`, fmtMontant(g.montant_couvert), 'info');
@@ -14228,58 +14289,68 @@ function renderOpTimeline(op) {
     addEvt(g.date_delib, 'Garantie', `Délibération ${label}`, null, 'success');
     addEvt(g.date_conv, 'Garantie', `Convention de garantie ${label}`, null, 'success');
   });
-
-  // Subventions events
   (op.subventions || []).forEach(s => {
     addEvt(s.date_demande, 'Subvention', `Demande ${s.financeur || ''}`, fmtMontant(s.montant_demande), 'info');
     addEvt(s.date_notification, 'Subvention', `Notification ${s.financeur || ''}`, fmtMontant(s.montant_notifie), 'success');
     addEvt(s.date_conv, 'Subvention', `Convention ${s.financeur || ''}`, null, 'success');
   });
-
-  // Comités events
   (op.comites || []).forEach(com => {
     const conf = comiteTypeConfig(com.type);
     addEvt(com.date, 'Comité', `${conf.full}`, com.doc_name || null, 'purple');
   });
-
-  // Sort chronologically (oldest first)
   events.sort((a, b) => a.date.getTime() - b.date.getTime());
+  return events;
+}
+function countOpTimelineEvents(op) { return collectOpTimelineEvents(op).length; }
 
-  if (events.length === 0) return '';
-
-  const isOpen = !!opTimelineOpen[op._uid];
+let _timelineModalUid = null;
+function openTimelineModal(uid) {
+  _timelineModalUid = uid;
+  const op = findOp(uid) || (DATA || []).find(o => o._uid === uid);
+  if (!op) return;
+  const events = collectOpTimelineEvents(op);
   const today = new Date(); today.setHours(0, 0, 0, 0);
-
-  return `
-    <div class="section section-timeline">
-      <button class="timeline-toggle" onclick="toggleOpTimeline('${escapeHtml(op._uid)}')" type="button">
-        <span class="section-label cal"><i class="ti ti-history"></i>Chronologie de l'opération</span>
-        <span class="timeline-count">${events.length} événement${events.length > 1 ? 's' : ''}</span>
-        <i class="ti ti-chevron-${isOpen ? 'up' : 'down'}"></i>
-      </button>
-      ${isOpen ? `
-        <div class="timeline-content">
-          <ul class="timeline-list">
-            ${events.map(e => {
-              const isPast = e.date.getTime() <= today.getTime();
-              const dateStr = e.date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-              return `
-                <li class="timeline-evt timeline-evt-${e.color} ${isPast ? 'timeline-evt-past' : 'timeline-evt-future'}">
-                  <span class="timeline-dot"></span>
-                  <span class="timeline-date">${escapeHtml(dateStr)}</span>
-                  <span class="timeline-type">${escapeHtml(e.type)}</span>
-                  <div class="timeline-body">
-                    <div class="timeline-label">${escapeHtml(e.label)}</div>
-                    ${e.detail ? `<div class="timeline-detail">${escapeHtml(e.detail)}</div>` : ''}
-                  </div>
-                </li>
-              `;
-            }).join('')}
-          </ul>
-        </div>
-      ` : ''}
-    </div>
-  `;
+  const body = document.getElementById('timelineModalBody');
+  const titleEl = document.getElementById('timelineModalTitle');
+  if (titleEl) titleEl.textContent = op.display_name || op.code || "Chronologie de l'opération";
+  // Filtres par type
+  const types = [...new Set(events.map(e => e.type))];
+  const filterBar = `<div class="timeline-modal-filters">
+      <button class="tmf-chip active" data-tmf="all">Tous <span>${events.length}</span></button>
+      ${types.map(t => `<button class="tmf-chip" data-tmf="${escapeHtml(t)}">${escapeHtml(t)} <span>${events.filter(e => e.type === t).length}</span></button>`).join('')}
+    </div>`;
+  const list = `<ul class="timeline-list">
+      ${events.map(e => {
+        const isPast = e.date.getTime() <= today.getTime();
+        const dateStr = e.date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+        return `<li class="timeline-evt timeline-evt-${e.color} ${isPast ? 'timeline-evt-past' : 'timeline-evt-future'}" data-evt-type="${escapeHtml(e.type)}">
+            <span class="timeline-dot"></span>
+            <span class="timeline-date">${escapeHtml(dateStr)}</span>
+            <span class="timeline-type">${escapeHtml(e.type)}</span>
+            <div class="timeline-body">
+              <div class="timeline-label">${escapeHtml(e.label)}</div>
+              ${e.detail ? `<div class="timeline-detail">${escapeHtml(e.detail)}</div>` : ''}
+            </div>
+          </li>`;
+      }).join('')}
+    </ul>`;
+  body.innerHTML = events.length ? (filterBar + list) : '<div class="subent-empty">Aucun événement daté pour cette opération.</div>';
+  // Wire filters
+  body.querySelectorAll('.tmf-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      body.querySelectorAll('.tmf-chip').forEach(c => c.classList.toggle('active', c === chip));
+      const f = chip.dataset.tmf;
+      body.querySelectorAll('.timeline-evt').forEach(li => {
+        li.style.display = (f === 'all' || li.dataset.evtType === f) ? '' : 'none';
+      });
+    });
+  });
+  document.getElementById('timelineModalBackdrop').classList.add('open');
+  if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
+}
+function closeTimelineModal() {
+  document.getElementById('timelineModalBackdrop').classList.remove('open');
+  _timelineModalUid = null;
 }
 
 function renderAccueil() {
@@ -16336,6 +16407,68 @@ function populateSynthFilters() {
 
 // View switching
 // Theme toggle (dark / light)
+// ============== SECTIONS REPLIABLES (fiche opération) ==============
+let collapsedSections = (() => { try { return JSON.parse(storageGet('collapsedSections') || '{}'); } catch (e) { return {}; } })();
+function saveCollapsedSections() { storageSet('collapsedSections', JSON.stringify(collapsedSections)); }
+
+function osnLabelEl(sec) {
+  return sec.querySelector(':scope > .section-label, :scope > .subent-header .subent-title, :scope > .timeline-toggle .section-label');
+}
+function osnLabelText(lab) {
+  if (!lab) return '';
+  const clone = lab.cloneNode(true);
+  clone.querySelectorAll('button, select, input, .auto-tag').forEach(n => n.remove());
+  return clone.textContent.replace(/\s+/g, ' ').trim();
+}
+function osnKeyOf(sec) {
+  const t = osnLabelText(osnLabelEl(sec));
+  return t.replace(/·.*$/, '').trim().toLowerCase();
+}
+function applyCollapsedSections() {
+  document.querySelectorAll('#opDetail .section, #trancheDetail .section').forEach(sec => {
+    const key = osnKeyOf(sec);
+    if (key) sec.classList.toggle('collapsed', !!collapsedSections[key]);
+  });
+}
+
+// Repli/dépli au clic sur les titres de sections (hors timeline qui a son toggle)
+document.addEventListener('click', (e) => {
+  if (e.target.closest('button, a, input, select, textarea, .icon-btn, .add-row-btn, .timeline-toggle')) return;
+  const head = e.target.closest('.section-label, .subent-header');
+  if (!head) return;
+  const sec = head.parentElement;
+  if (!sec || !sec.classList.contains('section')) return;
+  if (!sec.closest('#opDetail, #trancheDetail')) return;
+  sec.classList.toggle('collapsed');
+  const k = osnKeyOf(sec);
+  if (k) {
+    if (sec.classList.contains('collapsed')) collapsedSections[k] = 1; else delete collapsedSections[k];
+    saveCollapsedSections();
+  }
+});
+
+// Réapplication après chaque re-render (les renderers remplacent l'innerHTML)
+(function initCollapseObserver() {
+  let raf = null;
+  const obs = new MutationObserver(() => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => { raf = null; applyCollapsedSections(); });
+  });
+  ['opDetail', 'trancheDetail'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) obs.observe(el, { childList: true, subtree: true });
+  });
+})();
+
+// Fermeture de la modale chronologie via Échap
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const bd = document.getElementById('timelineModalBackdrop');
+    if (bd && bd.classList.contains('open')) closeTimelineModal();
+  }
+});
+// ============== FIN SECTIONS REPLIABLES ==============
+
 (function initTheme() {
   const root = document.documentElement;
   const toggle = document.getElementById('themeToggle');
@@ -17878,5 +18011,19 @@ window.addEventListener('beforeunload', (e) => {
 </script>
 
 <div id="cmdpResults" class="cmdp-dropdown" style="display:none;"></div>
+
+<div class="timeline-modal-backdrop" id="timelineModalBackdrop" onclick="if(event.target===this)closeTimelineModal()">
+  <div class="timeline-modal" role="dialog" aria-modal="true" aria-label="Chronologie de l'opération">
+    <div class="timeline-modal-head">
+      <i class="ti ti-timeline-event"></i>
+      <div class="tm-titles">
+        <span class="tm-kicker">Chronologie de l'opération</span>
+        <span class="tm-title" id="timelineModalTitle"></span>
+      </div>
+      <button class="timeline-modal-close" onclick="closeTimelineModal()" title="Fermer (Échap)"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="timeline-modal-body" id="timelineModalBody"></div>
+  </div>
+</div>
 </body>
 </html>
