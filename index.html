@@ -3450,44 +3450,55 @@
   .ctrl-chip-soon { background: var(--warning-bg); color: var(--warning-text); }
   .ctrl-chip-ok { background: var(--success-bg); color: var(--success-text); }
   .ctrl-chip-muted { color: var(--text-tertiary); }
-  /* === Mise en place des financements : format compact === */
-  .finmep-op { border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 7px; overflow: hidden; background: var(--bg-primary); }
-  .finmep-op[open] { border-color: var(--border-color-strong); }
-  .finmep-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; list-style: none; user-select: none; }
-  .finmep-head::-webkit-details-marker { display: none; }
-  .finmep-head:hover { background: var(--bg-secondary); }
-  .finmep-chev { color: var(--text-tertiary); font-size: 13px; transition: transform 0.15s ease; flex-shrink: 0; }
-  .finmep-op[open] .finmep-chev { transform: rotate(90deg); }
-  .finmep-name { font-size: 12.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 80px; }
-  .finmep-meter { display: flex; height: 6px; border-radius: 999px; overflow: hidden; width: 90px; flex-shrink: 0; background: var(--bg-tertiary); }
-  .finmep-meter span { display: block; height: 100%; }
-  .finmep-meter .m-ok { background: var(--success-accent); }
-  .finmep-meter .m-soon { background: var(--warning-accent); }
-  .finmep-meter .m-over { background: #d85a30; }
-  .finmep-sum { display: flex; gap: 5px; flex-shrink: 0; margin-left: auto; }
-  .finmep-spill { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
-  .finmep-spill.ok { background: var(--success-bg); color: var(--success-text); }
-  .finmep-spill.soon { background: var(--warning-bg); color: var(--warning-text); }
-  .finmep-spill.over { background: rgba(216,90,48,0.16); color: #d85a30; }
-  .finmep-total { font-size: 11.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums; }
-  .finmep-body { padding: 4px 12px 10px 30px; border-top: 1px solid var(--border-color); }
-  .finmep-tr { margin-top: 8px; }
-  .finmep-tr-code { display: inline-block; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-tertiary); margin-bottom: 3px; }
-  .finmep-line { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; border-bottom: 1px dashed var(--border-color); }
-  .finmep-line:last-child { border-bottom: none; }
-  .finmep-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .finmep-dot.ok { background: var(--success-accent); }
-  .finmep-dot.soon { background: var(--warning-accent); }
-  .finmep-dot.over { background: #d85a30; }
-  .finmep-dot.muted { background: var(--text-tertiary); }
-  .finmep-type { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-tertiary); width: 30px; flex-shrink: 0; }
-  .finmep-lib { color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 60px; }
-  .finmep-stat { color: var(--text-tertiary); font-size: 11px; margin-left: auto; white-space: nowrap; flex-shrink: 0; }
-  .finmep-mt { font-weight: 600; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
-  .finmep-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-  .finmep-toolbar-btn { font-size: 11px; font-weight: 600; color: var(--text-secondary); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 3px 9px; cursor: pointer; font-family: inherit; }
-  .finmep-toolbar-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
-  .finmep-toolbar-note { font-size: 11px; color: var(--text-tertiary); margin-left: auto; }
+/* === Mise en place des financements : radar portefeuille + steppers === */
+  .fm2-toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .fm2-filter { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+  .fm2-filter:hover { background: var(--bg-secondary); }
+  .fm2-filter.active { background: var(--info-bg); color: var(--info-text); border-color: var(--info-accent); }
+  .fm2-filter b { font-weight: 700; }
+  .fm2-kpis { margin-left: auto; font-size: 11.5px; color: var(--text-tertiary); display: flex; gap: 14px; font-variant-numeric: tabular-nums; }
+  .fm2-kpis strong { color: var(--text-primary); }
+
+  .fm2-row { border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 6px; background: var(--bg-primary); overflow: hidden; }
+  .fm2-row[open] { border-color: var(--border-color-strong); box-shadow: 0 2px 10px -4px rgba(0,0,0,0.12); }
+  .fm2-head { display: grid; grid-template-columns: 14px minmax(140px, 1.2fr) 1fr 0.8fr 0.7fr; gap: 12px; align-items: center; padding: 7px 12px; cursor: pointer; list-style: none; user-select: none; }
+  .fm2-head::-webkit-details-marker { display: none; }
+  .fm2-head:hover { background: var(--bg-secondary); }
+  .fm2-chev { color: var(--text-tertiary); font-size: 12px; transition: transform 0.15s ease; }
+  .fm2-row[open] .fm2-chev { transform: rotate(90deg); }
+  .fm2-name { font-size: 12.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fm2-cell { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .fm2-cell-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-tertiary); width: 32px; flex-shrink: 0; }
+  .fm2-dots { display: flex; gap: 3px; flex-wrap: wrap; }
+  .fm2-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .fm2-dot.ok { background: var(--success-accent); }
+  .fm2-dot.soon { background: var(--warning-accent); }
+  .fm2-dot.over { background: #d85a30; }
+  .fm2-dot.muted { background: var(--border-color-strong); }
+  .fm2-cell-mt { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .fm2-cell-empty { font-size: 11px; color: var(--text-tertiary); }
+
+  .fm2-body { border-top: 1px solid var(--border-color); padding: 6px 12px 12px 26px; background: var(--bg-secondary); }
+  .fm2-tr-code { display: inline-block; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-tertiary); margin: 10px 0 2px; }
+  .fm2-line { display: grid; grid-template-columns: minmax(150px, 0.9fr) 80px 1.6fr; gap: 12px; align-items: center; padding: 5px 0; border-bottom: 1px dashed var(--border-color); }
+  .fm2-line:last-child { border-bottom: none; }
+  .fm2-line.dim { opacity: 0.38; }
+  .fm2-line-lib { font-size: 12px; color: var(--text-primary); min-width: 0; display: flex; align-items: baseline; gap: 6px; }
+  .fm2-line-type { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-tertiary); flex-shrink: 0; width: 30px; }
+  .fm2-line-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fm2-line-mt { font-size: 11.5px; font-weight: 600; color: var(--text-secondary); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .fm2-stepper { display: flex; align-items: center; gap: 0; min-width: 0; overflow: hidden; }
+  .fm2-step { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; white-space: nowrap; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; }
+  .fm2-step em { font-style: normal; font-weight: 500; opacity: 0.75; font-size: 9.5px; }
+  .fm2-step.done { background: var(--success-bg); color: var(--success-text); }
+  .fm2-step.next { background: var(--warning-bg); color: var(--warning-text); }
+  .fm2-step.todo { background: var(--bg-tertiary); color: var(--text-tertiary); }
+  .fm2-step-link { width: 12px; height: 1px; background: var(--border-color-strong); flex-shrink: 0; }
+  @media (max-width: 1100px) {
+    .fm2-head { grid-template-columns: 14px 1fr; grid-auto-rows: auto; row-gap: 4px; }
+    .fm2-line { grid-template-columns: 1fr; row-gap: 2px; }
+    .fm2-line-mt { text-align: left; }
+  }
   /* === [RESTAURÉ] Calendrier Comités === */
   .com-cal { border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; background: var(--bg-secondary); }
   .com-cal-head { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 12px; }
@@ -6967,95 +6978,157 @@ function renderCtrlGoNoGo() {
     </div>`;
 }
 
+// === Mise en place des financements : radar portefeuille + steppers d'étapes ===
+let fm2Filter = 'all'; // all | over | soon | ok
+function setFm2Filter(f) { fm2Filter = f; renderControles(); }
+
+// Modèles d'étapes par type d'instrument (date + détection par libellé de statut)
+const FM2_CHAINS = {
+  pret: [
+    { label: 'Demande',  date: i => i.date_demande, rx: /demand|instruction/ },
+    { label: 'LO',       date: i => i.date_lo,      rx: /lettre|offre|\blo\b/ },
+    { label: 'Contrat',  date: i => i.date_contrat, rx: /contrat|sign/ }
+  ],
+  gar: [
+    { label: 'Demande',    date: i => i.date_demande, rx: /demand|transmis|dossier|mont/ },
+    { label: 'AP',         date: i => i.date_ap,      rx: /accord/ },
+    { label: 'Délib.',     date: i => i.date_delib,   rx: /délib|delib|exécutoire|executoire/ },
+    { label: 'Convention', date: i => i.date_conv,    rx: /conventi/ }
+  ],
+  subv: [
+    { label: 'Demande',      date: i => i.date_demande,      rx: /dépos|depos|demand|instruction/ },
+    { label: 'Notification', date: i => i.date_notification, rx: /notifi/ },
+    { label: 'Convention',   date: i => i.date_conv,         rx: /conventi/ }
+  ]
+};
+
+// Index de la dernière étape franchie : max(dates renseignées, libellé de statut)
+function fm2DoneIdx(chain, item) {
+  const l = (item.statut || '').toLowerCase();
+  if (/à demander|a demander|à déposer|a deposer|à monter|a monter|à solliciter|a solliciter/.test(l)) {
+    // explicitement à initier : seules les dates comptent
+    let di = -1;
+    chain.forEach((st, i) => { if (parseDateStr(st.date(item))) di = i; });
+    return di;
+  }
+  let di = -1;
+  chain.forEach((st, i) => {
+    if (parseDateStr(st.date(item))) di = Math.max(di, i);
+    if (st.rx.test(l)) di = Math.max(di, i);
+  });
+  return di;
+}
+function fm2Level(chain, doneIdx, statut) {
+  if (doneIdx < 0) return (statut || '').trim() ? 'over' : 'muted';
+  if (doneIdx >= chain.length - 1) return 'ok';
+  return 'soon';
+}
+
 function renderCtrlFinancements() {
   const ops = ctrlActiveOps();
-  // Niveau de statut : ok (en place) / soon (en cours) / over (à initier) / muted (inconnu)
-  const lvlOf = (statut) => {
-    const l = (statut || '').toLowerCase().trim();
-    if (!l) return 'muted';
-    if (/à demander|a demander|à déposer|a deposer|à monter|a monter|à solliciter|a solliciter/.test(l)) return 'over';
-    if (/sign|notifi|contrat|conventi|obtenu|accord.*re|reçu|recu|levé|leve/.test(l)) return 'ok';
-    if (/demand|instruction|dossier|accord|délib|delib|dépos|depos|offre|lettre|négoci|negoci|validé|valide|transmis|cours/.test(l)) return 'soon';
-    return 'soon';
-  };
   const pretMt = p => Number(p.montant_contrat) || Number(p.montant_lo) || Number(p.montant_sim) || 0;
   const subvMt = s => Number(s.montant_notifie) || Number(s.montant_demande) || 0;
   const garMtTxt = g => {
     const q = Number(g.quotite) || 0;
-    return Number(g.montant_couvert) ? fmtMontant(Number(g.montant_couvert)) : (q ? (q > 1 ? q : Math.round(q * 100)) + ' %' : '—');
+    return Number(g.montant_couvert) ? fmtMontant(Number(g.montant_couvert)) : (q ? (q > 1 ? q : Math.round(q * 100)) + ' %' : '');
   };
 
-  let totalCount = 0, totOk = 0, totSoon = 0, totOver = 0;
+  // Construire le modèle par opération
+  const model = ops.map(op => {
+    const mk = (arr, kind, type, libOf, mtTxtOf, mtNum) => (arr || []).map(i => {
+      const chain = FM2_CHAINS[kind];
+      const di = fm2DoneIdx(chain, i);
+      return { kind, type, tr: (i.tranche || '').trim(), lib: libOf(i), statut: i.statut || '', mtTxt: mtTxtOf(i), mtNum: mtNum ? mtNum(i) : 0, chain, doneIdx: di, lvl: fm2Level(chain, di, i.statut), item: i };
+    });
+    const items = [
+      ...mk(op.prets, 'pret', 'Prêt', p => `${p.ligne || 'Prêt'}${p.financeur ? ' · ' + p.financeur : ''}`, p => fmtMontant(pretMt(p)), pretMt),
+      ...mk(op.subventions, 'subv', 'Subv', s => (s.financement || s.financeur || 'Subvention'), s => fmtMontant(subvMt(s)), subvMt),
+      ...mk(op.garanties, 'gar', 'Gar', g => `${g.garant || 'Garantie'}${g.pret_lie ? ' · ' + g.pret_lie : ''}`, garMtTxt)
+    ];
+    return { op, items };
+  }).filter(m => m.items.length);
 
-  const blocks = ops.map(op => {
-    const prets = op.prets || [], subv = op.subventions || [], gar = op.garanties || [];
-    if (!prets.length && !subv.length && !gar.length) return '';
+  // KPIs + compteurs filtres
+  const all = model.flatMap(m => m.items);
+  const nOk = all.filter(i => i.lvl === 'ok').length;
+  const nSoon = all.filter(i => i.lvl === 'soon').length;
+  const nOver = all.filter(i => i.lvl === 'over' || i.lvl === 'muted').length;
+  const mtSigne = all.filter(i => i.kind === 'pret' && i.lvl === 'ok').reduce((s, i) => s + i.mtNum, 0);
+  const mtTotal = all.filter(i => i.kind === 'pret').reduce((s, i) => s + i.mtNum, 0);
 
-    // Liste unifiée d'instruments
-    const items = [];
-    prets.forEach(p => items.push({ tr: (p.tranche || '').trim(), type: 'Prêt', lib: `${p.ligne || ''}${p.financeur ? ' · ' + p.financeur : ''}`.trim() || 'Prêt', statut: p.statut, mt: fmtMontant(pretMt(p)), lvl: lvlOf(p.statut), pmt: pretMt(p) }));
-    subv.forEach(s => items.push({ tr: (s.tranche || '').trim(), type: 'Subv', lib: (s.financement || s.financeur || 'Subvention'), statut: s.statut, mt: fmtMontant(subvMt(s)), lvl: lvlOf(s.statut), pmt: 0 }));
-    gar.forEach(g => items.push({ tr: (g.tranche || '').trim(), type: 'Gar', lib: `${g.garant || 'Garantie'}${g.pret_lie ? ' · ' + g.pret_lie : ''}`, statut: g.statut, mt: garMtTxt(g), lvl: lvlOf(g.statut), pmt: 0 }));
-    if (!items.length) return '';
+  const visible = model.filter(m => fm2Filter === 'all' || m.items.some(i => (fm2Filter === 'over' ? (i.lvl === 'over' || i.lvl === 'muted') : i.lvl === fm2Filter)));
 
-    const cOk = items.filter(i => i.lvl === 'ok').length;
-    const cSoon = items.filter(i => i.lvl === 'soon').length;
-    const cOver = items.filter(i => i.lvl === 'over' || i.lvl === 'muted').length;
-    totalCount += items.length; totOk += cOk; totSoon += cSoon; totOver += cOver;
-    const totPret = items.reduce((s, i) => s + (i.pmt || 0), 0);
-    const tot = items.length;
-    const pct = v => (tot ? (v / tot * 100).toFixed(1) : 0) + '%';
+  const dotTip = i => `${i.type} ${i.lib} — ${i.statut || '—'}${i.mtTxt ? ' · ' + i.mtTxt : ''}`;
+  const cellFor = (m, kind, label) => {
+    const arr = m.items.filter(i => i.kind === kind);
+    if (!arr.length) return `<span class="fm2-cell"><span class="fm2-cell-label">${label}</span><span class="fm2-cell-empty">—</span></span>`;
+    const dots = arr.map(i => `<span class="fm2-dot ${i.lvl === 'muted' ? 'muted' : i.lvl}" title="${escapeHtml(dotTip(i))}"></span>`).join('');
+    let mt = '';
+    if (kind === 'pret') { const t = arr.reduce((s, i) => s + i.mtNum, 0); mt = t ? fmtMontant(t) : ''; }
+    else if (kind === 'subv') { const t = arr.reduce((s, i) => s + i.mtNum, 0); mt = t ? fmtMontant(t) : ''; }
+    else { mt = arr.length + ''; }
+    return `<span class="fm2-cell"><span class="fm2-cell-label">${label}</span><span class="fm2-dots">${dots}</span>${mt ? `<span class="fm2-cell-mt">${mt}</span>` : ''}</span>`;
+  };
 
-    // Regroupement par tranche
+  const stepperHtml = it => {
+    const parts = [];
+    it.chain.forEach((st, idx) => {
+      if (idx > 0) parts.push('<span class="fm2-step-link"></span>');
+      const d = st.date(it.item);
+      const dateTxt = d ? `<em>${escapeHtml(String(d))}</em>` : '';
+      if (idx <= it.doneIdx) parts.push(`<span class="fm2-step done">✓ ${st.label}${dateTxt ? ' ' + dateTxt : ''}</span>`);
+      else if (idx === it.doneIdx + 1) parts.push(`<span class="fm2-step next">● ${st.label}</span>`);
+      else parts.push(`<span class="fm2-step todo">${st.label}</span>`);
+    });
+    return `<span class="fm2-stepper">${parts.join('')}</span>`;
+  };
+
+  const rows = visible.map(m => {
+    const op = m.op;
+    // Groupes par tranche pour le corps
     const order = [];
     (op.tranches || []).forEach(t => { const c = (typeof synthTrCode === 'function' ? synthTrCode(t) : '') || t.code_full || ''; if (c && !order.includes(c)) order.push(c); });
-    items.forEach(i => { if (i.tr && !order.includes(i.tr)) order.push(i.tr); });
+    m.items.forEach(i => { if (i.tr && !order.includes(i.tr)) order.push(i.tr); });
     const single = order.length <= 1;
-    const groups = single
-      ? [['', items]]
-      : order.map(code => [code, items.filter(i => i.tr === code)]).filter(([, arr]) => arr.length);
+    const groups = single ? [['', m.items]] : order.map(code => [code, m.items.filter(i => i.tr === code)]).filter(([, a]) => a.length);
 
-    const lineHtml = i => `<div class="finmep-line">
-        <span class="finmep-dot ${i.lvl}" title="${escapeHtml(i.statut || '—')}"></span>
-        <span class="finmep-type">${i.type}</span>
-        <span class="finmep-lib">${escapeHtml(i.lib)}</span>
-        <span class="finmep-stat">${escapeHtml(i.statut || '—')}</span>
-        <span class="finmep-mt">${i.mt}</span>
-      </div>`;
-    const bodyHtml = groups.map(([code, arr]) =>
-      `<div class="finmep-tr">${code ? `<span class="finmep-tr-code">${escapeHtml(code)}</span>` : ''}${arr.map(lineHtml).join('')}</div>`
+    const matches = i => fm2Filter === 'all' || (fm2Filter === 'over' ? (i.lvl === 'over' || i.lvl === 'muted') : i.lvl === fm2Filter);
+    const body = groups.map(([code, arr]) =>
+      `${code ? `<span class="fm2-tr-code">${escapeHtml(code)}</span>` : ''}` +
+      arr.map(i => `<div class="fm2-line${matches(i) ? '' : ' dim'}">
+          <span class="fm2-line-lib"><span class="fm2-line-type">${i.type}</span><span class="fm2-line-name" title="${escapeHtml(i.lib)}">${escapeHtml(i.lib)}</span></span>
+          <span class="fm2-line-mt">${i.mtTxt || ''}</span>
+          ${stepperHtml(i)}
+        </div>`).join('')
     ).join('');
 
-    const pills = [
-      cOk ? `<span class="finmep-spill ok">${cOk} en place</span>` : '',
-      cSoon ? `<span class="finmep-spill soon">${cSoon} en cours</span>` : '',
-      cOver ? `<span class="finmep-spill over">${cOver} à initier</span>` : ''
-    ].filter(Boolean).join('');
-
-    return `<details class="finmep-op">
-      <summary class="finmep-head">
-        <i class="ti ti-chevron-right finmep-chev"></i>
-        <span class="finmep-name">${escapeHtml(op.display_name || op.code || '')}</span>
-        <span class="finmep-meter" title="${cOk} en place · ${cSoon} en cours · ${cOver} à initier">
-          <span class="m-ok" style="width:${pct(cOk)}"></span><span class="m-soon" style="width:${pct(cSoon)}"></span><span class="m-over" style="width:${pct(cOver)}"></span>
-        </span>
-        <span class="finmep-sum">${pills}</span>
-        <span class="finmep-total">${totPret ? fmtMontant(totPret) : ''}</span>
+    return `<details class="fm2-row">
+      <summary class="fm2-head">
+        <i class="ti ti-chevron-right fm2-chev"></i>
+        <span class="fm2-name" title="${escapeHtml(op.display_name || op.code || '')}">${escapeHtml(op.display_name || op.code || '')}</span>
+        ${cellFor(m, 'pret', 'Prêts')}
+        ${cellFor(m, 'subv', 'Subv')}
+        ${cellFor(m, 'gar', 'Gar')}
       </summary>
-      <div class="finmep-body">${bodyHtml}</div>
+      <div class="fm2-body">${body}</div>
     </details>`;
   }).join('');
 
-  if (!blocks) return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-cash"></i>Mise en place des financements</div><div class="subent-empty">Aucun financement enregistré.</div></div>`;
-
-  const globalPct = totalCount ? Math.round(totOk / totalCount * 100) : 0;
-  const toolbar = `<div class="finmep-toolbar">
-      <button class="finmep-toolbar-btn" onclick="this.closest('.ctrl-block').querySelectorAll('details.finmep-op').forEach(d=>d.open=true)">Tout déplier</button>
-      <button class="finmep-toolbar-btn" onclick="this.closest('.ctrl-block').querySelectorAll('details.finmep-op').forEach(d=>d.open=false)">Tout replier</button>
-      <span class="finmep-toolbar-note">${totalCount} financements · <strong style="color:var(--success-text);">${globalPct}%</strong> en place</span>
+  const chip = (f, label, n) => `<button class="fm2-filter${fm2Filter === f ? ' active' : ''}" onclick="setFm2Filter('${f}')">${label} <b>${n}</b></button>`;
+  const toolbar = `<div class="fm2-toolbar">
+      ${chip('all', 'Tous', all.length)}
+      ${chip('over', 'À initier', nOver)}
+      ${chip('soon', 'En cours', nSoon)}
+      ${chip('ok', 'En place', nOk)}
+      <span class="fm2-kpis">
+        <span><strong>${all.length ? Math.round(nOk / all.length * 100) : 0}%</strong> en place</span>
+        <span>Prêts signés : <strong>${fmtMontant(mtSigne)}</strong> / ${fmtMontant(mtTotal)}</span>
+      </span>
     </div>`;
 
-  return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-cash"></i>Mise en place des financements</div>${toolbar}${blocks}</div>`;
+  if (!model.length) return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-cash"></i>Mise en place des financements</div><div class="subent-empty">Aucun financement enregistré.</div></div>`;
+  const emptyFilter = !visible.length ? `<div class="subent-empty">Aucune opération ne correspond à ce filtre.</div>` : '';
+  return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-cash"></i>Mise en place des financements</div>${toolbar}${rows}${emptyFilter}</div>`;
 }
 
 // ============== PLAN DE CHARGE ==============
