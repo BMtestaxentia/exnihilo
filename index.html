@@ -8096,6 +8096,9 @@ function tranchesOptions(op, currentValue) {
 
 // Inline Tabler SVG icons (no CDN dependency — works offline + behind firewalls)
 const TABLER_SVG = {
+  'fold-all': '<path d="M12 3v6"/><path d="M9 6l3 3l3 -3"/><path d="M12 21v-6"/><path d="M9 18l3 -3l3 3"/><path d="M4 12h16"/>',
+  'unfold-all': '<path d="M12 9v6"/><path d="M9 12l3 3l3 -3"/><path d="M4 4h16"/><path d="M4 20h16"/>',
+  'timeline': '<path d="M4 16l6 0"/><path d="M14 8l6 0"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="8" r="2"/><path d="M7 14v-6a2 2 0 0 1 2 -2h2"/><path d="M17 10v6a2 2 0 0 1 -2 2h-2"/>',
   'building-skyscraper': '<path d="M5 21V7l8 -4v18"/><path d="M19 21V11l-6 -4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/>',
   'building-community': '<path d="M8 9l5 -5l5 5"/><path d="M11 14h.01"/><path d="M14 14h.01"/><path d="M11 17h.01"/><path d="M14 17h.01"/><path d="M16 21V11"/><path d="M5 21V13"/><path d="M3 21h18"/>',
   'chart-bar': '<path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M9 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M15 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M4 20h14"/>',
@@ -8712,7 +8715,7 @@ function renderOpDetail() {
         </div>
       </div>
       <div style="display: flex; gap: 8px; align-self: center; flex-shrink: 0;">
-        ${!effectiveEditMode ? `<button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-arrows-diagonal-minimize-2"></i></button>` : ''}
+        ${!effectiveEditMode ? `<button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-fold-all"></i></button>` : ''}
         ${!effectiveEditMode ? `<button class="icon-btn" onclick="showOpHistory()" title="Historique des modifications"><i class="ti ti-history"></i></button>` : ''}
         ${op.lien_sharepoint && !effectiveEditMode ? `<a href="${escapeHtml(op.lien_sharepoint)}" target="_blank" class="icon-btn sharepoint-btn" title="Ouvrir dans SharePoint">
           <svg width="14" height="14" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -8809,7 +8812,7 @@ function renderOpDetail() {
       ${editableDateJalon('Convention location', op.date_conv_loc, 'date_conv_loc', op)}
       ${editableDateJalon('Convention APL', op.date_conv_apl, 'date_conv_apl', op)}
       ${editableDateJalon('Dernier CA Axentia', op.date_ca_axentia, 'date_ca_axentia', op)}
-      ${(() => { const n = countOpTimelineEvents(op); return n ? `<button class="timeline-open-btn" onclick="openTimelineModal('${escapeHtml(op._uid)}')" type="button"><i class="ti ti-timeline-event"></i>Voir la chronologie de l'opération<span class="timeline-open-count">${n}</span></button>` : ''; })()}
+      ${(() => { const n = countOpTimelineEvents(op); return n ? `<button class="timeline-open-btn" onclick="openTimelineModal('${escapeHtml(op._uid)}')" type="button"><i class="ti ti-timeline"></i>Voir la chronologie de l'opération<span class="timeline-open-count">${n}</span></button>` : ''; })()}
     </div>
 
     <div class="section">
@@ -16447,7 +16450,7 @@ function toggleAllSections() {
   const btn = document.getElementById('opFoldAllBtn');
   if (btn) {
     const i = btn.querySelector('i, .tabler-svg-icon');
-    if (i) { i.className = 'ti ' + (anyOpen ? 'ti-arrows-diagonal-2' : 'ti-arrows-diagonal-minimize-2'); }
+    if (i) { i.className = 'ti ' + (anyOpen ? 'ti-unfold-all' : 'ti-fold-all'); }
     btn.title = anyOpen ? 'Tout déplier' : 'Tout replier';
     if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
   }
@@ -18037,7 +18040,7 @@ window.addEventListener('beforeunload', (e) => {
 <div class="timeline-modal-backdrop" id="timelineModalBackdrop" onclick="if(event.target===this)closeTimelineModal()">
   <div class="timeline-modal" role="dialog" aria-modal="true" aria-label="Chronologie de l'opération">
     <div class="timeline-modal-head">
-      <i class="ti ti-timeline-event"></i>
+      <i class="ti ti-timeline"></i>
       <div class="tm-titles">
         <span class="tm-kicker">Chronologie de l'opération</span>
         <span class="tm-title" id="timelineModalTitle"></span>
