@@ -8712,6 +8712,7 @@ function renderOpDetail() {
         </div>
       </div>
       <div style="display: flex; gap: 8px; align-self: center; flex-shrink: 0;">
+        ${!effectiveEditMode ? `<button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-fold"></i></button>` : ''}
         ${!effectiveEditMode ? `<button class="icon-btn" onclick="showOpHistory()" title="Historique des modifications"><i class="ti ti-history"></i></button>` : ''}
         ${op.lien_sharepoint && !effectiveEditMode ? `<a href="${escapeHtml(op.lien_sharepoint)}" target="_blank" class="icon-btn sharepoint-btn" title="Ouvrir dans SharePoint">
           <svg width="14" height="14" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -16429,6 +16430,27 @@ function applyCollapsedSections() {
     const key = osnKeyOf(sec);
     if (key) sec.classList.toggle('collapsed', !!collapsedSections[key]);
   });
+}
+
+// Tout replier / tout déplier : si au moins une section est dépliée -> tout replier, sinon tout déplier
+function toggleAllSections() {
+  const secs = [...document.querySelectorAll('#opDetail .section, #trancheDetail .section')];
+  if (!secs.length) return;
+  const anyOpen = secs.some(s => !s.classList.contains('collapsed'));
+  secs.forEach(sec => {
+    const k = osnKeyOf(sec);
+    if (!k) return;
+    sec.classList.toggle('collapsed', anyOpen);
+    if (anyOpen) collapsedSections[k] = 1; else delete collapsedSections[k];
+  });
+  saveCollapsedSections();
+  const btn = document.getElementById('opFoldAllBtn');
+  if (btn) {
+    const i = btn.querySelector('i, .tabler-svg-icon');
+    if (i) { i.className = 'ti ' + (anyOpen ? 'ti-unfold' : 'ti-fold'); }
+    btn.title = anyOpen ? 'Tout déplier' : 'Tout replier';
+    if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
+  }
 }
 
 // Repli/dépli au clic sur les titres de sections (hors timeline qui a son toggle)
