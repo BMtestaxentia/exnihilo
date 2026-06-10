@@ -8712,7 +8712,7 @@ function renderOpDetail() {
         </div>
       </div>
       <div style="display: flex; gap: 8px; align-self: center; flex-shrink: 0;">
-        ${!effectiveEditMode ? `<button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-fold"></i></button>` : ''}
+        ${!effectiveEditMode ? `<button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-arrows-diagonal-minimize-2"></i></button>` : ''}
         ${!effectiveEditMode ? `<button class="icon-btn" onclick="showOpHistory()" title="Historique des modifications"><i class="ti ti-history"></i></button>` : ''}
         ${op.lien_sharepoint && !effectiveEditMode ? `<a href="${escapeHtml(op.lien_sharepoint)}" target="_blank" class="icon-btn sharepoint-btn" title="Ouvrir dans SharePoint">
           <svg width="14" height="14" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -8822,9 +8822,9 @@ function renderOpDetail() {
 
     ${(op.notes_libres || editMode) ? `<div class="section"><div class="section-label notes"><i class="ti ti-message"></i>Notes libres</div>${editableNotes(op.notes_libres, 'notes_libres')}</div>` : ''}
 
-    ${renderValidationPanel(displayedOp)}
-
     ${renderHistoryChart(op)}
+
+    ${renderValidationPanel(displayedOp)}
 
     ${renderAlertsPanel(displayedOp)}
   `;
@@ -16447,7 +16447,7 @@ function toggleAllSections() {
   const btn = document.getElementById('opFoldAllBtn');
   if (btn) {
     const i = btn.querySelector('i, .tabler-svg-icon');
-    if (i) { i.className = 'ti ' + (anyOpen ? 'ti-unfold' : 'ti-fold'); }
+    if (i) { i.className = 'ti ' + (anyOpen ? 'ti-arrows-diagonal-2' : 'ti-arrows-diagonal-minimize-2'); }
     btn.title = anyOpen ? 'Tout déplier' : 'Tout replier';
     if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
   }
