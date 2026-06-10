@@ -3450,6 +3450,44 @@
   .ctrl-chip-soon { background: var(--warning-bg); color: var(--warning-text); }
   .ctrl-chip-ok { background: var(--success-bg); color: var(--success-text); }
   .ctrl-chip-muted { color: var(--text-tertiary); }
+  /* === Mise en place des financements : format compact === */
+  .finmep-op { border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 7px; overflow: hidden; background: var(--bg-primary); }
+  .finmep-op[open] { border-color: var(--border-color-strong); }
+  .finmep-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; list-style: none; user-select: none; }
+  .finmep-head::-webkit-details-marker { display: none; }
+  .finmep-head:hover { background: var(--bg-secondary); }
+  .finmep-chev { color: var(--text-tertiary); font-size: 13px; transition: transform 0.15s ease; flex-shrink: 0; }
+  .finmep-op[open] .finmep-chev { transform: rotate(90deg); }
+  .finmep-name { font-size: 12.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 80px; }
+  .finmep-meter { display: flex; height: 6px; border-radius: 999px; overflow: hidden; width: 90px; flex-shrink: 0; background: var(--bg-tertiary); }
+  .finmep-meter span { display: block; height: 100%; }
+  .finmep-meter .m-ok { background: var(--success-accent); }
+  .finmep-meter .m-soon { background: var(--warning-accent); }
+  .finmep-meter .m-over { background: #d85a30; }
+  .finmep-sum { display: flex; gap: 5px; flex-shrink: 0; margin-left: auto; }
+  .finmep-spill { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+  .finmep-spill.ok { background: var(--success-bg); color: var(--success-text); }
+  .finmep-spill.soon { background: var(--warning-bg); color: var(--warning-text); }
+  .finmep-spill.over { background: rgba(216,90,48,0.16); color: #d85a30; }
+  .finmep-total { font-size: 11.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .finmep-body { padding: 4px 12px 10px 30px; border-top: 1px solid var(--border-color); }
+  .finmep-tr { margin-top: 8px; }
+  .finmep-tr-code { display: inline-block; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-tertiary); margin-bottom: 3px; }
+  .finmep-line { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; border-bottom: 1px dashed var(--border-color); }
+  .finmep-line:last-child { border-bottom: none; }
+  .finmep-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .finmep-dot.ok { background: var(--success-accent); }
+  .finmep-dot.soon { background: var(--warning-accent); }
+  .finmep-dot.over { background: #d85a30; }
+  .finmep-dot.muted { background: var(--text-tertiary); }
+  .finmep-type { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-tertiary); width: 30px; flex-shrink: 0; }
+  .finmep-lib { color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 60px; }
+  .finmep-stat { color: var(--text-tertiary); font-size: 11px; margin-left: auto; white-space: nowrap; flex-shrink: 0; }
+  .finmep-mt { font-weight: 600; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+  .finmep-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .finmep-toolbar-btn { font-size: 11px; font-weight: 600; color: var(--text-secondary); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 3px 9px; cursor: pointer; font-family: inherit; }
+  .finmep-toolbar-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+  .finmep-toolbar-note { font-size: 11px; color: var(--text-tertiary); margin-left: auto; }
   /* === [RESTAURÉ] Calendrier Comités === */
   .com-cal { border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; background: var(--bg-secondary); }
   .com-cal-head { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 12px; }
@@ -6931,60 +6969,93 @@ function renderCtrlGoNoGo() {
 
 function renderCtrlFinancements() {
   const ops = ctrlActiveOps();
-  const finChip = (statut) => {
-    const s = (statut || '').trim();
-    const l = s.toLowerCase();
-    let cls = 'ctrl-chip-muted';
-    if (/à demander|a demander|à déposer|a deposer/.test(l) || !s) cls = 'ctrl-chip-over';
-    else if (/sign|notifi|contrat|conventi|obtenu/.test(l)) cls = 'ctrl-chip-ok';
-    else if (/demand|instruction|dossier|accord|délib|delib|dépos|depos|offre|lettre|négoci|negoci|validé|valide/.test(l)) cls = 'ctrl-chip-soon';
-    return `<span class="ctrl-chip ${cls}">${escapeHtml(s || '—')}</span>`;
+  // Niveau de statut : ok (en place) / soon (en cours) / over (à initier) / muted (inconnu)
+  const lvlOf = (statut) => {
+    const l = (statut || '').toLowerCase().trim();
+    if (!l) return 'muted';
+    if (/à demander|a demander|à déposer|a deposer|à monter|a monter|à solliciter|a solliciter/.test(l)) return 'over';
+    if (/sign|notifi|contrat|conventi|obtenu|accord.*re|reçu|recu|levé|leve/.test(l)) return 'ok';
+    if (/demand|instruction|dossier|accord|délib|delib|dépos|depos|offre|lettre|négoci|negoci|validé|valide|transmis|cours/.test(l)) return 'soon';
+    return 'soon';
   };
   const pretMt = p => Number(p.montant_contrat) || Number(p.montant_lo) || Number(p.montant_sim) || 0;
   const subvMt = s => Number(s.montant_notifie) || Number(s.montant_demande) || 0;
+  const garMtTxt = g => {
+    const q = Number(g.quotite) || 0;
+    return Number(g.montant_couvert) ? fmtMontant(Number(g.montant_couvert)) : (q ? (q > 1 ? q : Math.round(q * 100)) + ' %' : '—');
+  };
+
+  let totalCount = 0, totOk = 0, totSoon = 0, totOver = 0;
 
   const blocks = ops.map(op => {
     const prets = op.prets || [], subv = op.subventions || [], gar = op.garanties || [];
     if (!prets.length && !subv.length && !gar.length) return '';
-    const trOf = i => (i.tranche || '').trim();
-    const codes = [];
-    (op.tranches || []).forEach(t => { const c = (typeof synthTrCode === 'function' ? synthTrCode(t) : '') || t.code_full || ''; if (c && !codes.includes(c)) codes.push(c); });
-    [...prets, ...subv, ...gar].forEach(i => { const c = trOf(i); if (c && !codes.includes(c)) codes.push(c); });
-    if (!codes.length) codes.push('');
-    const single = codes.length === 1;
-    const rows = [];
-    codes.forEach(code => {
-      const tp = prets.filter(p => single || trOf(p) === code);
-      const ts = subv.filter(s => single || trOf(s) === code);
-      const tg = gar.filter(g => single || trOf(g) === code);
-      const n = tp.length + ts.length + tg.length;
-      if (!n) return;
-      let first = true;
-      const row = (type, lib, statut, montant) => {
-        const tdTr = first ? `<td rowspan="${n}" style="font-weight:600;color:var(--text-primary);vertical-align:top;border-right:1px solid var(--border-color);">${escapeHtml(code || '—')}</td>` : '';
-        first = false;
-        return `<tr>${tdTr}<td style="color:var(--text-tertiary);">${type}</td><td>${escapeHtml(lib)}</td><td>${finChip(statut)}</td><td style="text-align:right;white-space:nowrap;">${montant}</td></tr>`;
-      };
-      tp.forEach(p => rows.push(row('Prêt', `${p.ligne || ''}${p.financeur ? ' · ' + p.financeur : ''}`, p.statut, fmtMontant(pretMt(p)))));
-      ts.forEach(s => rows.push(row('Subv.', `${s.financement || s.financeur || ''}`, s.statut, fmtMontant(subvMt(s)))));
-      tg.forEach(g => {
-        const q = Number(g.quotite) || 0;
-        const mt = Number(g.montant_couvert) ? fmtMontant(Number(g.montant_couvert)) : (q ? (q > 1 ? q : Math.round(q * 100)) + ' %' : '—');
-        rows.push(row('Garantie', `${g.garant || ''}${g.pret_lie ? ' · ' + g.pret_lie : ''}`, g.statut, mt));
-      });
-    });
-    if (!rows.length) return '';
-    return `<div style="margin-bottom:16px;">
-      <div style="font-size:12.5px;font-weight:700;color:var(--text-primary);margin:4px 0 6px;">${escapeHtml(op.display_name || op.code || '')}</div>
-      <table class="ctrl-table">
-        <thead><tr><th>Tranche</th><th>Type</th><th>Libellé</th><th>Statut / étape</th><th style="text-align:right;">Montant</th></tr></thead>
-        <tbody>${rows.join('')}</tbody>
-      </table>
-    </div>`;
+
+    // Liste unifiée d'instruments
+    const items = [];
+    prets.forEach(p => items.push({ tr: (p.tranche || '').trim(), type: 'Prêt', lib: `${p.ligne || ''}${p.financeur ? ' · ' + p.financeur : ''}`.trim() || 'Prêt', statut: p.statut, mt: fmtMontant(pretMt(p)), lvl: lvlOf(p.statut), pmt: pretMt(p) }));
+    subv.forEach(s => items.push({ tr: (s.tranche || '').trim(), type: 'Subv', lib: (s.financement || s.financeur || 'Subvention'), statut: s.statut, mt: fmtMontant(subvMt(s)), lvl: lvlOf(s.statut), pmt: 0 }));
+    gar.forEach(g => items.push({ tr: (g.tranche || '').trim(), type: 'Gar', lib: `${g.garant || 'Garantie'}${g.pret_lie ? ' · ' + g.pret_lie : ''}`, statut: g.statut, mt: garMtTxt(g), lvl: lvlOf(g.statut), pmt: 0 }));
+    if (!items.length) return '';
+
+    const cOk = items.filter(i => i.lvl === 'ok').length;
+    const cSoon = items.filter(i => i.lvl === 'soon').length;
+    const cOver = items.filter(i => i.lvl === 'over' || i.lvl === 'muted').length;
+    totalCount += items.length; totOk += cOk; totSoon += cSoon; totOver += cOver;
+    const totPret = items.reduce((s, i) => s + (i.pmt || 0), 0);
+    const tot = items.length;
+    const pct = v => (tot ? (v / tot * 100).toFixed(1) : 0) + '%';
+
+    // Regroupement par tranche
+    const order = [];
+    (op.tranches || []).forEach(t => { const c = (typeof synthTrCode === 'function' ? synthTrCode(t) : '') || t.code_full || ''; if (c && !order.includes(c)) order.push(c); });
+    items.forEach(i => { if (i.tr && !order.includes(i.tr)) order.push(i.tr); });
+    const single = order.length <= 1;
+    const groups = single
+      ? [['', items]]
+      : order.map(code => [code, items.filter(i => i.tr === code)]).filter(([, arr]) => arr.length);
+
+    const lineHtml = i => `<div class="finmep-line">
+        <span class="finmep-dot ${i.lvl}" title="${escapeHtml(i.statut || '—')}"></span>
+        <span class="finmep-type">${i.type}</span>
+        <span class="finmep-lib">${escapeHtml(i.lib)}</span>
+        <span class="finmep-stat">${escapeHtml(i.statut || '—')}</span>
+        <span class="finmep-mt">${i.mt}</span>
+      </div>`;
+    const bodyHtml = groups.map(([code, arr]) =>
+      `<div class="finmep-tr">${code ? `<span class="finmep-tr-code">${escapeHtml(code)}</span>` : ''}${arr.map(lineHtml).join('')}</div>`
+    ).join('');
+
+    const pills = [
+      cOk ? `<span class="finmep-spill ok">${cOk} en place</span>` : '',
+      cSoon ? `<span class="finmep-spill soon">${cSoon} en cours</span>` : '',
+      cOver ? `<span class="finmep-spill over">${cOver} à initier</span>` : ''
+    ].filter(Boolean).join('');
+
+    return `<details class="finmep-op">
+      <summary class="finmep-head">
+        <i class="ti ti-chevron-right finmep-chev"></i>
+        <span class="finmep-name">${escapeHtml(op.display_name || op.code || '')}</span>
+        <span class="finmep-meter" title="${cOk} en place · ${cSoon} en cours · ${cOver} à initier">
+          <span class="m-ok" style="width:${pct(cOk)}"></span><span class="m-soon" style="width:${pct(cSoon)}"></span><span class="m-over" style="width:${pct(cOver)}"></span>
+        </span>
+        <span class="finmep-sum">${pills}</span>
+        <span class="finmep-total">${totPret ? fmtMontant(totPret) : ''}</span>
+      </summary>
+      <div class="finmep-body">${bodyHtml}</div>
+    </details>`;
   }).join('');
 
   if (!blocks) return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-cash"></i>Mise en place des financements</div><div class="subent-empty">Aucun financement enregistré.</div></div>`;
-  return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-cash"></i>Mise en place des financements</div>${blocks}</div>`;
+
+  const globalPct = totalCount ? Math.round(totOk / totalCount * 100) : 0;
+  const toolbar = `<div class="finmep-toolbar">
+      <button class="finmep-toolbar-btn" onclick="this.closest('.ctrl-block').querySelectorAll('details.finmep-op').forEach(d=>d.open=true)">Tout déplier</button>
+      <button class="finmep-toolbar-btn" onclick="this.closest('.ctrl-block').querySelectorAll('details.finmep-op').forEach(d=>d.open=false)">Tout replier</button>
+      <span class="finmep-toolbar-note">${totalCount} financements · <strong style="color:var(--success-text);">${globalPct}%</strong> en place</span>
+    </div>`;
+
+  return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-cash"></i>Mise en place des financements</div>${toolbar}${blocks}</div>`;
 }
 
 // ============== PLAN DE CHARGE ==============
@@ -8096,6 +8167,7 @@ function tranchesOptions(op, currentValue) {
 
 // Inline Tabler SVG icons (no CDN dependency — works offline + behind firewalls)
 const TABLER_SVG = {
+  'chevron-right': '<path d="M9 6l6 6l-6 6"/>',
   'fold-all': '<path d="M12 3v6"/><path d="M9 6l3 3l3 -3"/><path d="M12 21v-6"/><path d="M9 18l3 -3l3 3"/><path d="M4 12h16"/>',
   'unfold-all': '<path d="M12 9v6"/><path d="M9 12l3 3l3 -3"/><path d="M4 4h16"/><path d="M4 20h16"/>',
   'timeline': '<path d="M4 16l6 0"/><path d="M14 8l6 0"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="8" r="2"/><path d="M7 14v-6a2 2 0 0 1 2 -2h2"/><path d="M17 10v6a2 2 0 0 1 -2 2h-2"/>',
