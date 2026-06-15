@@ -152,173 +152,55 @@
 
   /* La page bilan : format A4 (21 cm × 29.7 cm), couleurs Axentia */
   .bilan-print-page {
-    width: 21cm;
-    min-height: 29.7cm;
-    background: #fff;
-    color: #1f2937;
-    font-family: Calibri, 'Segoe UI', Arial, sans-serif;
-    font-size: 10pt;
-    padding: 1.5cm 1.8cm;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-    box-sizing: border-box;
+    width: 21cm; min-height: 29.7cm; background: #fff; color: #2b2b2b;
+    font-family: 'Segoe UI', Calibri, Arial, sans-serif; font-size: 10pt;
+    padding: 1.4cm 1.6cm; box-shadow: 0 4px 24px rgba(0,0,0,0.4); box-sizing: border-box;
   }
-
-  /* Header avec titre et logo */
-  .bilan-header {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    margin-bottom: 6px;
-  }
+  .bilan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; }
   .bilan-title-block { flex: 1; }
-  .bilan-title {
-    font-size: 22pt;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0;
-    letter-spacing: 0.5px;
-  }
-  .bilan-subtitle {
-    font-size: 11pt;
-    font-style: italic;
-    color: #6b7280;
-    margin: 4px 0 0;
-  }
-  .bilan-logo {
-    height: 38px;
-    width: auto;
-  }
-  .bilan-date-block {
-    text-align: right;
-    font-size: 9pt;
-    color: #6b7280;
-    margin-top: 8px;
-    margin-bottom: 14px;
-  }
+  .bilan-title { font-size: 16.5pt; font-weight: 700; color: #1F3A5F; margin: 0; letter-spacing: 0.3px; }
+  .bilan-subtitle { font-size: 10pt; color: #7A7A7A; margin: 2px 0 0; }
+  .bilan-logo { height: 40px; width: auto; }
+  .bilan-date-block { text-align: right; font-size: 9pt; color: #7A7A7A; margin: 2px 0 12px; }
+  .bilan-date-block b { color: #1F3A5F; font-weight: 700; }
 
-  /* Bandeaux de section : bleu marine */
-  .bilan-section-header {
-    background: #1c4e80;
-    color: #fff;
-    font-weight: 700;
-    font-size: 10pt;
-    padding: 7px 12px;
-    margin-top: 10px;
-    letter-spacing: 0.3px;
-  }
-  /* Sous-bandeaux : bleu clair */
-  .bilan-subsection-header {
-    background: #c7d6e8;
-    color: #1c4e80;
-    font-weight: 700;
-    font-size: 9.5pt;
-    padding: 6px 12px;
-    letter-spacing: 0.2px;
-  }
-  /* Lignes de tableau */
-  .bilan-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 9.5pt;
-  }
-  .bilan-table td {
-    padding: 5px 12px;
-    border-bottom: 1px solid #e5e7eb;
-    vertical-align: top;
-  }
-  .bilan-table td.bilan-libelle-indent {
-    padding-left: 30px;
-    color: #374151;
-  }
-  .bilan-table td.bilan-libelle-bold {
-    font-weight: 600;
-    color: #1f2937;
-  }
-  .bilan-table td.bilan-montant {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    width: 110px;
-  }
-  .bilan-table td.bilan-pct {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    color: #6b7280;
-    width: 60px;
-  }
-  /* Sous-totaux : fond teal */
-  .bilan-table tr.bilan-subtotal td {
-    background: #2a9d8f;
-    color: #fff;
-    font-weight: 700;
-    border-bottom: none;
-    padding-top: 7px; padding-bottom: 7px;
-  }
-  /* Total opération : fond bleu marine plus marqué */
-  .bilan-table tr.bilan-total td {
-    background: #1c4e80;
-    color: #fff;
-    font-weight: 700;
-    border-bottom: none;
-    padding-top: 8px; padding-bottom: 8px;
-    font-size: 10pt;
-  }
-  /* En-tête de tableau (Montants TTC / %) */
-  .bilan-table-header {
-    background: #1c4e80;
-    color: #fff;
-    font-weight: 700;
-    font-size: 9.5pt;
-  }
-  .bilan-table-header td {
-    padding: 6px 12px;
-    border-bottom: none;
-  }
+  /* Bandeau de section : navy plein */
+  .bilan-section-header { background: #1F3A5F; color: #fff; font-weight: 700; font-size: 10pt; padding: 7px 12px; margin-top: 12px; letter-spacing: 0.3px; display: flex; justify-content: space-between; align-items: center; }
+  .bilan-section-header .bsh-cols { display: flex; }
+  .bilan-section-header .bsh-m { width: 120px; text-align: right; font-size: 9pt; }
+  .bilan-section-header .bsh-p { width: 64px; text-align: right; font-size: 9pt; }
 
-  /* Identification (lignes clé:valeur) */
-  .bilan-id-table { width: 100%; border-collapse: collapse; }
-  .bilan-id-table td {
-    padding: 5px 12px;
-    border-bottom: 1px solid #e5e7eb;
-    font-size: 9.5pt;
-  }
-  .bilan-id-table td:first-child {
-    font-weight: 600;
-    width: 35%;
-    color: #1c4e80;
-  }
+  /* Sous-bandeau : beige */
+  .bilan-subsection-header { background: #F4F1EA; color: #1F3A5F; font-weight: 700; font-size: 9.5pt; padding: 5px 12px; letter-spacing: 0.2px; margin-top: 2px; }
 
-  /* Équilibre */
-  .bilan-equilibre {
-    margin-top: 14px;
-    text-align: right;
-    font-size: 10pt;
-    font-style: italic;
-    font-weight: 600;
-  }
-  .bilan-equilibre-ok { color: #2a9d8f; }
+  .bilan-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  .bilan-table td { padding: 4px 12px; border-bottom: 1px solid #ececec; vertical-align: top; }
+  .bilan-table td.bilan-libelle-indent { padding-left: 26px; color: #333; }
+  .bilan-table td.bilan-libelle { color: #1F3A5F; }
+  .bilan-table td.bilan-montant { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; width: 120px; color: #1F3A5F; }
+  .bilan-table td.bilan-pct { text-align: right; font-variant-numeric: tabular-nums; color: #7A7A7A; width: 64px; }
+
+  /* Sous-total de bloc : texte navy gras, filet au-dessus, sans fond (comme l'Excel) */
+  .bilan-table tr.bilan-subtotal td { color: #1F3A5F; font-weight: 700; border-top: 1.5px solid #1F3A5F; border-bottom: none; padding-top: 5px; padding-bottom: 5px; }
+
+  /* Totaux Dépenses / Financement : bandeau navy plein */
+  .bilan-table tr.bilan-total-navy td { background: #1F3A5F; color: #fff; font-weight: 700; border-bottom: none; padding-top: 7px; padding-bottom: 7px; }
+  .bilan-table tr.bilan-total-navy td.bilan-montant, .bilan-table tr.bilan-total-navy td.bilan-pct { color: #fff; }
+  /* Prix de revient opération : bandeau or */
+  .bilan-table tr.bilan-total-gold td { background: #C9A961; color: #fff; font-weight: 700; border-bottom: none; padding-top: 8px; padding-bottom: 8px; font-size: 10pt; }
+  .bilan-table tr.bilan-total-gold td.bilan-montant, .bilan-table tr.bilan-total-gold td.bilan-pct { color: #fff; }
+
+  /* Identification : grille clé(beige)/valeur 2 colonnes */
+  .bilan-id-grid { display: grid; grid-template-columns: auto 1fr auto 1fr; border: 1px solid #ececec; border-top: none; }
+  .bilan-id-grid .bik { background: #F4F1EA; color: #1F3A5F; font-weight: 700; padding: 5px 12px; font-size: 9.5pt; border-bottom: 1px solid #fff; white-space: nowrap; }
+  .bilan-id-grid .biv { color: #1F3A5F; padding: 5px 12px; font-size: 9.5pt; border-bottom: 1px solid #ececec; }
+
+  .bilan-equilibre { margin-top: 10px; padding: 6px 12px; text-align: right; font-size: 10pt; font-weight: 700; color: #1F3A5F; border-top: 1.5px solid #1F3A5F; }
+  .bilan-equilibre-ok { color: #1F3A5F; }
   .bilan-equilibre-ko { color: #c4423a; }
-
-  /* Footer */
-  .bilan-footer {
-    margin-top: 28px;
-    text-align: center;
-    font-size: 8pt;
-    font-style: italic;
-    color: #9ca3af;
-    border-top: 1px solid #e5e7eb;
-    padding-top: 8px;
-  }
-
-  /* Légende multi-tranches */
-  .bilan-tranches-legend {
-    margin-top: 6px;
-    margin-bottom: 6px;
-    padding: 8px 12px;
-    background: #f3f4f6;
-    border-left: 3px solid #1c4e80;
-    font-size: 9pt;
-    color: #4b5563;
-  }
-  .bilan-tranches-legend strong { color: #1c4e80; }
+  .bilan-footer { margin-top: 22px; text-align: center; font-size: 8pt; font-style: italic; color: #A0A0A0; border-top: 1px solid #ececec; padding-top: 8px; }
+  .bilan-tranches-legend { margin: 6px 0; padding: 7px 12px; background: #F4F1EA; border-left: 3px solid #1F3A5F; font-size: 9pt; color: #555; }
+  .bilan-tranches-legend strong { color: #1F3A5F; }
 
   /* ============== MODE PRINT ============== */
   @media print {
@@ -7570,83 +7452,68 @@ function _bilanFmt(v) {
 function _bilanFmtPct(v, total) {
   if (!total || total === 0) return '—';
   const p = (v / total) * 100;
-  return p.toFixed(2).replace('.', ',') + ' %';
+  return p.toFixed(1).replace('.', ',') + ' %';
 }
 
 // Agrège les données du bilan pour une liste de tranches sélectionnées (somme des postes)
 function _bilanAggregateData(op, tranches) {
-  // Postes consolidés
-  let vefa = 0, notaire = 0, divFoncier = 0;
-  let conduite = 0, prefi = 0, hypo = 0;
-  let fraisDivers = 0;
-  let pli = 0, pliFoncier = 0, als = 0, subv = 0, fp = 0;
-  // Pour les types de produit / gestionnaires : on liste tout
-  const types = new Set();
-  const gestionnaires = new Set();
-  const refs = new Set();
+  const types = new Set(), gestionnaires = new Set(), refs = new Set();
+  const addToMap = (map, obj) => {
+    if (!obj || typeof obj !== 'object') return;
+    Object.entries(obj).forEach(([k, v]) => {
+      const n = Number(v); if (isNaN(n)) return;
+      map.set(k, (map.get(k) || 0) + n);
+    });
+  };
+  const cfMap = new Map(), batMap = new Map(), honMap = new Map();
+  const recMap = new Map();
+  let fp = 0;
 
   tranches.forEach(t => {
-    const cf = t.bilan?.charge_fonciere || t.charge_fonciere || {};
-    const hon = t.bilan?.honoraires || t.honoraires || {};
-    const fd = t.bilan?.frais_divers || t.frais_divers || {};
-    const ff = t.bilan?.frais_financiers || t.frais_financiers || {};
-    const bat = t.bilan?.batiment || t.batiment || {};
+    const bl = t.bilan || {};
+    addToMap(cfMap, bl.charge_fonciere || t.charge_fonciere);
+    addToMap(batMap, bl.batiment || t.batiment);
+    addToMap(batMap, bl.frais_divers || t.frais_divers);
+    addToMap(honMap, bl.honoraires || t.honoraires);
+    addToMap(honMap, bl.frais_financiers || t.frais_financiers);
 
-    const v = _bilanMatchSum(cf, ['vefa', 'terrain', 'acquisition fonci', 'achat']);
-    const n = _bilanMatchSum(cf, ['notari', 'acquisition']);
-    const nKeys = n.keys.filter(k => !v.keys.includes(k));
-    const nTotal = nKeys.reduce((s, k) => s + (Number(cf[k]) || 0), 0);
-    const usedCF = [...v.keys, ...nKeys];
-    vefa += v.total;
-    notaire += nTotal;
-    divFoncier += _bilanSumOther(cf, usedCF);
-
-    const cond = _bilanMatchSum(hon, ['conduite']);
-    const pf = _bilanMatchSum(hon, ['préfi', 'prefi', 'intérêt', 'interet']);
-    const pfKeys = pf.keys.filter(k => !cond.keys.includes(k));
-    const pfTotal = pfKeys.reduce((s, k) => s + (Number(hon[k]) || 0), 0);
-    const hy = _bilanMatchSum(hon, ['hypoth', 'garant']);
-    const hyKeys = hy.keys.filter(k => !cond.keys.includes(k) && !pfKeys.includes(k));
-    const hyTotal = hyKeys.reduce((s, k) => s + (Number(hon[k]) || 0), 0);
-    conduite += cond.total;
-    prefi += pfTotal;
-    hypo += hyTotal;
-
-    fraisDivers += _bilanSumSection(fd) + _bilanSumSection(ff) + _bilanSumSection(bat);
-
-    // Recettes
     const trCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
-    const pretsT = (op.prets || []).filter(p => p.tranche === trCode);
-    const subvT = (op.subventions || []).filter(s => s.tranche === trCode);
-
-    pli += _bilanSumPrets(pretsT, ['pli'], ['foncier']);
-    pliFoncier += _bilanSumPrets(pretsT, ['foncier']);
-    als += _bilanSumPrets(pretsT, ['als']);
-    subv += subvT.reduce((s, sb) => s + (Number(sb.montant_notifie || sb.montant_notif || sb.montant_demande) || 0), 0);
+    (op.prets || []).filter(p => p.tranche === trCode).forEach(p => {
+      const label = (p.ligne || 'Prêt') + (p.financeur ? ' · ' + p.financeur : '');
+      const amt = Number(p.montant_contrat) || Number(p.montant_lo) || Number(p.montant_sim) || 0;
+      if (amt) { const k = 'P:' + label; recMap.set(k, { label, montant: (recMap.get(k)?.montant || 0) + amt }); }
+    });
+    (op.subventions || []).filter(s => s.tranche === trCode).forEach(s => {
+      const label = s.financement || ('Subvention ' + (s.financeur || '')).trim();
+      const amt = Number(s.montant_notifie) || Number(s.montant_demande) || 0;
+      if (amt) { const k = 'S:' + label; recMap.set(k, { label, montant: (recMap.get(k)?.montant || 0) + amt }); }
+    });
     fp += Number(t.fonds_propres) || 0;
 
     if (t.type_structure) types.add(t.type_structure);
     if (t.gestionnaire) gestionnaires.add(t.gestionnaire);
-    const ref = t.n_leon || t.n_siap;
-    if (ref) refs.add(ref);
+    const ref = t.n_leon || t.n_siap; if (ref) refs.add(ref);
   });
 
-  const totalCF = vefa + notaire + divFoncier;
-  const totalHon = conduite + prefi + hypo;
-  const totalPR = totalCF + totalHon;
-  const totalDep = totalCF + totalHon + fraisDivers;
-  const totalRec = pli + pliFoncier + als + subv + fp;
+  const mapToLines = m => [...m.entries()].map(([label, montant]) => ({ label, montant }));
+  const sum = lines => lines.reduce((s, l) => s + l.montant, 0);
+  const cfLines = mapToLines(cfMap), batLines = mapToLines(batMap), honLines = mapToLines(honMap);
+  const blocks = [
+    { title: 'CHARGE FONCIÈRE', totalLabel: 'TOTAL CHARGE FONCIÈRE', depLabel: 'Charge Foncière', lines: cfLines, total: sum(cfLines) },
+    { title: 'BÂTIMENT / TRAVAUX', totalLabel: 'TOTAL BÂTIMENT', depLabel: 'Bâtiment / Travaux', lines: batLines, total: sum(batLines) },
+    { title: 'HONORAIRES', totalLabel: 'TOTAL HONORAIRES', depLabel: 'Honoraires', lines: honLines, total: sum(honLines) },
+  ].filter(b => b.lines.length || b.total);
+
+  const totalPR = blocks.reduce((s, b) => s + b.total, 0);
+  const depenses = blocks.map(b => ({ label: b.depLabel, montant: b.total }));
+  const totalDep = totalPR;
+  const recettes = [...recMap.values()].map(r => ({ label: r.label, montant: r.montant }));
+  if (fp) recettes.push({ label: 'Fonds propres', montant: fp });
+  const totalRec = recettes.reduce((s, l) => s + l.montant, 0);
   const equilibre = totalRec - totalDep;
 
-  return {
-    vefa, notaire, divFoncier, totalCF,
-    conduite, prefi, hypo, totalHon,
-    totalPR,
-    fraisDivers, totalDep,
-    pli, pliFoncier, als, subv, fp, totalRec,
-    equilibre,
-    types: [...types], gestionnaires: [...gestionnaires], refs: [...refs],
-  };
+  return { blocks, totalPR, depenses, totalDep, recettes, totalRec, equilibre,
+    types: [...types], gestionnaires: [...gestionnaires], refs: [...refs] };
 }
 
 // Génère le HTML de la page bilan dans le conteneur #bilan-print-page
@@ -7655,99 +7522,83 @@ function _bilanRenderPage(op, tranchesSelected) {
   const today = new Date();
   const dateStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
 
-  // Identification
   const depMatch = (op.departement || '').match(/\((\d+)\)/);
-  const depCode = depMatch ? depMatch[1] : (op.departement || '');
-  const programme = `${(op.commune || '').toUpperCase()}${depCode ? ' (' + depCode + ')' : ''} - ${op.code || ''}`;
+  const depCode = depMatch ? depMatch[1] : '';
+  const programme = `${(op.commune || '').toUpperCase()}${depCode ? ' (' + depCode + ')' : ''}`;
   const typeProduit = d.types.join(' / ') || '—';
   const gestionnaireStr = d.gestionnaires.join(' / ') || '—';
   const refsStr = d.refs.join(' / ') || '—';
 
-  // Sous-titre (typologies des tranches sélectionnées)
   const trancheLabels = tranchesSelected.map(t => {
     const tc = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
     return `${tc}${t.financement ? ' (' + t.financement + ')' : ''}`;
   });
-  const sousTitre = d.types.join(', ') + (d.types.length ? ' — ' : '') + trancheLabels.join(', ');
+  const sousTitre = d.types.join(', ') || 'Bilan prévisionnel d\'opération';
 
-  const multiTranche = tranchesSelected.length > 1;
-  const legendHtml = multiTranche
-    ? `<div class="bilan-tranches-legend"><strong>Périmètre :</strong> bilan consolidé de ${tranchesSelected.length} tranches (${trancheLabels.join(', ')}). Les montants sont la somme des postes correspondants sur chaque tranche.</div>`
-    : '';
-
-  // Logo Axentia : on récupère le src de l'image de la topnav (déjà chargée en base64 dans le HTML)
   const logoEl = document.querySelector('.topnav-brand-logo');
   const logoSrc = logoEl ? logoEl.src : '';
 
-  const equilibreClass = Math.abs(d.equilibre) < 1 ? 'bilan-equilibre-ok' : 'bilan-equilibre-ko';
-  const equilibreText = `Équilibre — Écart (Recettes − Dépenses) : ${d.equilibre >= 0 ? '+' : ''}${_bilanFmt(d.equilibre).replace('—', '0 €')}`;
+  const multiTranche = tranchesSelected.length > 1;
+  const legendHtml = multiTranche
+    ? `<div class="bilan-tranches-legend"><strong>Périmètre :</strong> bilan consolidé de ${tranchesSelected.length} tranches (${escapeHtml(trancheLabels.join(', '))}). Les montants correspondent à la somme des postes de chaque tranche.</div>`
+    : '';
+
+  const bandeau = title => `<div class="bilan-section-header"><span>${title}</span><span class="bsh-cols"><span class="bsh-m">Montants TTC (€)</span><span class="bsh-p">%</span></span></div>`;
+  const lineRow = (label, montant, base) => `<tr><td class="bilan-libelle-indent">${escapeHtml(label)}</td><td class="bilan-montant">${_bilanFmt(montant)}</td><td class="bilan-pct">${_bilanFmtPct(montant, base)}</td></tr>`;
+  const subtotalRow = (label, montant) => `<tr class="bilan-subtotal"><td class="bilan-libelle">${escapeHtml(label)}</td><td class="bilan-montant">${_bilanFmt(montant)}</td><td class="bilan-pct">100,0 %</td></tr>`;
+
+  const blocksHtml = d.blocks.map(b => `
+    <div class="bilan-subsection-header">${escapeHtml(b.title)}</div>
+    <table class="bilan-table">
+      ${b.lines.map(l => lineRow(l.label, l.montant, b.total)).join('')}
+      ${subtotalRow(b.totalLabel, b.total)}
+    </table>`).join('');
+
+  const depRows = d.depenses.map(l => lineRow(l.label, l.montant, d.totalDep)).join('');
+  const recRows = d.recettes.map(l => lineRow(l.label, l.montant, d.totalRec)).join('');
+
+  const equilibreOk = Math.abs(d.equilibre) < 1;
+  const equilibreVal = (d.equilibre > 0 ? '+' : '') + (equilibreOk ? '0 €' : _bilanFmt(d.equilibre));
 
   return `
     <div class="bilan-header">
       <div class="bilan-title-block">
         <h1 class="bilan-title">BILAN PRÉVISIONNEL D'OPÉRATION</h1>
-        <p class="bilan-subtitle">${escapeHtml(sousTitre || 'Tranche')}</p>
+        <p class="bilan-subtitle">${escapeHtml(sousTitre)}</p>
       </div>
       ${logoSrc ? `<img src="${logoSrc}" alt="AXENTIA" class="bilan-logo">` : ''}
     </div>
-    <div class="bilan-date-block">Date : ${dateStr}</div>
-
+    <div class="bilan-date-block">Date : <b>${dateStr}</b></div>
     ${legendHtml}
 
-    <div class="bilan-section-header">IDENTIFICATION DE L'OPÉRATION</div>
-    <table class="bilan-id-table">
-      <tr><td>Programme</td><td>${escapeHtml(programme)}</td></tr>
-      <tr><td>Gestionnaire</td><td>${escapeHtml(gestionnaireStr)}</td></tr>
-      <tr><td>Type de produit</td><td>${escapeHtml(typeProduit)}</td></tr>
-      <tr><td>Référence</td><td>${escapeHtml(refsStr)}</td></tr>
+    <div class="bilan-section-header"><span>IDENTIFICATION DE L'OPÉRATION</span></div>
+    <div class="bilan-id-grid">
+      <div class="bik">Programme</div><div class="biv">${escapeHtml(programme || '—')}</div>
+      <div class="bik">Gestionnaire</div><div class="biv">${escapeHtml(gestionnaireStr)}</div>
+      <div class="bik">Type de produit</div><div class="biv">${escapeHtml(typeProduit)}</div>
+      <div class="bik">Référence</div><div class="biv">${escapeHtml(refsStr)}</div>
+    </div>
+
+    ${bandeau('PRIX DE REVIENT PRÉVISIONNEL')}
+    ${blocksHtml}
+    <table class="bilan-table">
+      <tr class="bilan-total-gold"><td>PRIX DE REVIENT OPÉRATION</td><td class="bilan-montant">${_bilanFmt(d.totalPR)}</td><td class="bilan-pct">100,0 %</td></tr>
     </table>
 
-    <div class="bilan-section-header">PRIX DE REVIENT PRÉVISIONNEL</div>
-    <table class="bilan-table">
-      <tr class="bilan-table-header"><td></td><td class="bilan-montant">Montants TTC (€)</td><td class="bilan-pct">%</td></tr>
-    </table>
-    <div class="bilan-subsection-header">CHARGE FONCIÈRE</div>
-    <table class="bilan-table">
-      <tr><td class="bilan-libelle-indent">VEFA / Terrain</td><td class="bilan-montant">${_bilanFmt(d.vefa)}</td><td class="bilan-pct">${_bilanFmtPct(d.vefa, d.totalCF)}</td></tr>
-      <tr><td class="bilan-libelle-indent">Frais d'acquisition / notariés</td><td class="bilan-montant">${_bilanFmt(d.notaire)}</td><td class="bilan-pct">${_bilanFmtPct(d.notaire, d.totalCF)}</td></tr>
-      <tr><td class="bilan-libelle-indent">Divers foncier</td><td class="bilan-montant">${_bilanFmt(d.divFoncier)}</td><td class="bilan-pct">${_bilanFmtPct(d.divFoncier, d.totalCF)}</td></tr>
-      <tr class="bilan-subtotal"><td>TOTAL CHARGE FONCIÈRE</td><td class="bilan-montant">${_bilanFmt(d.totalCF)}</td><td class="bilan-pct">100,00 %</td></tr>
-    </table>
-    <div class="bilan-subsection-header">HONORAIRES</div>
-    <table class="bilan-table">
-      <tr><td class="bilan-libelle-indent">Conduite d'opération</td><td class="bilan-montant">${_bilanFmt(d.conduite)}</td><td class="bilan-pct">${_bilanFmtPct(d.conduite, d.totalHon)}</td></tr>
-      <tr><td class="bilan-libelle-indent">Intérêts préfi. forfaitaires</td><td class="bilan-montant">${_bilanFmt(d.prefi)}</td><td class="bilan-pct">${_bilanFmtPct(d.prefi, d.totalHon)}</td></tr>
-      <tr><td class="bilan-libelle-indent">Frais d'hypothèque</td><td class="bilan-montant">${_bilanFmt(d.hypo)}</td><td class="bilan-pct">${_bilanFmtPct(d.hypo, d.totalHon)}</td></tr>
-      <tr class="bilan-subtotal"><td>TOTAL HONORAIRES</td><td class="bilan-montant">${_bilanFmt(d.totalHon)}</td><td class="bilan-pct">100,00 %</td></tr>
-    </table>
-    <table class="bilan-table">
-      <tr class="bilan-total"><td>PRIX DE REVIENT OPÉRATION</td><td class="bilan-montant">${_bilanFmt(d.totalPR)}</td><td class="bilan-pct">100,00 %</td></tr>
-    </table>
-
-    <div class="bilan-section-header">PLAN DE FINANCEMENT PRÉVISIONNEL</div>
-    <table class="bilan-table">
-      <tr class="bilan-table-header"><td></td><td class="bilan-montant">Montants TTC (€)</td><td class="bilan-pct">%</td></tr>
-    </table>
+    ${bandeau('PLAN DE FINANCEMENT PRÉVISIONNEL')}
     <div class="bilan-subsection-header">I — DÉPENSES</div>
     <table class="bilan-table">
-      <tr><td class="bilan-libelle-indent">Charge Foncière</td><td class="bilan-montant">${_bilanFmt(d.totalCF)}</td><td class="bilan-pct">${_bilanFmtPct(d.totalCF, d.totalDep)}</td></tr>
-      <tr><td class="bilan-libelle-indent">Honoraires</td><td class="bilan-montant">${_bilanFmt(d.totalHon)}</td><td class="bilan-pct">${_bilanFmtPct(d.totalHon, d.totalDep)}</td></tr>
-      <tr><td class="bilan-libelle-indent">Frais divers</td><td class="bilan-montant">${_bilanFmt(d.fraisDivers)}</td><td class="bilan-pct">${_bilanFmtPct(d.fraisDivers, d.totalDep)}</td></tr>
-      <tr class="bilan-subtotal"><td>TOTAL DÉPENSES</td><td class="bilan-montant">${_bilanFmt(d.totalDep)}</td><td class="bilan-pct">100,00 %</td></tr>
+      ${depRows}
+      <tr class="bilan-total-navy"><td>TOTAL DÉPENSES</td><td class="bilan-montant">${_bilanFmt(d.totalDep)}</td><td class="bilan-pct">100,0 %</td></tr>
     </table>
     <div class="bilan-subsection-header">II — RECETTES</div>
     <table class="bilan-table">
-      <tr><td class="bilan-libelle-indent">PLI</td><td class="bilan-montant">${_bilanFmt(d.pli)}</td><td class="bilan-pct">${_bilanFmtPct(d.pli, d.totalRec)}</td></tr>
-      <tr><td class="bilan-libelle-indent">PLI Foncier</td><td class="bilan-montant">${_bilanFmt(d.pliFoncier)}</td><td class="bilan-pct">${_bilanFmtPct(d.pliFoncier, d.totalRec)}</td></tr>
-      <tr><td class="bilan-libelle-indent">Prêt ALS</td><td class="bilan-montant">${_bilanFmt(d.als)}</td><td class="bilan-pct">${_bilanFmtPct(d.als, d.totalRec)}</td></tr>
-      <tr><td class="bilan-libelle-indent">Subventions</td><td class="bilan-montant">${_bilanFmt(d.subv)}</td><td class="bilan-pct">${_bilanFmtPct(d.subv, d.totalRec)}</td></tr>
-      <tr><td class="bilan-libelle-indent">Fonds propres</td><td class="bilan-montant">${_bilanFmt(d.fp)}</td><td class="bilan-pct">${_bilanFmtPct(d.fp, d.totalRec)}</td></tr>
-      <tr class="bilan-subtotal"><td>TOTAL FINANCEMENT</td><td class="bilan-montant">${_bilanFmt(d.totalRec)}</td><td class="bilan-pct">100,00 %</td></tr>
+      ${recRows}
+      <tr class="bilan-total-navy"><td>TOTAL FINANCEMENT</td><td class="bilan-montant">${_bilanFmt(d.totalRec)}</td><td class="bilan-pct">100,0 %</td></tr>
     </table>
 
-    <div class="bilan-equilibre ${equilibreClass}">${escapeHtml(equilibreText)}</div>
-
-    <div class="bilan-footer">Document confidentiel — Template prévisionnel d'opération · AXENTIA</div>
+    <div class="bilan-equilibre ${equilibreOk ? 'bilan-equilibre-ok' : 'bilan-equilibre-ko'}">ÉQUILIBRE&nbsp;&nbsp;—&nbsp;&nbsp;Écart (Recettes − Dépenses) : ${escapeHtml(equilibreVal)}</div>
+    <div class="bilan-footer">Document confidentiel — Bilan prévisionnel d'opération · AXENTIA</div>
   `;
 }
 
