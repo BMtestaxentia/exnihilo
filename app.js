@@ -11442,6 +11442,7 @@ function showTagLinkedPopover(anchorEl, tagValue) {
 document.querySelectorAll('.topnav-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     const target = tab.dataset.view;
+    if (!target) return; // item d'action (ex. modale Admin), pas une vue à afficher
     // Garde-fou modifs non sauvegardées
     if (editMode && hasUnsavedChanges() && target !== 'operations') {
       if (!confirm('Vous avez des modifications non enregistrées sur l\'opération en cours. Les abandonner et quitter ?')) {
@@ -12830,14 +12831,11 @@ function addLogoutButton(){
     <span class="sess-caret">▾</span>
     <div class="sess-menu">
       ${email ? `<div class="sess-menu-email">${escapeHtml(email)}</div>` : ''}
-      <button class="sess-menu-item" id="acctAdminBtn" type="button">Administration des comptes</button>
       <button class="sess-menu-logout" id="authLogoutBtn" type="button">Déconnexion</button>
     </div>`;
   nav.appendChild(userChip);
   const lo = userChip.querySelector('#authLogoutBtn');
   if (lo) lo.addEventListener('click', authLogout);
-  const adminBtn = userChip.querySelector('#acctAdminBtn');
-  if (adminBtn) adminBtn.addEventListener('click', openAccountsAdmin);
 
   startSessionLoops();
 }
@@ -13068,6 +13066,12 @@ async function acctAdd(){
     if (typeof showToast === 'function') showToast('Rattachement enregistr\u00e9', 'check');
   } catch(e){ if (typeof showToast === 'function') showToast('\u00c9chec \u2014 la table \u00ab comptes \u00bb existe-t-elle ?', 'alert-triangle'); }
 }
+
+// Ouvre la modale d'admin depuis l'onglet déroulant Admin
+(function bindAdminAccountsItem(){
+  const el = document.getElementById('adminAccountsBtn');
+  if (el) el.addEventListener('click', () => { if (typeof openAccountsAdmin === 'function') openAccountsAdmin(); });
+})();
 
 async function acctDelete(email){
   if (!email) return;
