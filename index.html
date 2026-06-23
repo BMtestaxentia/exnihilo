@@ -4947,18 +4947,71 @@
   #opDetail .section, #trancheDetail .section { scroll-margin-top: 16px; }
   /* ============== FIN SECTIONS REPLIABLES + CHRONOLOGIE ============== */
 
-  /* ============== AUTHENTIFICATION ============== */
-  .auth-overlay { position: fixed; inset: 0; z-index: 99999; background: linear-gradient(135deg,#0e1b2e,#1F3A5F); display: flex; align-items: center; justify-content: center; }
-  .auth-card { background: #fff; border-radius: 14px; padding: 30px 30px 26px; width: 350px; max-width: 90vw; box-shadow: 0 24px 60px rgba(0,0,0,0.45); display: flex; flex-direction: column; font-family: 'Segoe UI', Arial, sans-serif; }
-  .auth-brand { font-size: 22px; font-weight: 800; color: #1F3A5F; letter-spacing: 0.5px; }
-  .auth-sub { font-size: 12.5px; color: #7A7A7A; margin: 4px 0 18px; }
-  .auth-label { font-size: 11px; font-weight: 600; color: #444; margin: 12px 0 4px; }
-  .auth-input { padding: 10px 11px; border: 1px solid #cfd6e0; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; }
-  .auth-input:focus { border-color: #1F3A5F; box-shadow: 0 0 0 3px rgba(31,58,95,0.12); }
-  .auth-err { color: #c4423a; font-size: 12px; min-height: 16px; margin-top: 10px; }
-  .auth-btn { margin-top: 12px; background: #1F3A5F; color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  /* ============== AUTHENTIFICATION (écran split-screen) ============== */
+  .auth-overlay { position: fixed; inset: 0; z-index: 99999; display: flex; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif; }
+  .auth-overlay * { box-sizing: border-box; }
+
+  /* Panneau gauche : marque, fond navy animé */
+  .auth-left { position: relative; flex: 1.1; background: #122742; color: #fff; padding: 54px 50px; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .auth-left::before { content: ''; position: absolute; inset: 0; background:
+      radial-gradient(circle at 18% 22%, rgba(201,169,97,0.30), transparent 42%),
+      radial-gradient(circle at 82% 78%, rgba(46,99,158,0.45), transparent 45%),
+      radial-gradient(circle at 60% 30%, rgba(31,58,95,0.6), transparent 55%),
+      linear-gradient(135deg, #0e1f38 0%, #1F3A5F 60%, #24456e 100%);
+    background-size: 200% 200%, 200% 200%, 180% 180%, 100% 100%;
+    animation: authmesh 18s ease-in-out infinite; }
+  @keyframes authmesh {
+    0%   { background-position: 0% 0%, 100% 100%, 50% 50%, 0 0; }
+    50%  { background-position: 30% 40%, 70% 60%, 60% 40%, 0 0; }
+    100% { background-position: 0% 0%, 100% 100%, 50% 50%, 0 0; }
+  }
+  .auth-orb { position: absolute; border-radius: 50%; filter: blur(6px); opacity: 0.5; pointer-events: none; }
+  .auth-orb.o1 { width: 220px; height: 220px; background: radial-gradient(circle, rgba(201,169,97,0.55), transparent 70%); top: -50px; right: -40px; animation: authfloat 14s ease-in-out infinite; }
+  .auth-orb.o2 { width: 300px; height: 300px; background: radial-gradient(circle, rgba(120,170,230,0.35), transparent 70%); bottom: -90px; left: -60px; animation: authfloat 20s ease-in-out infinite reverse; }
+  @keyframes authfloat { 0%,100% { transform: translate(0,0); } 50% { transform: translate(24px,-26px); } }
+  .auth-left-inner { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%; }
+  .auth-logo { width: 56px; height: 56px; }
+  .auth-wordmark { font-size: 30px; font-weight: 800; letter-spacing: 1px; margin-top: 22px; }
+  .auth-wordmark b { color: #C9A961; }
+  .auth-tagline { font-size: 14px; color: rgba(255,255,255,0.72); margin-top: 6px; max-width: 320px; line-height: 1.5; }
+  .auth-feats { list-style: none; padding: 0; margin: 38px 0 0; display: flex; flex-direction: column; gap: 14px; }
+  .auth-feats li { display: flex; align-items: center; gap: 12px; font-size: 13.5px; color: rgba(255,255,255,0.88); }
+  .auth-feats .af-ic { width: 30px; height: 30px; border-radius: 9px; background: rgba(201,169,97,0.16); border: 1px solid rgba(201,169,97,0.4); display: flex; align-items: center; justify-content: center; color: #C9A961; font-size: 15px; flex-shrink: 0; }
+  .auth-foot { margin-top: auto; font-size: 11.5px; color: rgba(255,255,255,0.5); letter-spacing: 0.4px; }
+
+  /* Panneau droit : carte de connexion */
+  .auth-right { width: 430px; max-width: 44vw; background: #fff; padding: 0 56px; display: flex; flex-direction: column; justify-content: center; }
+  .auth-card-head { font-size: 23px; font-weight: 800; color: #1F3A5F; }
+  .auth-card-sub { font-size: 13px; color: #7A7A7A; margin: 6px 0 26px; }
+  .auth-field { position: relative; margin-bottom: 16px; }
+  .auth-field .af-lab { font-size: 11.5px; font-weight: 700; color: #46556b; letter-spacing: 0.3px; display: block; margin-bottom: 6px; }
+  .auth-field .af-wrap { position: relative; }
+  .auth-field .af-ic2 { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #9aa6b6; font-size: 15px; }
+  .auth-input { width: 100%; padding: 12px 13px 12px 40px; border: 1.5px solid #d7dde6; border-radius: 10px; font-size: 14.5px; outline: none; transition: border-color .15s, box-shadow .15s; font-family: inherit; }
+  .auth-input:focus { border-color: #1F3A5F; box-shadow: 0 0 0 4px rgba(31,58,95,0.10); }
+  .auth-err { color: #c4423a; font-size: 12.5px; min-height: 18px; margin: 2px 0 6px; display: flex; align-items: center; gap: 6px; }
+  .auth-btn { margin-top: 8px; background: #1F3A5F; color: #fff; border: none; border-radius: 10px; padding: 13px; font-size: 14.5px; font-weight: 700; cursor: pointer; transition: background .15s, transform .05s; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .auth-btn:hover { background: #16314f; }
-  .auth-btn:disabled { opacity: 0.6; cursor: default; }
+  .auth-btn:active { transform: translateY(1px); }
+  .auth-btn:disabled { opacity: 0.65; cursor: default; }
+  .auth-btn .af-spin { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: authspin .7s linear infinite; }
+  @keyframes authspin { to { transform: rotate(360deg); } }
+  .auth-secure { margin-top: 22px; font-size: 11.5px; color: #9aa6b6; display: flex; align-items: center; gap: 7px; }
+  .auth-secure .lockico { color: #2a9d6f; }
+  @media (max-width: 820px) {
+    .auth-left { display: none; }
+    .auth-right { width: 100%; max-width: 100%; padding: 0 28px; }
+  }
+
+  /* Barre de session (topnav) */
+  .sess-btn { margin-left: 8px; background: var(--info-bg); border: 1px solid var(--info-accent); color: var(--info-text); border-radius: 6px; padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .sess-btn:hover { filter: brightness(0.97); }
+  .sess-refresh-ico { display: inline-block; }
+  .sess-btn.spinning .sess-refresh-ico { animation: authspin .6s linear; }
+  .sess-stamp { margin-left: 10px; font-size: 11px; color: var(--text-tertiary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .sess-presence { margin-left: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: rgba(42,157,111,0.12); border: 1px solid rgba(42,157,111,0.4); color: #1f7d56; font-size: 11.5px; font-weight: 700; white-space: nowrap; cursor: default; }
+  .sess-presence .sess-dot { width: 8px; height: 8px; border-radius: 50%; background: #2a9d6f; box-shadow: 0 0 0 0 rgba(42,157,111,0.6); animation: sesspulse 2s infinite; }
+  @keyframes sesspulse { 0%{box-shadow:0 0 0 0 rgba(42,157,111,0.6);} 70%{box-shadow:0 0 0 6px rgba(42,157,111,0);} 100%{box-shadow:0 0 0 0 rgba(42,157,111,0);} }
   .auth-logout { margin-left: 8px; background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; font-family: inherit; white-space: nowrap; }
   .auth-logout:hover { background: var(--bg-secondary); color: var(--text-primary); }
 </style>
@@ -16860,7 +16913,8 @@ replaceTablerIcons(); // initial pass to handle topnav and dashboard
 // ============== SUPABASE LOADER ==============
 // Charge les opérations depuis Supabase et remplace les données en dur.
 // Si Supabase ne répond pas, les données démo en dur restent affichées.
-async function loadFromSupabase() {
+async function loadFromSupabase(opts) {
+  const _silent = !!(opts && opts.silent);
   const splashStart = Date.now();
   // Filet de sécurité : si le chargement dépasse 8s, on cache le splash quand même
   const splashTimeout = setTimeout(() => {
@@ -17153,7 +17207,7 @@ async function loadFromSupabase() {
       switchToTab(savedView);
     }
 
-    if (typeof showToast === 'function') {
+    if (!_silent && typeof showToast === 'function') {
       showToast(`${DATA.length} opérations chargées depuis Supabase`, 'check');
     }
     // Cacher l'écran de chargement (avec délai minimum de 1.2s pour effet visuel)
@@ -18084,34 +18138,151 @@ async function authLogout(){
 }
 
 function addLogoutButton(){
-  if (document.getElementById('authLogoutBtn')) return;
   const nav = document.querySelector('.topnav');
-  if (!nav) return;
+  if (!nav || document.getElementById('authLogoutBtn')) return;
   const s = authLoadSession();
+
+  // Indicateur de présence
+  const pres = document.createElement('span');
+  pres.id = 'sessPresence'; pres.className = 'sess-presence'; pres.style.display = 'none';
+  pres.innerHTML = '<span class="sess-dot"></span><span class="sess-count">0</span>';
+  nav.appendChild(pres);
+
+  // Horodatage de synchro
+  const stamp = document.createElement('span');
+  stamp.id = 'sessSyncStamp'; stamp.className = 'sess-stamp';
+  nav.appendChild(stamp);
+
+  // Bouton rafraîchir
+  const rbtn = document.createElement('button');
+  rbtn.id = 'sessRefreshBtn'; rbtn.className = 'sess-btn'; rbtn.title = 'Rafraîchir les données (auto toutes les 30 s)';
+  rbtn.innerHTML = '<span class="sess-refresh-ico">⟳</span> Rafraîchir';
+  rbtn.addEventListener('click', () => refreshData(false));
+  nav.appendChild(rbtn);
+
+  // Bouton déconnexion
   const btn = document.createElement('button');
-  btn.id = 'authLogoutBtn';
-  btn.className = 'auth-logout';
+  btn.id = 'authLogoutBtn'; btn.className = 'auth-logout';
   btn.textContent = 'Déconnexion';
   btn.title = 'Se déconnecter' + (s && s.email ? ` (${s.email})` : '');
   btn.addEventListener('click', authLogout);
   nav.appendChild(btn);
+
+  startSessionLoops();
 }
 
+// ============== SESSIONS : rafraîchissement live + présence ==============
+let _sessClientId = 'c' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+let _sessAutoOn = true;
+let _sessLoops = [];
+
+function _two(n){ return String(n).padStart(2,'0'); }
+function updateSyncStamp(){
+  const el = document.getElementById('sessSyncStamp'); if (!el) return;
+  const d = new Date();
+  el.textContent = 'Synchro ' + _two(d.getHours()) + ':' + _two(d.getMinutes()) + ':' + _two(d.getSeconds());
+}
+
+async function refreshData(silent){
+  // Ne jamais écraser une saisie en cours
+  if (silent && (editMode || (typeof hasUnsavedChanges === 'function' && hasUnsavedChanges()))) return;
+  const selCode = (typeof storageGet === 'function') ? storageGet('selectedOp') : null;
+  const view = (typeof storageGet === 'function') ? storageGet('activeView') : null;
+  const rbtn = document.getElementById('sessRefreshBtn');
+  if (!silent && rbtn) { rbtn.classList.add('spinning'); }
+  try { await loadFromSupabase({ silent: true }); } catch(e){}
+  updateSyncStamp();
+  if (!silent && view === 'operations' && selCode && typeof selectOp === 'function') { try { selectOp(selCode); } catch(e){} }
+  if (!silent && typeof showToast === 'function') showToast('Données rafraîchies', 'refresh');
+  if (!silent && rbtn) setTimeout(()=>rbtn.classList.remove('spinning'), 400);
+  refreshPresence();
+}
+
+async function presenceHeartbeat(){
+  const s = authLoadSession(); if (!s) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/sessions?on_conflict=client_id`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ client_id: _sessClientId, email: s.email || '', last_seen: new Date().toISOString() })
+    });
+  } catch(e){}
+}
+
+async function refreshPresence(){
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/sessions?select=email,last_seen`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}` }
+    });
+    if (!res.ok) return; // table absente -> présence désactivée en silence
+    const rows = await res.json();
+    const cutoff = Date.now() - 90000;
+    const active = rows.filter(r => r.last_seen && new Date(r.last_seen).getTime() > cutoff);
+    const emails = [...new Set(active.map(r => r.email).filter(Boolean))];
+    const pill = document.getElementById('sessPresence');
+    if (pill) {
+      pill.style.display = active.length ? 'inline-flex' : 'none';
+      const c = pill.querySelector('.sess-count'); if (c) c.textContent = active.length;
+      pill.title = active.length + ' session(s) active(s) · ' + (emails.join(', ') || '—');
+    }
+  } catch(e){}
+}
+
+function startSessionLoops(){
+  if (_sessLoops.length) return;
+  presenceHeartbeat(); refreshPresence(); updateSyncStamp();
+  _sessLoops.push(setInterval(presenceHeartbeat, 30000));
+  _sessLoops.push(setInterval(() => { if (_sessAutoOn) refreshData(true); }, 30000));
+  // Libère la session en quittant
+  window.addEventListener('beforeunload', () => {
+    try { navigator.sendBeacon && navigator.sendBeacon(
+      `${SUPABASE_URL}/rest/v1/sessions?client_id=eq.${_sessClientId}`); } catch(e){}
+  });
+}
 function showLoginOverlay(){
   if (document.getElementById('authOverlay')) { document.getElementById('authOverlay').style.display='flex'; return; }
   const ov = document.createElement('div');
   ov.id = 'authOverlay';
   ov.className = 'auth-overlay';
   ov.innerHTML = `
-    <form class="auth-card" id="authForm">
-      <div class="auth-brand">ExNihilo</div>
-      <div class="auth-sub">Accès réservé — identifiez-vous pour continuer</div>
-      <label class="auth-label" for="authEmail">Identifiant (e-mail)</label>
-      <input class="auth-input" type="email" id="authEmail" required autocomplete="username">
-      <label class="auth-label" for="authPwd">Mot de passe</label>
-      <input class="auth-input" type="password" id="authPwd" required autocomplete="current-password">
+    <div class="auth-left">
+      <span class="auth-orb o1"></span><span class="auth-orb o2"></span>
+      <div class="auth-left-inner">
+        <svg class="auth-logo" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="3" width="58" height="58" rx="15" fill="#1F3A5F" stroke="#C9A961" stroke-width="2"/>
+          <path d="M22 20h21M22 32h15M22 44h21" stroke="#C9A961" stroke-width="3.4" stroke-linecap="round"/>
+          <circle cx="46" cy="32" r="3.2" fill="#fff"/>
+        </svg>
+        <div class="auth-wordmark">Ex<b>Nihilo</b></div>
+        <div class="auth-tagline">Pilotage du financement d'opérations de logement social — prêts, garanties, subventions, agréments.</div>
+        <ul class="auth-feats">
+          <li><span class="af-ic">◆</span> Cycle de financement centralisé</li>
+          <li><span class="af-ic">◷</span> Contrôles &amp; échéances suivis</li>
+          <li><span class="af-ic">▤</span> Éditions normalisées en un clic</li>
+        </ul>
+        <div class="auth-foot">AXENTIA · Espace sécurisé · Accès réservé</div>
+      </div>
+    </div>
+    <form class="auth-right" id="authForm" autocomplete="on">
+      <div class="auth-card-head">Connexion</div>
+      <div class="auth-card-sub">Identifiez-vous pour accéder à l'application</div>
+      <div class="auth-field">
+        <label class="af-lab" for="authEmail">Identifiant (e-mail)</label>
+        <div class="af-wrap">
+          <span class="af-ic2">@</span>
+          <input class="auth-input" type="email" id="authEmail" required autocomplete="username" placeholder="prenom.nom@axentia.fr">
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="af-lab" for="authPwd">Mot de passe</label>
+        <div class="af-wrap">
+          <span class="af-ic2">&#128274;</span>
+          <input class="auth-input" type="password" id="authPwd" required autocomplete="current-password" placeholder="••••••••">
+        </div>
+      </div>
       <div class="auth-err" id="authErr"></div>
       <button class="auth-btn" type="submit" id="authBtn">Se connecter</button>
+      <div class="auth-secure"><span class="lockico">&#128274;</span> Connexion chiffrée · vos identifiants ne sont jamais stockés en clair</div>
     </form>`;
   document.body.appendChild(ov);
   document.getElementById('authForm').addEventListener('submit', async (e) => {
