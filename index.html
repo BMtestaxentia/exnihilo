@@ -6744,7 +6744,7 @@ async function deleteAap(lid) {
 
 // ============== CONTRÔLES & PILOTAGE ==============
 function ctrlActiveOps() {
-  return (DATA || []).filter(op => !op._deleted && !op.deleted && !op.is_deleted);
+  return (DATA || []).filter(op => !op._deleted && !op.deleted && !op.is_deleted && inScope(op));
 }
 function ctrlParseFr(d) {
   if (!d) return null;
@@ -8573,7 +8573,7 @@ function renderSidebar() {
   const c = document.getElementById('sidebarList');
   const q = searchQuery.trim().toLowerCase();
   // Hide soft-deleted ops from sidebar (they live in the trash)
-  const visibleOps = DATA.filter(op => !op.deleted);
+  const visibleOps = DATA.filter(op => !op.deleted && inScope(op));
   const filtered = q
     ? visibleOps.filter(op => {
         const tagsStr = Array.isArray(op.tags) ? op.tags.join(' ') : '';
@@ -8592,6 +8592,18 @@ function renderSidebar() {
     const nb = (b.display_name || '').toLowerCase();
     return na.localeCompare(nb, 'fr', { sensitivity: 'base' });
   });
+
+  if (filtered.length === 0 && APP_SCOPE === 'mine' && !q) {
+    c.innerHTML = `<div style="padding:18px;color:var(--text-tertiary);font-size:12.5px;line-height:1.55;">Aucune opération ne vous est attribuée.<br><button id="scopeSeeAll" style="margin-top:10px;background:var(--info-bg);border:1px solid var(--info-accent);color:var(--info-text);border-radius:6px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Voir tout le portefeuille</button></div>`;
+    const b = document.getElementById('scopeSeeAll');
+    if (b) b.addEventListener('click', () => {
+      APP_SCOPE = 'all';
+      try { sessionStorage.setItem('exnihilo_scope', 'all'); } catch(e){}
+      const tb = document.getElementById('scopeToggle'); if (tb) tb.textContent = 'Tout le portefeuille';
+      applyScopeRerender();
+    });
+    return;
+  }
 
   // Update count badge dynamically
   const countEl = document.getElementById('sidebarCount');
@@ -11159,9 +11171,9 @@ function refreshNavBadges() {
   WORKFLOWS.forEach(w => {
     if (Array.isArray(w.recipients)) {
       w.recipients.forEach(r => {
-        if (r.name === me && r.status === 'pending') pendingForMe++;
+        if (isCurrentUser(r.name) && r.status === 'pending') pendingForMe++;
       });
-    } else if (w.recipient === me && w.status === 'pending') {
+    } else if (isCurrentUser(w.recipient) && w.status === 'pending') {
       pendingForMe++;
     }
   });
@@ -11175,7 +11187,7 @@ function refreshNavBadges() {
 
 // === Rebuild dashboard KPI tiles + bars dynamically from current DATA ===
 function refreshDashboardKpis() {
-  const ops = DATA.filter(o => !o.deleted);
+  const ops = DATA.filter(o => !o.deleted && inScope(o));
   if (ops.length === 0) return;
 
   // Helper: render bar list HTML
@@ -12036,7 +12048,7 @@ function openPlanComiteModal(existingPlanningId) {
     }
   }
 
-  const ops = DATA.filter(o => !o.deleted).sort((a, b) => {
+  const ops = DATA.filter(o => !o.deleted && inScope(o)).sort((a, b) => {
     const na = (a.display_name || a.code || '').toLowerCase();
     const nb = (b.display_name || b.code || '').toLowerCase();
     return na.localeCompare(nb, 'fr');
@@ -13627,7 +13639,7 @@ function renderFinances() {
   const c = document.getElementById('financesContent');
   if (!c) return;
 
-  const ops = DATA.filter(o => !o.deleted);
+  const ops = DATA.filter(o => !o.deleted && inScope(o));
 
   // ===== Agrégation =====
   let totalBudget = 0;
@@ -14036,7 +14048,7 @@ function renderTresorerie() {
   const c = document.getElementById('tresorerieContent');
   if (!c) return;
 
-  const ops = DATA.filter(o => !o.deleted);
+  const ops = DATA.filter(o => !o.deleted && inScope(o));
   const today = new Date(); today.setHours(0, 0, 0, 0);
   // Premier du mois courant
   const startMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -14348,7 +14360,21 @@ Net : ${m.flux_net >= 0 ? '+' : ''}${fmtEuros(m.flux_net)}`;
 }
 
 // ============== ACCUEIL (personal dashboard) ==============
-const CURRENT_USER = 'Bastien MERCIER';
+let CURRENT_USER = 'Bastien MERCIER';
+let APP_SCOPE = (function(){ try { return sessionStorage.getItem('exnihilo_scope') || 'mine'; } catch(e){ return 'mine'; } })();
+// Normalisation pour rattacher un compte (display name) à une personne des données (resp_op / charge_fin / developpeur)
+function normPerson(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
+function isCurrentUser(name){ const c = normPerson(CURRENT_USER); return !!c && normPerson(name) === c; }
+function isMyOp(op){ return !!op && (isCurrentUser(op.charge_fin) || isCurrentUser(op.resp_op) || isCurrentUser(op.developpeur)); }
+function inScope(op){ return APP_SCOPE !== 'mine' || isMyOp(op); }
+function firstNameOf(full){ const t=(full||'').toString().trim().split(/\s+/)[0]||''; return t ? t.charAt(0).toUpperCase()+t.slice(1).toLowerCase() : ''; }
+function applyScopeRerender(){
+  try { renderSidebar(); } catch(e){}
+  try { if (typeof refreshDashboardKpis === 'function') refreshDashboardKpis(); } catch(e){}
+  try { if (typeof renderSynthTable === 'function') renderSynthTable(); } catch(e){}
+  const v = (typeof storageGet === 'function' && storageGet('activeView')) || 'accueil';
+  try { if (typeof switchToTab === 'function') switchToTab(v); } catch(e){}
+}
 
 // Op chronological timeline (collapsible section under Calendar)
 function toggleOpTimeline(uid) { openTimelineModal(uid); }
@@ -14467,15 +14493,11 @@ function renderAccueil() {
     else if (h < 12) salut = 'Bonjour';
     else if (h < 18) salut = 'Bon après-midi';
     else salut = 'Bonsoir';
-    document.querySelector('#view-accueil .dashboard-title').textContent = `${salut} Bastien`;
+    document.querySelector('#view-accueil .dashboard-title').textContent = `${salut} ${firstNameOf(CURRENT_USER) || ''}`.trim();
   }
 
   // Ops where user has a role
-  const myOps = DATA.filter(op => !op.deleted && (
-    op.developpeur === CURRENT_USER ||
-    op.resp_op === CURRENT_USER ||
-    op.charge_fin === CURRENT_USER
-  ));
+  const myOps = DATA.filter(op => !op.deleted && isMyOp(op));
 
   // Alerts aggregated across my ops
   const allAlerts = [];
@@ -14490,7 +14512,7 @@ function renderAccueil() {
   const myPendingWorkflows = WORKFLOWS.filter(w => {
     if (computeWfOverallStatus(w) !== 'pending') return false;
     const recipients = getWfRecipients(w);
-    return recipients.some(r => r.name === CURRENT_USER && r.status === 'pending');
+    return recipients.some(r => isCurrentUser(r.name) && r.status === 'pending');
   });
 
   // Comités à venir (date > today, ou date dans les 30 derniers jours)
@@ -14523,7 +14545,7 @@ function renderAccueil() {
   myOps.forEach(op => {
     if (!Array.isArray(op.audit_log)) return;
     op.audit_log.forEach(e => {
-      if (e.user !== CURRENT_USER) { // only show actions by OTHERS
+      if (!isCurrentUser(e.user)) { // only show actions by OTHERS
         recentActivity.push({ entry: e, op });
       }
     });
@@ -15058,6 +15080,7 @@ function renderMap() {
   // Apply filters
   const q = (mapFilters.search || '').trim().toLowerCase();
   const filtered = DATA.filter(op => {
+      if (!inScope(op)) return false;
     if (q) {
       const hay = [op.display_name, op.code, op.commune, op.adresse].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
@@ -15334,6 +15357,7 @@ function renderGantt() {
   // Apply filters
   const q = (ganttFilters.search || '').trim().toLowerCase();
   const filtered = DATA.filter(op => {
+      if (!inScope(op)) return false;
     if (q) {
       const hay = [op.display_name, op.code, op.commune, op.developpeur, op.resp_op, op.charge_fin]
         .filter(Boolean).join(' ').toLowerCase();
@@ -15991,6 +16015,7 @@ function renderSynthTable() {
     ? (p => _synthEq(p.financeur, synthFilters.pret_banque))
     : null;
   let filtered = DATA.filter(op => {
+    if (!inScope(op)) return false;
     if (q) {
       const hay = [op.display_name, op.code, op.commune, op.departement,
                    op.developpeur, op.resp_op, op.charge_fin, op.promoteur,
@@ -18184,6 +18209,21 @@ function addLogoutButton(){
   const nav = document.querySelector('.topnav');
   if (!nav || document.getElementById('authLogoutBtn')) return;
   const s = authLoadSession();
+  if (s && s.name) CURRENT_USER = s.name;
+
+  // Bascule de périmètre : mes opérations / tout le portefeuille
+  const scopeBtn = document.createElement('button');
+  scopeBtn.id = 'scopeToggle'; scopeBtn.className = 'sess-btn';
+  const _scopeLabel = () => (APP_SCOPE === 'mine' ? 'Mes opérations' : 'Tout le portefeuille');
+  scopeBtn.textContent = _scopeLabel();
+  scopeBtn.title = 'Basculer entre vos opérations et tout le portefeuille';
+  scopeBtn.addEventListener('click', () => {
+    APP_SCOPE = (APP_SCOPE === 'mine') ? 'all' : 'mine';
+    try { sessionStorage.setItem('exnihilo_scope', APP_SCOPE); } catch(e){}
+    scopeBtn.textContent = _scopeLabel();
+    applyScopeRerender();
+  });
+  nav.appendChild(scopeBtn);
 
   // Chip utilisateur (display name de la session active)
   let uname = (s && (s.name || s.email)) || 'Utilisateur';
