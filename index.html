@@ -2779,6 +2779,11 @@
   [data-theme="dark"] .theme-toggle .theme-icon-dark { display: none; }
   [data-theme="dark"] .theme-toggle .theme-icon-light { display: inline-block; }
   .theme-toggle svg.tabler-svg-icon { width: 16px; height: 16px; }
+  /* Easter egg : mode arc-en-ciel (calque teinté, n'altère pas la mise en page) */
+  #rainbowFx { position: fixed; inset: 0; z-index: 99990; pointer-events: none; opacity: 0.38; mix-blend-mode: hue;
+    background: linear-gradient(60deg, #ff0040, #ff8000, #ffe000, #00e000, #00e0e0, #0040ff, #a000ff, #ff0040);
+    background-size: 400% 400%; animation: rainbowMove 7s linear infinite; }
+  @keyframes rainbowMove { 0% { background-position: 0% 50%; } 100% { background-position: 400% 50%; } }
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0;
@@ -16635,6 +16640,31 @@ document.addEventListener('keydown', (e) => {
       root.setAttribute('data-theme', next);
       storageSet('theme', next);
     });
+
+    // Easter egg : 5 clics rapides => mode arc-en-ciel (1 s de sécurité avant de pouvoir le couper)
+    let _rbClicks = [], _rbOn = false, _rbLock = 0;
+    toggle.addEventListener('click', (e) => {
+      const now = Date.now();
+      if (_rbOn) {
+        if (now < _rbLock) { e.stopImmediatePropagation(); e.preventDefault(); return; }
+        _rbOn = false;
+        const fx = document.getElementById('rainbowFx'); if (fx) fx.remove();
+        e.stopImmediatePropagation(); e.preventDefault();
+        if (typeof showToast === 'function') showToast('Mode arc-en-ciel désactivé', 'palette');
+        return;
+      }
+      _rbClicks.push(now);
+      _rbClicks = _rbClicks.filter(t => now - t < 1200);
+      if (_rbClicks.length >= 5) {
+        _rbClicks = [];
+        _rbOn = true; _rbLock = now + 1000;
+        if (!document.getElementById('rainbowFx')) {
+          const fx = document.createElement('div'); fx.id = 'rainbowFx'; document.body.appendChild(fx);
+        }
+        e.stopImmediatePropagation(); e.preventDefault();
+        if (typeof showToast === 'function') showToast('Mode arc-en-ciel activé \u2014 reclique sur le thème pour quitter', 'palette');
+      }
+    }, true);
   }
 })();
 
