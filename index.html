@@ -5012,6 +5012,9 @@
   .sess-presence { margin-left: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: rgba(42,157,111,0.12); border: 1px solid rgba(42,157,111,0.4); color: #1f7d56; font-size: 11.5px; font-weight: 700; white-space: nowrap; cursor: default; }
   .sess-presence .sess-dot { width: 8px; height: 8px; border-radius: 50%; background: #2a9d6f; box-shadow: 0 0 0 0 rgba(42,157,111,0.6); animation: sesspulse 2s infinite; }
   @keyframes sesspulse { 0%{box-shadow:0 0 0 0 rgba(42,157,111,0.6);} 70%{box-shadow:0 0 0 6px rgba(42,157,111,0);} 100%{box-shadow:0 0 0 0 rgba(42,157,111,0);} }
+  .sess-user { margin-left: 10px; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .sess-ava { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg,#1F3A5F,#2e639e); color: #fff; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: 0.3px; }
+  .sess-uname { font-size: 12.5px; font-weight: 600; color: var(--text-primary); max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
   .auth-logout { margin-left: 8px; background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; font-family: inherit; white-space: nowrap; }
   .auth-logout:hover { background: var(--bg-secondary); color: var(--text-primary); }
 </style>
@@ -6406,7 +6409,8 @@ function softDeleteOp() {
 L'opération restera restaurable depuis le panneau Admin > Corbeille.`)) return;
   op.deleted = true;
   op.deleted_at = new Date().toISOString();
-  op.deleted_by = 'Bastien MERCIER';
+  op.deleted_by = (typeof authLoadSession === 'function' && authLoadSession() && (authLoadSession().name || authLoadSession().email)) || 'Utilisateur';
+  saveOpToSupabase(op);
   showToast(`« ${op.display_name} » déplacée dans la corbeille`, 'trash');
   // Switch selection to first non-deleted op
   const next = DATA.find(o => !o.deleted);
@@ -6418,9 +6422,10 @@ L'opération restera restaurable depuis le panneau Admin > Corbeille.`)) return;
 function restoreOp(uid) {
   const op = DATA.find(o => o._uid === uid);
   if (!op || !op.deleted) return;
-  delete op.deleted;
-  delete op.deleted_at;
+  op.deleted = false;
+  op.deleted_at = null;
   delete op.deleted_by;
+  saveOpToSupabase(op);
   showToast(`« ${op.display_name} » restaurée`, 'restore');
   renderTrash();
   renderSidebar();
@@ -6434,6 +6439,13 @@ function permanentDeleteOp(uid) {
   if (!confirm(`Supprimer définitivement « ${op.display_name} » ?
 
 Cette action est irréversible.`)) return;
+  const sid = op._supabase_id || (op._uid && op._uid.startsWith('op-supabase-') ? parseInt(op._uid.replace('op-supabase-','')) : null);
+  if (sid && !isNaN(sid)) {
+    fetch(`${SUPABASE_URL}/rest/v1/operations?id=eq.${sid}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}` }
+    }).catch(e => console.error('Suppression Supabase:', e));
+  }
   const idx = DATA.indexOf(op);
   if (idx >= 0) DATA.splice(idx, 1);
   showToast(`« ${op.display_name} » supprimée définitivement`, 'trash');
@@ -7431,7 +7443,7 @@ function makeNewOp() {
   };
 }
 
-function createOp() {
+async function createOp() {
   const msg = ["Créer une nouvelle opération.", "", "Entrez son nom (vous pourrez le modifier ensuite) :"].join('\n');
   const name = prompt(msg, "Nouvelle opération");
   if (name === null) return; // Cancel
@@ -7442,6 +7454,21 @@ function createOp() {
   }
   const newOp = makeNewOp();
   newOp.display_name = trimmed;
+  // Insertion immédiate dans Supabase pour obtenir un id persistant
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/operations`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify({ code: newOp.code, display_name: newOp.display_name, phase_actuelle: newOp.phase_actuelle })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const rows = await res.json();
+    const id = rows && rows[0] && rows[0].id;
+    if (id) { newOp._supabase_id = id; newOp._uid = 'op-supabase-' + id; }
+  } catch (e) {
+    console.error('Création Supabase échouée:', e);
+    showToast('Opération créée localement, mais non enregistrée dans Supabase', 'alert-triangle');
+  }
   DATA.push(newOp);
   selectedOpCode = newOp._uid;
   selectedTrancheIdx = 0;
@@ -7450,6 +7477,7 @@ function createOp() {
   const searchInput = document.getElementById('sidebarSearch');
   if (searchInput) searchInput.value = '';
   renderAll();
+  if (newOp._supabase_id) saveOpToSupabase(newOp); // persiste les valeurs par défaut
   showToast(`Opération « ${trimmed} » créée — pensez à lui attribuer un code analytique`, 'plus');
 }
 
@@ -16723,6 +16751,7 @@ function addOpTag(tagValue) {
   // Case-insensitive dedupe (but preserve user's casing)
   if (!op.tags.some(t => t.toLowerCase() === clean.toLowerCase())) {
     op.tags.push(clean);
+    saveOpToSupabase(op);
   }
   renderOpDetail();
   renderSidebar();
@@ -16740,6 +16769,7 @@ function removeOpTag(idx) {
   renderOpDetail();
   renderSidebar();
   replaceTablerIcons();
+  saveOpToSupabase(op);
 }
 
 // Show a popover listing ops linked by this tag
@@ -17167,6 +17197,8 @@ async function loadFromSupabase(opts) {
         workflows: workflowsForOp,
         audit_log: auditForOp,
         tags: tagsForOp,
+        deleted: !!row.deleted_at,
+        deleted_at: row.deleted_at || null,
         phases_history: phasesHistory,
       };
     });
@@ -17611,6 +17643,7 @@ async function saveOpToSupabase(op) {
       date_ca_axentia: op.date_ca_axentia,
       notes_libres: op.notes_libres,
       jalons_reel: op.jalons_reel || {},
+      deleted_at: op.deleted_at || null,
     };
     const opResponse = await fetch(`${SUPABASE_URL}/rest/v1/operations?id=eq.${supabaseId}`, {
       method: 'PATCH', headers, body: JSON.stringify(opPayload),
@@ -18101,11 +18134,14 @@ async function authLogin(email, password){
   });
   const data = await res.json().catch(()=>({}));
   if (!res.ok) throw new Error(data.error_description || data.msg || data.message || 'Identifiants invalides');
+  const _md = (data.user && data.user.user_metadata) || {};
+  const _mail = (data.user && data.user.email) || email || '';
   const session = {
     access_token: data.access_token,
     refresh_token: data.refresh_token,
     expires_at: Date.now() + ((data.expires_in || 3600) * 1000),
-    email: (data.user && data.user.email) || email
+    email: _mail,
+    name: _md.display_name || _md.full_name || _md.name || (_mail.split('@')[0] || 'Utilisateur')
   };
   AUTH_TOKEN = session.access_token;
   authSaveSession(session);
@@ -18120,11 +18156,15 @@ async function authRefresh(refresh_token){
   });
   const data = await res.json().catch(()=>({}));
   if (!res.ok) throw new Error('refresh failed');
+  const _md2 = (data.user && data.user.user_metadata) || {};
+  const _prev = authLoadSession() || {};
+  const _mail2 = (data.user && data.user.email) || _prev.email || '';
   const session = {
     access_token: data.access_token,
     refresh_token: data.refresh_token,
     expires_at: Date.now() + ((data.expires_in || 3600) * 1000),
-    email: (data.user && data.user.email) || ''
+    email: _mail2,
+    name: _md2.display_name || _md2.full_name || _md2.name || _prev.name || (_mail2.split('@')[0] || 'Utilisateur')
   };
   AUTH_TOKEN = session.access_token;
   authSaveSession(session);
@@ -18141,6 +18181,15 @@ function addLogoutButton(){
   const nav = document.querySelector('.topnav');
   if (!nav || document.getElementById('authLogoutBtn')) return;
   const s = authLoadSession();
+
+  // Chip utilisateur (display name de la session active)
+  const uname = (s && (s.name || s.email)) || 'Utilisateur';
+  const initials = uname.split(/[ ._@-]+/).filter(Boolean).slice(0,2).map(x => x[0].toUpperCase()).join('') || 'U';
+  const userChip = document.createElement('span');
+  userChip.id = 'sessUser'; userChip.className = 'sess-user';
+  userChip.title = (s && s.email) ? s.email : '';
+  userChip.innerHTML = `<span class="sess-ava">${escapeHtml(initials)}</span><span class="sess-uname">${escapeHtml(uname)}</span>`;
+  nav.appendChild(userChip);
 
   // Indicateur de présence
   const pres = document.createElement('span');
