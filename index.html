@@ -5030,6 +5030,37 @@
   .sess-menu-email { font-size: 11.5px; color: var(--text-tertiary); padding: 2px 8px 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 6px; word-break: break-all; }
   .sess-menu-logout { width: 100%; text-align: left; background: none; border: none; border-radius: 6px; padding: 8px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
   .sess-menu-logout:hover { background: var(--bg-secondary); color: #c4423a; }
+  .sess-menu-item { width: 100%; text-align: left; background: none; border: none; border-radius: 6px; padding: 8px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+  .sess-menu-item:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  /* Modale Administration des comptes */
+  .acct-modal-backdrop { position: fixed; inset: 0; z-index: 100000; background: rgba(10,22,38,0.55); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .acct-modal { width: 640px; max-width: 96vw; max-height: 86vh; display: flex; flex-direction: column; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,0.4); overflow: hidden; }
+  .acct-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--border-color); }
+  .acct-modal-title { font-size: 16px; font-weight: 800; color: var(--text-primary); }
+  .acct-modal-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 3px; }
+  .acct-modal-close { background: none; border: none; font-size: 16px; color: var(--text-tertiary); cursor: pointer; padding: 4px 8px; border-radius: 6px; line-height: 1; }
+  .acct-modal-close:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .acct-modal-body { padding: 16px 20px 20px; overflow: auto; }
+  .acct-section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px; }
+  .acct-list { display: flex; flex-direction: column; gap: 6px; }
+  .acct-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: 9px; background: var(--bg-secondary); }
+  .acct-row-main { min-width: 0; }
+  .acct-email { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .acct-person { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+  .acct-row-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .acct-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .acct-badge.ok { background: rgba(42,157,111,0.12); color: #1f7d56; border: 1px solid rgba(42,157,111,0.4); }
+  .acct-badge.warn { background: rgba(196,66,58,0.10); color: #c4423a; border: 1px solid rgba(196,66,58,0.35); }
+  .acct-del { background: none; border: 1px solid var(--border-color); color: var(--text-tertiary); border-radius: 6px; padding: 3px 8px; cursor: pointer; font-size: 12px; line-height: 1; }
+  .acct-del:hover { color: #c4423a; border-color: #c4423a; }
+  .acct-add { display: flex; gap: 8px; margin-top: 12px; }
+  .acct-input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: 13px; font-family: inherit; }
+  .acct-add-btn { background: var(--info-bg); border: 1px solid var(--info-accent); color: var(--info-text); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: inherit; }
+  .acct-add-btn:hover { filter: brightness(0.97); }
+  .acct-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .acct-chip { font-size: 12px; padding: 4px 10px; border-radius: 999px; }
+  .acct-chip.warn { background: rgba(196,66,58,0.10); color: #c4423a; border: 1px solid rgba(196,66,58,0.30); }
+  .acct-muted { color: var(--text-tertiary); font-size: 12px; }
   .sess-ava { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg,#1F3A5F,#2e639e); color:#fff; font-size:10.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; letter-spacing:0.3px; }
   .sess-uname { font-size: 12.5px; font-weight: 600; color: var(--text-primary); max-width: 160px; overflow:hidden; text-overflow:ellipsis; }
   .auth-logout { margin-left: 8px; background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; font-family: inherit; white-space: nowrap; }
@@ -14376,6 +14407,7 @@ Net : ${m.flux_net >= 0 ? '+' : ''}${fmtEuros(m.flux_net)}`;
 // ============== ACCUEIL (personal dashboard) ==============
 let CURRENT_USER = 'Bastien MERCIER';
 let APP_SCOPE = (function(){ try { return sessionStorage.getItem('exnihilo_scope') || 'mine'; } catch(e){ return 'mine'; } })();
+let ACCOUNTS = []; // rattachements compte (email) -> personne, chargés depuis la table 'comptes'
 // Normalisation pour rattacher un compte (display name) à une personne des données (resp_op / charge_fin / developpeur)
 function normPerson(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
 function isCurrentUser(name){ const c = normPerson(CURRENT_USER); return !!c && normPerson(name) === c; }
@@ -18286,11 +18318,14 @@ function addLogoutButton(){
     <span class="sess-caret">▾</span>
     <div class="sess-menu">
       ${email ? `<div class="sess-menu-email">${escapeHtml(email)}</div>` : ''}
+      <button class="sess-menu-item" id="acctAdminBtn" type="button">Administration des comptes</button>
       <button class="sess-menu-logout" id="authLogoutBtn" type="button">Déconnexion</button>
     </div>`;
   nav.appendChild(userChip);
   const lo = userChip.querySelector('#authLogoutBtn');
   if (lo) lo.addEventListener('click', authLogout);
+  const adminBtn = userChip.querySelector('#acctAdminBtn');
+  if (adminBtn) adminBtn.addEventListener('click', openAccountsAdmin);
 
   startSessionLoops();
 }
@@ -18398,8 +18433,7 @@ function showLoginOverlay(){
       await authLogin(document.getElementById('authEmail').value.trim(), document.getElementById('authPwd').value);
       ov.remove();
       document.body.style.overflow = '';
-      addLogoutButton();
-      loadFromSupabase();
+      bootAfterAuth();
     } catch (ex) {
       err.textContent = ex.message || 'Échec de connexion';
       btn.disabled = false; btn.textContent = 'Se connecter';
@@ -18408,16 +18442,141 @@ function showLoginOverlay(){
   setTimeout(()=>{ const i=document.getElementById('authEmail'); if(i) i.focus(); }, 50);
 }
 
+// ============== RATTACHEMENT COMPTE -> PERSONNE + ADMIN ==============
+function normEmail(e){ return (e||'').toString().trim().toLowerCase(); }
+
+async function loadAccounts(){
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/comptes?select=email,personne,actif`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}` }
+    });
+    if (!res.ok) { ACCOUNTS = []; return; } // table absente -> repli sur le display name
+    ACCOUNTS = await res.json();
+  } catch(e){ ACCOUNTS = []; }
+}
+
+// Résout CURRENT_USER à partir de l'e-mail de session via la table 'comptes'.
+// Repli : display name de la session si aucun rattachement trouvé.
+function resolveCurrentUser(){
+  const s = authLoadSession(); if (!s) return;
+  const row = ACCOUNTS.find(a => normEmail(a.email) === normEmail(s.email));
+  if (row && row.personne) CURRENT_USER = row.personne;
+  else if (s.name) CURRENT_USER = s.name;
+}
+
+async function bootAfterAuth(){
+  addLogoutButton();
+  try { await loadAccounts(); resolveCurrentUser(); } catch(e){}
+  loadFromSupabase();
+}
+
+function _acctMatchCount(personne){
+  const np = normPerson(personne);
+  if (!np) return 0;
+  return DATA.filter(o => !o.deleted && (normPerson(o.charge_fin) === np || normPerson(o.resp_op) === np || normPerson(o.developpeur) === np)).length;
+}
+
+function openAccountsAdmin(){
+  const old = document.getElementById('acctAdminBackdrop'); if (old) old.remove();
+  const bd = document.createElement('div');
+  bd.id = 'acctAdminBackdrop'; bd.className = 'acct-modal-backdrop';
+  bd.innerHTML = `<div class="acct-modal">
+    <div class="acct-modal-head">
+      <div>
+        <div class="acct-modal-title">Administration des comptes</div>
+        <div class="acct-modal-sub">Rattachement compte (e-mail) \u2192 personne des op\u00e9rations</div>
+      </div>
+      <button class="acct-modal-close" id="acctModalClose" type="button">\u2715</button>
+    </div>
+    <div class="acct-modal-body" id="acctModalBody"></div>
+  </div>`;
+  document.body.appendChild(bd);
+  bd.addEventListener('click', (e) => { if (e.target === bd) bd.remove(); });
+  document.getElementById('acctModalClose').addEventListener('click', () => bd.remove());
+  renderAccountsAdmin();
+}
+
+function renderAccountsAdmin(){
+  const body = document.getElementById('acctModalBody'); if (!body) return;
+  const persons = getAllPersons();
+  const mappedNorms = new Set(ACCOUNTS.map(a => normPerson(a.personne)).filter(Boolean));
+  const sansCompte = persons.filter(p => !mappedNorms.has(normPerson(p)));
+  const rows = ACCOUNTS.slice().sort((a,b) => (a.email||'').localeCompare(b.email||''));
+
+  const comptesHtml = rows.length ? rows.map(a => {
+    const n = _acctMatchCount(a.personne);
+    const warn = !a.personne ? 'Aucune personne renseign\u00e9e' : (n === 0 ? 'Rattach\u00e9 \u00e0 aucune op\u00e9ration' : '');
+    return `<div class="acct-row">
+      <div class="acct-row-main">
+        <div class="acct-email">${escapeHtml(a.email||'')}</div>
+        <div class="acct-person">${a.personne ? escapeHtml(a.personne) : '<span class="acct-muted">\u2014 non rattach\u00e9</span>'}</div>
+      </div>
+      <div class="acct-row-right">
+        ${warn ? `<span class="acct-badge warn">\u26a0 ${escapeHtml(warn)}</span>` : `<span class="acct-badge ok">${n} op\u00e9ration${n>1?'s':''}</span>`}
+        <button class="acct-del" data-email="${escapeHtml(a.email||'')}" type="button" title="Supprimer ce rattachement">\u2715</button>
+      </div>
+    </div>`;
+  }).join('') : '<div class="acct-muted" style="padding:8px 2px;">Aucun compte rattach\u00e9 pour le moment.</div>';
+
+  const sansCompteHtml = sansCompte.length
+    ? sansCompte.map(p => `<span class="acct-chip warn">\u26a0 ${escapeHtml(p)}</span>`).join('')
+    : '<span class="acct-muted">Toutes les personnes des op\u00e9rations ont un compte.</span>';
+
+  const personOptions = ['<option value="">\u2014 personne \u2014</option>']
+    .concat(persons.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`)).join('');
+
+  body.innerHTML = `
+    <div class="acct-section-title">Comptes rattach\u00e9s</div>
+    <div class="acct-list">${comptesHtml}</div>
+    <div class="acct-add">
+      <input id="acctAddEmail" class="acct-input" type="email" placeholder="email@axentia.fr" autocomplete="off">
+      <select id="acctAddPerson" class="acct-input">${personOptions}</select>
+      <button id="acctAddBtn" class="acct-add-btn" type="button">Ajouter / mettre \u00e0 jour</button>
+    </div>
+    <div class="acct-section-title" style="margin-top:18px;">Personnes des op\u00e9rations sans compte</div>
+    <div class="acct-chips">${sansCompteHtml}</div>
+  `;
+  body.querySelectorAll('.acct-del').forEach(b => b.addEventListener('click', () => acctDelete(b.dataset.email)));
+  const addBtn = document.getElementById('acctAddBtn');
+  if (addBtn) addBtn.addEventListener('click', acctAdd);
+}
+
+async function acctAdd(){
+  const email = normEmail((document.getElementById('acctAddEmail')||{}).value);
+  const personne = (document.getElementById('acctAddPerson')||{}).value || null;
+  if (!email) { if (typeof showToast === 'function') showToast('E-mail requis', 'alert-circle'); return; }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/comptes?on_conflict=email`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ email, personne })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    await loadAccounts(); resolveCurrentUser(); renderAccountsAdmin(); applyScopeRerender();
+    if (typeof showToast === 'function') showToast('Rattachement enregistr\u00e9', 'check');
+  } catch(e){ if (typeof showToast === 'function') showToast('\u00c9chec \u2014 la table \u00ab comptes \u00bb existe-t-elle ?', 'alert-triangle'); }
+}
+
+async function acctDelete(email){
+  if (!email) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/comptes?email=eq.${encodeURIComponent(email)}`, {
+      method: 'DELETE', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}` }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    await loadAccounts(); resolveCurrentUser(); renderAccountsAdmin(); applyScopeRerender();
+  } catch(e){ if (typeof showToast === 'function') showToast('Suppression impossible', 'alert-triangle'); }
+}
+
 async function initAuthGate(){
   const s = authLoadSession();
   if (s && s.access_token && s.expires_at > Date.now() + 60000) {
     AUTH_TOKEN = s.access_token;
-    addLogoutButton();
-    loadFromSupabase();
+    bootAfterAuth();
     return;
   }
   if (s && s.refresh_token) {
-    try { await authRefresh(s.refresh_token); addLogoutButton(); loadFromSupabase(); return; } catch(e){}
+    try { await authRefresh(s.refresh_token); bootAfterAuth(); return; } catch(e){}
   }
   showLoginOverlay();
 }
