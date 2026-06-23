@@ -5015,7 +5015,16 @@
   .sess-refresh-ico { display: inline-block; }
   .sess-btn.spinning .sess-refresh-ico { animation: authspin .6s linear; }
   .sess-stamp { margin-left: 10px; font-size: 11px; color: var(--text-tertiary); white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .sess-user { margin-left: 10px; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .sess-icon-btn { padding: 5px 9px; font-size: 15px; line-height: 1; }
+  .sess-user { position: relative; margin-left: 12px; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; cursor: default; padding: 3px 6px 3px 4px; border-radius: 9px; }
+  .sess-user:hover { background: var(--bg-secondary); }
+  .sess-caret { font-size: 10px; color: var(--text-tertiary); }
+  .sess-menu { display: none; position: absolute; top: 100%; right: 0; margin-top: 6px; min-width: 190px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.20); padding: 8px; z-index: 1000; }
+  .sess-menu::before { content: ''; position: absolute; top: -8px; left: 0; right: 0; height: 8px; }
+  .sess-user:hover .sess-menu { display: block; }
+  .sess-menu-email { font-size: 11.5px; color: var(--text-tertiary); padding: 2px 8px 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 6px; word-break: break-all; }
+  .sess-menu-logout { width: 100%; text-align: left; background: none; border: none; border-radius: 6px; padding: 8px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+  .sess-menu-logout:hover { background: var(--bg-secondary); color: #c4423a; }
   .sess-ava { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg,#1F3A5F,#2e639e); color:#fff; font-size:10.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; letter-spacing:0.3px; }
   .sess-uname { font-size: 12.5px; font-weight: 600; color: var(--text-primary); max-width: 160px; overflow:hidden; text-overflow:ellipsis; }
   .auth-logout { margin-left: 8px; background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; font-family: inherit; white-space: nowrap; }
@@ -18225,35 +18234,33 @@ function addLogoutButton(){
   });
   nav.appendChild(scopeBtn);
 
-  // Chip utilisateur (display name de la session active)
-  let uname = (s && (s.name || s.email)) || 'Utilisateur';
-  uname = uname.split(/([ ._\-]+)/).map(w => (w && /[a-zA-ZÀ-ÿ]/.test(w.charAt(0))) ? w.charAt(0).toUpperCase() + w.slice(1) : w).join('');
-  const initials = uname.split(/[ ._@-]+/).filter(Boolean).slice(0,2).map(x => x[0].toUpperCase()).join('') || 'U';
-  const userChip = document.createElement('span');
-  userChip.id = 'sessUser'; userChip.className = 'sess-user';
-  userChip.title = (s && s.email) ? s.email : '';
-  userChip.innerHTML = `<span class="sess-ava">${escapeHtml(initials)}</span><span class="sess-uname">${escapeHtml(uname)}</span>`;
-  nav.appendChild(userChip);
-
-  // Horodatage de synchro
-  const stamp = document.createElement('span');
-  stamp.id = 'sessSyncStamp'; stamp.className = 'sess-stamp';
-  nav.appendChild(stamp);
-
-  // Bouton rafraîchir
+  // Bouton rafraîchir (icône seule)
   const rbtn = document.createElement('button');
-  rbtn.id = 'sessRefreshBtn'; rbtn.className = 'sess-btn'; rbtn.title = 'Rafraîchir les données (auto toutes les 30 s)';
-  rbtn.innerHTML = '<span class="sess-refresh-ico">⟳</span> Rafraîchir';
+  rbtn.id = 'sessRefreshBtn'; rbtn.className = 'sess-btn sess-icon-btn';
+  rbtn.title = 'Rafraîchir les données (auto toutes les 30 s)';
+  rbtn.setAttribute('aria-label', 'Rafraîchir');
+  rbtn.innerHTML = '<span class="sess-refresh-ico">⟳</span>';
   rbtn.addEventListener('click', () => refreshData(false));
   nav.appendChild(rbtn);
 
-  // Bouton déconnexion
-  const btn = document.createElement('button');
-  btn.id = 'authLogoutBtn'; btn.className = 'auth-logout';
-  btn.textContent = 'Déconnexion';
-  btn.title = 'Se déconnecter' + (s && s.email ? ` (${s.email})` : '');
-  btn.addEventListener('click', authLogout);
-  nav.appendChild(btn);
+  // Chip utilisateur (display name) — tout à droite, menu déconnexion au survol
+  let uname = (s && (s.name || s.email)) || 'Utilisateur';
+  uname = uname.split(/([ ._\-]+)/).map(w => (w && /[a-zA-ZÀ-ÿ]/.test(w.charAt(0))) ? w.charAt(0).toUpperCase() + w.slice(1) : w).join('');
+  const initials = uname.split(/[ ._@-]+/).filter(Boolean).slice(0,2).map(x => x[0].toUpperCase()).join('') || 'U';
+  const email = (s && s.email) ? s.email : '';
+  const userChip = document.createElement('div');
+  userChip.id = 'sessUser'; userChip.className = 'sess-user';
+  userChip.innerHTML = `
+    <span class="sess-ava">${escapeHtml(initials)}</span>
+    <span class="sess-uname">${escapeHtml(uname)}</span>
+    <span class="sess-caret">▾</span>
+    <div class="sess-menu">
+      ${email ? `<div class="sess-menu-email">${escapeHtml(email)}</div>` : ''}
+      <button class="sess-menu-logout" id="authLogoutBtn" type="button">Déconnexion</button>
+    </div>`;
+  nav.appendChild(userChip);
+  const lo = userChip.querySelector('#authLogoutBtn');
+  if (lo) lo.addEventListener('click', authLogout);
 
   startSessionLoops();
 }
@@ -18265,9 +18272,9 @@ let _sessLoops = [];
 
 function _two(n){ return String(n).padStart(2,'0'); }
 function updateSyncStamp(){
-  const el = document.getElementById('sessSyncStamp'); if (!el) return;
   const d = new Date();
-  el.textContent = 'Synchro ' + _two(d.getHours()) + ':' + _two(d.getMinutes()) + ':' + _two(d.getSeconds());
+  const rb = document.getElementById('sessRefreshBtn');
+  if (rb) rb.title = 'Dernière synchro : ' + _two(d.getHours()) + ':' + _two(d.getMinutes()) + ':' + _two(d.getSeconds()) + ' · cliquer pour rafraîchir';
 }
 
 async function refreshData(silent){
