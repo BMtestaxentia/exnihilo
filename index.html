@@ -4319,12 +4319,20 @@
   }
 
 
+  [data-theme="dark"] input[type="date"],
+  [data-theme="dark"] input[type="datetime-local"],
+  [data-theme="dark"] input[type="time"],
+  [data-theme="dark"] input[type="month"] { color-scheme: dark; }
+  [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+  [data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1) brightness(1.6); opacity: 0.85; cursor: pointer; }
+
   .gantt-tooltip {
     position: fixed; pointer-events: none;
-    background: var(--text-primary); color: white;
-    padding: 5px 9px; border-radius: 4px;
-    font-size: 11px; font-weight: 500; white-space: nowrap;
-    z-index: 9999; box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    background: #1f2430; color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.16);
+    padding: 5px 9px; border-radius: 6px;
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+    z-index: 9999; box-shadow: 0 6px 18px rgba(0,0,0,0.45);
   }
 
   .gantt-empty { padding: 40px; text-align: center; color: var(--text-tertiary); font-style: italic; }
@@ -5081,8 +5089,6 @@
       <i class="ti ti-moon theme-icon-dark"></i>
       <i class="ti ti-sun theme-icon-light"></i>
     </button>
-    <span>Bastien Mercier</span>
-    <div class="topnav-user-avatar">BM</div>
   </div>
 </nav>
 
@@ -18180,7 +18186,8 @@ function addLogoutButton(){
   const s = authLoadSession();
 
   // Chip utilisateur (display name de la session active)
-  const uname = (s && (s.name || s.email)) || 'Utilisateur';
+  let uname = (s && (s.name || s.email)) || 'Utilisateur';
+  uname = uname.split(/([ ._\-]+)/).map(w => (w && /[a-zA-ZÀ-ÿ]/.test(w.charAt(0))) ? w.charAt(0).toUpperCase() + w.slice(1) : w).join('');
   const initials = uname.split(/[ ._@-]+/).filter(Boolean).slice(0,2).map(x => x[0].toUpperCase()).join('') || 'U';
   const userChip = document.createElement('span');
   userChip.id = 'sessUser'; userChip.className = 'sess-user';
