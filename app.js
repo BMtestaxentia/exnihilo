@@ -8745,7 +8745,7 @@ function renderTresorerie() {
       if (pf.statut === 'En cours') {
         prefin.push({
           op_code: op.code, op_name: op.display_name,
-          financeur: pf.financeur, montant_couvert: parseFloat(pf.montant_couvert) || 0,
+          banque: pf.banque || pf.financeur, montant_couvert: parseFloat(pf.montant_couvert) || 0,
           montant_tire: parseFloat(pf.montant_tire) || 0,
           date_fin: pf.date_fin,
         });
@@ -8893,7 +8893,7 @@ Net : ${m.flux_net >= 0 ? '+' : ''}${fmtEuros(m.flux_net)}`;
               <div class="treso-event">
                 <div class="treso-event-icon" style="color:var(--purple-accent);"><i class="ti ti-clock-bolt"></i></div>
                 <div class="treso-event-body">
-                  <div class="treso-event-label">${escapeHtml(p.financeur || '?')}</div>
+                  <div class="treso-event-label">${escapeHtml(p.banque || '?')}</div>
                   <div class="treso-event-meta">${escapeHtml(p.op_code)} · ${pctTire.toFixed(0)}% tiré · fin ${escapeHtml(p.date_fin || '—')}</div>
                 </div>
                 <div class="treso-event-amount">${fmtEuros(p.montant_tire)} / ${fmtEuros(p.montant_couvert)}</div>
