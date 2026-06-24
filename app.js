@@ -10157,6 +10157,7 @@ function setupGanttDragHandlers() {
     const op = findOp(dragging.opCode);
     if (op) {
       op[dragging.field] = fmtDateStr(newDate);
+      saveOpToSupabase(op);
       showToast(`${dragging.label} de ${op.display_name} : ${fmtDateStr(newDate)}`, 'check');
     }
     dragging.el.classList.remove('dragging');
