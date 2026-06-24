@@ -1379,7 +1379,7 @@ function renderCtrlCaducite() {
   if (rows.length === 0) return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-alert-triangle"></i>Caducité des financements</div><div class="subent-empty">Aucune date de caducité renseignée sur les prêts.</div></div>`;
   const body = rows.map(r => `
     <tr>
-      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}</td>
+      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}${r.osPrev ? ` <span style="font-weight:400;color:var(--text-tertiary);font-size:11px;">· OS prévu ${escapeHtml(r.osPrev)}</span>` : ''}</td>
       <td>${escapeHtml(r.tranche)}</td>
       <td>${escapeHtml(r.pret)}</td>
       <td>${escapeHtml(r.type)}</td>
@@ -1413,7 +1413,7 @@ function renderCtrlCloturesAgrement() {
   if (rows.length === 0) return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-calendar"></i>Clôtures d'agrément</div><div class="subent-empty">Aucune date de clôture d'agrément renseignée.</div></div>`;
   const body = rows.map(r => `
     <tr>
-      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}</td>
+      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}${r.osPrev ? ` <span style="font-weight:400;color:var(--text-tertiary);font-size:11px;">· OS prévu ${escapeHtml(r.osPrev)}</span>` : ''}</td>
       <td>${escapeHtml(r.tranche)}</td>
       <td>${r.statut ? statusBadge(r.statut) : ''}</td>
       <td>${escapeHtml(r.date)}</td>
@@ -1451,7 +1451,7 @@ function renderCtrlGaranties() {
   const chip = (cov) => cov === 0 ? '<span class="ctrl-chip ctrl-chip-over">Aucune garantie</span>' : `<span class="ctrl-chip ctrl-chip-soon">${cov}% couvert</span>`;
   const body = rows.map(r => `
     <tr>
-      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}</td>
+      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}${r.osPrev ? ` <span style="font-weight:400;color:var(--text-tertiary);font-size:11px;">· OS prévu ${escapeHtml(r.osPrev)}</span>` : ''}</td>
       <td>${escapeHtml(r.tranche)}</td>
       <td>${escapeHtml(r.pret)}</td>
       <td style="text-align:right;">${r.montant ? fmtMontant(r.montant) : ''}</td>
@@ -1470,8 +1470,10 @@ function renderCtrlGaranties() {
 
 function renderCtrlGoNoGo() {
   const rows = [];
+  const _today = new Date(); _today.setHours(0, 0, 0, 0);
   ctrlActiveOps().forEach(op => {
-    if (op.date_os) return; // OS déjà donné → contrôle levé
+    const _dOs = op.date_os ? parseDateStr(op.date_os) : null;
+    if (_dOs && _dOs <= _today) return; // OS déjà passé → contrôle levé (OS à venir = encore concerné)
     const tranches = op.tranches || [];
     const prets = op.prets || [];
     const agrOk = tranches.length > 0 && tranches.every(t => /obtenu|dfa|sign/i.test(t.statut_agrement || ''));
@@ -1479,13 +1481,13 @@ function renderCtrlGoNoGo() {
     const garOk = prets.filter(pp => !pp.non_garanti).every(pp => ctrlGarantieCoverage(op, pp) >= 100);
     const pcOk = !!op.date_obt_pc;
     const allOk = agrOk && finOk && garOk && pcOk;
-    rows.push({ opName: op.display_name || op.name || op.code || '', agrOk, finOk, garOk, pcOk, allOk });
+    rows.push({ opName: op.display_name || op.name || op.code || '', osPrev: (_dOs && _dOs > _today) ? op.date_os : null, agrOk, finOk, garOk, pcOk, allOk });
   });
   if (rows.length === 0) return `<div class="ctrl-block"><div class="ctrl-block-title"><i class="ti ti-list-check"></i>Go / no-go avant OS</div><div class="subent-empty">Aucune opération en attente d'OS.</div></div>`;
   const yn = (ok) => ok ? '<span class="ctrl-chip ctrl-chip-ok">OK</span>' : '<span class="ctrl-chip ctrl-chip-over">Non</span>';
   const body = rows.map(r => `
     <tr>
-      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}</td>
+      <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.opName)}${r.osPrev ? ` <span style="font-weight:400;color:var(--text-tertiary);font-size:11px;">· OS prévu ${escapeHtml(r.osPrev)}</span>` : ''}</td>
       <td>${yn(r.agrOk)}</td>
       <td>${yn(r.finOk)}</td>
       <td>${yn(r.garOk)}</td>
