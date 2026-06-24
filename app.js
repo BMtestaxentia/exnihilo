@@ -396,6 +396,25 @@ function computeAlerts(op) {
     }
   }
 
+  // === Rule 9 (NEW) : Conditions préalables / pièces attendues non levées ===
+  if (!isDelivered) {
+    (op.prets || []).forEach(p => {
+      const pieces = Array.isArray(p.pieces_attendues) ? p.pieces_attendues.filter(Boolean) : [];
+      if (pieces.length && !p.date_contrat && /offre|contrat|demand|accord/i.test(p.statut || '')) {
+        const d = p.date_lo ? parseDateStr(p.date_lo) : null;
+        const deadline = d ? addMonths(d, 4) : addMonths(today, 1);
+        const days = daysBetween(today, deadline);
+        const level = classify(days, 21, 60);
+        const apercu = pieces.slice(0, 3).join(', ') + (pieces.length > 3 ? '…' : '');
+        alerts.push({
+          level, days, deadline,
+          section: 'prets',
+          msg: `Conditions préalables non levées — ${p.ligne || ''} ${p.financeur || ''} : ${pieces.length} pièce${pieces.length > 1 ? 's' : ''} attendue${pieces.length > 1 ? 's' : ''} (${apercu})`
+        });
+      }
+    });
+  }
+
   // Sort: most urgent first (lowest days, expired first)
   alerts.sort((a, b) => a.days - b.days);
   return alerts;
@@ -5310,7 +5329,7 @@ function renderPrefinCard(i) {
         <div class="entity-card-stat"><span class="stat-label">Couvert</span><span class="stat-val">${fmtMontant(i.montant_couvert)}</span></div>
         <div class="entity-card-stat"><span class="stat-label">Tiré</span><span class="stat-val">${fmtMontant(i.montant_tire)}</span></div>
         <div class="entity-card-stat"><span class="stat-label">% tiré</span><span class="stat-val">${pct}</span></div>
-        <div class="entity-card-stat"><span class="stat-label">Période</span><span class="stat-val muted">${(i.date_debut || '?')} → ${(i.date_fin || '?')}</span></div>
+        <div class="entity-card-stat"><span class="stat-label">Période</span><span class="stat-val muted">${fmtDateFR(i.date_debut) || '?'} → ${fmtDateFR(i.date_fin) || '?'}</span></div>
         ${i.duree_prefi ? `<div class="entity-card-stat"><span class="stat-label">Durée</span><span class="stat-val">${i.duree_prefi} mois</span></div>` : ''}
       </div>
       ${i.commentaires ? `<div class="entity-card-notes">${escapeHtml(i.commentaires)}</div>` : ''}
@@ -5963,6 +5982,12 @@ function isoToFr(isoStr) {
   const m = String(isoStr).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (m) return `${m[3].padStart(2, '0')}/${m[2].padStart(2, '0')}/${m[1]}`;
   return '';
+}
+
+// Normalise n'importe quelle date (ISO ou DD/MM/YYYY) → DD/MM/YYYY
+function fmtDateFR(s) {
+  const d = parseDateStr(s);
+  return d ? fmtDateStr(d) : (s ? String(s) : '');
 }
 
 function computeGanttRange() {
@@ -8896,7 +8921,7 @@ Net : ${m.flux_net >= 0 ? '+' : ''}${fmtEuros(m.flux_net)}`;
                 <div class="treso-event-icon" style="color:var(--purple-accent);"><i class="ti ti-clock-bolt"></i></div>
                 <div class="treso-event-body">
                   <div class="treso-event-label">${escapeHtml(p.banque || '?')}</div>
-                  <div class="treso-event-meta">${escapeHtml(p.op_code)} · ${pctTire.toFixed(0)}% tiré · fin ${escapeHtml(p.date_fin || '—')}</div>
+                  <div class="treso-event-meta">${escapeHtml(p.op_code)} · ${pctTire.toFixed(0)}% tiré · fin ${escapeHtml(fmtDateFR(p.date_fin) || '—')}</div>
                 </div>
                 <div class="treso-event-amount">${fmtEuros(p.montant_tire)} / ${fmtEuros(p.montant_couvert)}</div>
               </div>
@@ -12201,7 +12226,14 @@ function mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap) {
 // ----- Fin mapping -----
 
 // Envoie une op modifiée vers Supabase via PATCH, ainsi que ses entités liées
+let _pendingWrites = 0;   // écritures Supabase en cours (garde-fou anti auto-refresh)
+let _lastWriteAt = 0;     // timestamp de la dernière écriture
 async function saveOpToSupabase(op) {
+  _pendingWrites++; _lastWriteAt = Date.now();
+  try { return await _saveOpToSupabaseImpl(op); }
+  finally { _pendingWrites = Math.max(0, _pendingWrites - 1); _lastWriteAt = Date.now(); }
+}
+async function _saveOpToSupabaseImpl(op) {
   // Extraire l'id Supabase depuis le _uid (format : "op-supabase-1" → 1)
   const supabaseId = op._supabase_id || (op._uid ? parseInt(op._uid.replace('op-supabase-', '')) : null);
   if (!supabaseId || isNaN(supabaseId)) {
@@ -12857,7 +12889,7 @@ function updateSyncStamp(){
 
 async function refreshData(silent){
   // Ne jamais écraser une saisie en cours
-  if (silent && (editMode || (typeof hasUnsavedChanges === 'function' && hasUnsavedChanges()))) return;
+  if (silent && (editMode || _pendingWrites > 0 || (Date.now() - _lastWriteAt < 8000) || (typeof hasUnsavedChanges === 'function' && hasUnsavedChanges()))) return;
   const selCode = (typeof storageGet === 'function') ? storageGet('selectedOp') : null;
   const view = (typeof storageGet === 'function') ? storageGet('activeView') : null;
   const rbtn = document.getElementById('sessRefreshBtn');
