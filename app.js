@@ -2448,7 +2448,9 @@ function _bilanBuildDocDef(op, tranchesSelected) {
 
   const NAVY = '#243b63', GOLD = '#c2a45c', GREY = '#e9ebef', WHITE = '#ffffff';
   const W = ['*', 95, 48];
-  const fmt = _bilanFmt, pctf = _bilanFmtPct;
+  const _clean = s => String(s).replace(/[\u202F\u00A0\u2009]/g, ' ');
+  const fmt = v => _clean(_bilanFmt(v));
+  const pctf = (v, base) => _clean(_bilanFmtPct(v, base));
 
   const line = (label, montant, base) => [
     { text: label, margin: [8, 0, 0, 0] },
@@ -2471,12 +2473,12 @@ function _bilanBuildDocDef(op, tranchesSelected) {
       { text: txt, color: WHITE, bold: true, fillColor: NAVY, margin: [2, 3, 2, 3] },
       { text: 'Montants TTC (€)', color: WHITE, fillColor: NAVY, alignment: 'right', fontSize: 7, margin: [2, 4, 2, 3] },
       { text: '%', color: WHITE, fillColor: NAVY, alignment: 'right', fontSize: 7, margin: [2, 4, 2, 3] },
-    ]] }, layout: 'noBorders', margin: [0, 9, 0, 0],
+    ]] }, layout: 'noBorders', margin: [0, 6, 0, 0],
   });
   const innerLayout = {
     hLineWidth: (i, node) => (i === 0 || i === node.table.body.length) ? 0 : 0.5,
     vLineWidth: () => 0, hLineColor: () => '#dfe2e7',
-    paddingTop: () => 2.5, paddingBottom: () => 2.5, paddingLeft: () => 2, paddingRight: () => 4,
+    paddingTop: () => 1.6, paddingBottom: () => 1.6, paddingLeft: () => 2, paddingRight: () => 4,
   };
 
   const prBody = [];
@@ -2507,7 +2509,7 @@ function _bilanBuildDocDef(op, tranchesSelected) {
 
   const headerCols = { columns: [
     { stack: [
-      { text: "BILAN PRÉVISIONNEL D'OPÉRATION", bold: true, fontSize: 14, color: NAVY },
+      { text: "BILAN PRÉVISIONNEL D'OPÉRATION", bold: true, fontSize: 13, color: NAVY },
       { text: sousTitre, color: '#666', fontSize: 9, margin: [0, 2, 0, 0] },
     ], width: '*' },
   ] };
@@ -2517,16 +2519,16 @@ function _bilanBuildDocDef(op, tranchesSelected) {
 
   const idBand = { table: { widths: ['*'], body: [[
     { text: "IDENTIFICATION DE L'OPÉRATION", color: WHITE, bold: true, fillColor: NAVY, margin: [2, 3, 2, 3] },
-  ]] }, layout: 'noBorders', margin: [0, 10, 0, 0] };
+  ]] }, layout: 'noBorders', margin: [0, 7, 0, 0] };
   const idGrid = {
     table: { widths: ['auto', '*', 'auto', '*'], body: [
       [ { text: 'Programme', bold: true, fillColor: GREY }, { text: programme || '—' }, { text: 'Gestionnaire', bold: true, fillColor: GREY }, { text: gestionnaireStr } ],
       [ { text: 'Type de produit', bold: true, fillColor: GREY }, { text: typeProduit }, { text: 'Référence', bold: true, fillColor: GREY }, { text: refsStr } ],
     ] },
-    layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => '#dfe2e7', vLineColor: () => '#dfe2e7', paddingTop: () => 3, paddingBottom: () => 3, paddingLeft: () => 5, paddingRight: () => 5 },
+    layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => '#dfe2e7', vLineColor: () => '#dfe2e7', paddingTop: () => 1.8, paddingBottom: () => 1.8, paddingLeft: () => 5, paddingRight: () => 5 },
   };
 
-  const content = [ headerCols, { text: `Date : ${dateStr}`, fontSize: 8, color: '#444', margin: [0, 6, 0, 0] } ];
+  const content = [ headerCols, { text: `Date : ${dateStr}`, fontSize: 8, color: '#444', margin: [0, 4, 0, 0] } ];
   if (tranchesSelected.length > 1) content.push({ text: `Périmètre : bilan consolidé de ${tranchesSelected.length} tranches (${trancheLabels.join(', ')}).`, italics: true, fontSize: 7.5, color: '#666', margin: [0, 4, 0, 0] });
   content.push(idBand, idGrid);
   content.push(bandeau('PRIX DE REVIENT PRÉVISIONNEL'));
@@ -2534,12 +2536,12 @@ function _bilanBuildDocDef(op, tranchesSelected) {
   content.push(goldRow);
   content.push(bandeau('PLAN DE FINANCEMENT PRÉVISIONNEL'));
   content.push({ table: { widths: W, body: pfBody }, layout: innerLayout });
-  content.push({ text: `ÉQUILIBRE   —   Écart (Recettes − Dépenses) : ${equilibreVal}`, bold: true, color: equilibreOk ? '#1f7a3d' : '#c0392b', margin: [0, 10, 0, 0] });
-  content.push({ text: "Document confidentiel — Bilan prévisionnel d'opération · AXENTIA", fontSize: 7, color: '#999', margin: [0, 14, 0, 0] });
+  content.push({ text: `ÉQUILIBRE   —   Écart (Recettes − Dépenses) : ${equilibreVal}`, bold: true, color: equilibreOk ? '#1f7a3d' : '#c0392b', margin: [0, 7, 0, 0] });
+  content.push({ text: "Document confidentiel — Bilan prévisionnel d'opération · AXENTIA", fontSize: 7, color: '#999', margin: [0, 7, 0, 0] });
 
   return {
-    pageSize: 'A4', pageMargins: [40, 40, 40, 40],
-    defaultStyle: { fontSize: 8, color: '#222' },
+    pageSize: 'A4', pageMargins: [36, 26, 36, 22],
+    defaultStyle: { fontSize: 7.5, color: '#222' },
     info: { title: `Bilan ${op.code || op.display_name || ''}`.trim() },
     content,
   };
@@ -3842,8 +3844,7 @@ function renderTrancheDetail() {
           </div>
         </div>
         ${editMode ? `<button class="icon-btn danger-btn" onclick="deleteTranche()" title="Supprimer cette tranche"><i class="ti ti-trash"></i></button>` : `
-          <button class="icon-btn" onclick="openBilanPreview()" title="Aperçu du Bilan PR/PF"><i class="ti ti-eye"></i></button>
-          <button class="icon-btn" onclick="openBilanPrint()" title="Générer le Bilan PR/PF en PDF"><i class="ti ti-printer"></i></button>
+          <button class="icon-btn" onclick="openBilanPreview()" title="Générer le Bilan PR/PF en PDF"><i class="ti ti-file-text"></i></button>
         `}
       </div>
 
