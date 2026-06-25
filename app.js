@@ -2408,25 +2408,17 @@ function openBilanPreview() {
   if (!op) { showToast('Aucune opération sélectionnée', 'alert-triangle'); return; }
   _bilanOpenTranchesModal(op, selectedTrancheIdx, (idxs) => {
     const tranches = idxs.map(i => op.tranches[i]).filter(Boolean);
-    const html = _bilanRenderPage(op, tranches);
-    document.getElementById('bilan-print-page').innerHTML = html;
-    document.getElementById('bilan-preview-overlay').style.display = 'flex';
-    replaceTablerIcons();
+    generateBilanPdf(op, tranches, 'open');
   });
 }
 
-// Ouvre directement l'aperçu PUIS lance l'impression (parcours rapide)
+// Génère et télécharge le Bilan PR/PF en PDF
 function openBilanPrint() {
   const op = findOp(selectedOpCode);
   if (!op) { showToast('Aucune opération sélectionnée', 'alert-triangle'); return; }
   _bilanOpenTranchesModal(op, selectedTrancheIdx, (idxs) => {
     const tranches = idxs.map(i => op.tranches[i]).filter(Boolean);
-    const html = _bilanRenderPage(op, tranches);
-    document.getElementById('bilan-print-page').innerHTML = html;
-    document.getElementById('bilan-preview-overlay').style.display = 'flex';
-    replaceTablerIcons();
-    // Léger délai pour laisser le DOM se rendre + les icônes Tabler se charger
-    setTimeout(() => { window.print(); }, 200);
+    generateBilanPdf(op, tranches, 'download');
   });
 }
 
@@ -2440,6 +2432,137 @@ function closeBilanPreview() {
   document.getElementById('bilan-preview-overlay').style.display = 'none';
   document.getElementById('bilan-print-page').innerHTML = '';
 }
+// --- Construit la définition de document pdfmake du Bilan PR/PF ---
+function _bilanBuildDocDef(op, tranchesSelected) {
+  const d = _bilanAggregateData(op, tranchesSelected);
+  const today = new Date();
+  const dateStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
+  const depMatch = (op.departement || '').match(/\((\d+)\)/);
+  const depCode = depMatch ? depMatch[1] : '';
+  const programme = `${(op.commune || '').toUpperCase()}${depCode ? ' (' + depCode + ')' : ''}`;
+  const typeProduit = d.types.join(' / ') || '—';
+  const gestionnaireStr = d.gestionnaires.join(' / ') || '—';
+  const refsStr = d.refs.join(' / ') || '—';
+  const sousTitre = d.types.join(', ') || "Bilan prévisionnel d'opération";
+  const trancheLabels = tranchesSelected.map(t => { const tc = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id; return `${tc}${t.financement ? ' (' + t.financement + ')' : ''}`; });
+
+  const NAVY = '#243b63', GOLD = '#c2a45c', GREY = '#e9ebef', WHITE = '#ffffff';
+  const W = ['*', 95, 48];
+  const fmt = _bilanFmt, pctf = _bilanFmtPct;
+
+  const line = (label, montant, base) => [
+    { text: label, margin: [8, 0, 0, 0] },
+    { text: fmt(montant), alignment: 'right' },
+    { text: pctf(montant, base), alignment: 'right', color: '#777' },
+  ];
+  const subHeader = (txt) => [{ text: txt, colSpan: 3, bold: true, fillColor: GREY, color: '#1f2d4d', margin: [2, 2, 2, 2] }, {}, {}];
+  const subtotal = (txt, montant) => [
+    { text: txt, bold: true },
+    { text: fmt(montant), bold: true, alignment: 'right' },
+    { text: '100,0 %', alignment: 'right', color: '#777' },
+  ];
+  const navyTotal = (txt, montant) => [
+    { text: txt, bold: true, color: WHITE, fillColor: NAVY, margin: [2, 2, 2, 2] },
+    { text: fmt(montant), bold: true, color: WHITE, fillColor: NAVY, alignment: 'right' },
+    { text: '100,0 %', color: WHITE, fillColor: NAVY, alignment: 'right' },
+  ];
+  const bandeau = (txt) => ({
+    table: { widths: W, body: [[
+      { text: txt, color: WHITE, bold: true, fillColor: NAVY, margin: [2, 3, 2, 3] },
+      { text: 'Montants TTC (€)', color: WHITE, fillColor: NAVY, alignment: 'right', fontSize: 7, margin: [2, 4, 2, 3] },
+      { text: '%', color: WHITE, fillColor: NAVY, alignment: 'right', fontSize: 7, margin: [2, 4, 2, 3] },
+    ]] }, layout: 'noBorders', margin: [0, 9, 0, 0],
+  });
+  const innerLayout = {
+    hLineWidth: (i, node) => (i === 0 || i === node.table.body.length) ? 0 : 0.5,
+    vLineWidth: () => 0, hLineColor: () => '#dfe2e7',
+    paddingTop: () => 2.5, paddingBottom: () => 2.5, paddingLeft: () => 2, paddingRight: () => 4,
+  };
+
+  const prBody = [];
+  d.blocks.forEach(b => {
+    prBody.push(subHeader(b.title));
+    b.lines.forEach(l => prBody.push(line(l.label, l.montant, b.total)));
+    prBody.push(subtotal(b.totalLabel, b.total));
+  });
+
+  const goldRow = {
+    table: { widths: W, body: [[
+      { text: 'PRIX DE REVIENT OPÉRATION', bold: true, fillColor: GOLD, color: '#3a2e10', margin: [2, 3, 2, 3] },
+      { text: fmt(d.totalPR), bold: true, alignment: 'right', fillColor: GOLD, color: '#3a2e10' },
+      { text: '100,0 %', alignment: 'right', fillColor: GOLD, color: '#3a2e10' },
+    ]] }, layout: 'noBorders',
+  };
+
+  const pfBody = [];
+  pfBody.push(subHeader('I — DÉPENSES'));
+  d.depenses.forEach(l => pfBody.push(line(l.label, l.montant, d.totalDep)));
+  pfBody.push(navyTotal('TOTAL DÉPENSES', d.totalDep));
+  pfBody.push(subHeader('II — RECETTES'));
+  d.recettes.forEach(l => pfBody.push(line(l.label, l.montant, d.totalRec)));
+  pfBody.push(navyTotal('TOTAL FINANCEMENT', d.totalRec));
+
+  const equilibreOk = Math.abs(d.equilibre) < 1;
+  const equilibreVal = (d.equilibre > 0 ? '+' : '') + (equilibreOk ? '0 €' : fmt(d.equilibre));
+
+  const headerCols = { columns: [
+    { stack: [
+      { text: "BILAN PRÉVISIONNEL D'OPÉRATION", bold: true, fontSize: 14, color: NAVY },
+      { text: sousTitre, color: '#666', fontSize: 9, margin: [0, 2, 0, 0] },
+    ], width: '*' },
+  ] };
+  if (typeof AXENTIA_LOGO === 'string' && AXENTIA_LOGO.startsWith('data:image')) {
+    headerCols.columns.push({ image: AXENTIA_LOGO, width: 58, alignment: 'right' });
+  }
+
+  const idBand = { table: { widths: ['*'], body: [[
+    { text: "IDENTIFICATION DE L'OPÉRATION", color: WHITE, bold: true, fillColor: NAVY, margin: [2, 3, 2, 3] },
+  ]] }, layout: 'noBorders', margin: [0, 10, 0, 0] };
+  const idGrid = {
+    table: { widths: ['auto', '*', 'auto', '*'], body: [
+      [ { text: 'Programme', bold: true, fillColor: GREY }, { text: programme || '—' }, { text: 'Gestionnaire', bold: true, fillColor: GREY }, { text: gestionnaireStr } ],
+      [ { text: 'Type de produit', bold: true, fillColor: GREY }, { text: typeProduit }, { text: 'Référence', bold: true, fillColor: GREY }, { text: refsStr } ],
+    ] },
+    layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => '#dfe2e7', vLineColor: () => '#dfe2e7', paddingTop: () => 3, paddingBottom: () => 3, paddingLeft: () => 5, paddingRight: () => 5 },
+  };
+
+  const content = [ headerCols, { text: `Date : ${dateStr}`, fontSize: 8, color: '#444', margin: [0, 6, 0, 0] } ];
+  if (tranchesSelected.length > 1) content.push({ text: `Périmètre : bilan consolidé de ${tranchesSelected.length} tranches (${trancheLabels.join(', ')}).`, italics: true, fontSize: 7.5, color: '#666', margin: [0, 4, 0, 0] });
+  content.push(idBand, idGrid);
+  content.push(bandeau('PRIX DE REVIENT PRÉVISIONNEL'));
+  content.push({ table: { widths: W, headerRows: 0, body: prBody }, layout: innerLayout });
+  content.push(goldRow);
+  content.push(bandeau('PLAN DE FINANCEMENT PRÉVISIONNEL'));
+  content.push({ table: { widths: W, body: pfBody }, layout: innerLayout });
+  content.push({ text: `ÉQUILIBRE   —   Écart (Recettes − Dépenses) : ${equilibreVal}`, bold: true, color: equilibreOk ? '#1f7a3d' : '#c0392b', margin: [0, 10, 0, 0] });
+  content.push({ text: "Document confidentiel — Bilan prévisionnel d'opération · AXENTIA", fontSize: 7, color: '#999', margin: [0, 14, 0, 0] });
+
+  return {
+    pageSize: 'A4', pageMargins: [40, 40, 40, 40],
+    defaultStyle: { fontSize: 8, color: '#222' },
+    info: { title: `Bilan ${op.code || op.display_name || ''}`.trim() },
+    content,
+  };
+}
+
+// Génère le Bilan PR/PF en PDF (mode 'open' = aperçu nouvel onglet, 'download' = téléchargement)
+function generateBilanPdf(op, tranchesSelected, mode) {
+  if (typeof pdfMake === 'undefined' || !pdfMake.createPdf) {
+    showToast('Générateur PDF non disponible (vérifie ta connexion).', 'alert-triangle');
+    return;
+  }
+  try {
+    const docDef = _bilanBuildDocDef(op, tranchesSelected);
+    const safe = (op.code || op.display_name || 'operation').replace(/[^a-z0-9_-]+/gi, '_');
+    const pdf = pdfMake.createPdf(docDef);
+    if (mode === 'download') pdf.download(`Bilan_${safe}.pdf`);
+    else pdf.open();
+  } catch (e) {
+    console.error('Bilan PDF:', e);
+    showToast('Erreur lors de la génération du PDF.', 'alert-triangle');
+  }
+}
+
 // ============== END BILAN PR/PF ==============
 
 function deleteTranche() {
