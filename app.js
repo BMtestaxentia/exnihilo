@@ -900,13 +900,23 @@ function findOp(uid) { return DATA.find(o => o._uid === uid) || DATA.find(o => o
 
 // Audit log helpers
 // Each entry: { date, user, field, scope, old, new }
+// Normalise une valeur pour comparaison d'audit : null/undefined/"" équivalents,
+// nombres et chaînes comparés en texte trimmé, objets/tableaux en JSON.
+function _auditNorm(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v).trim();
+}
+function _auditEq(a, b) { return _auditNorm(a) === _auditNorm(b); }
+
 function logModification(opUid, field, scope, oldVal, newVal) {
   const op = DATA.find(o => o._uid === opUid);
   if (!op) return;
+  if (_auditEq(oldVal, newVal)) return; // double sécurité : ne jamais logger un non-changement
   if (!Array.isArray(op.audit_log)) op.audit_log = [];
   op.audit_log.push({
     date: new Date().toISOString(),
-    user: 'Bastien MERCIER', // placeholder — to be replaced by real auth user
+    user: (typeof CURRENT_USER === 'string' && CURRENT_USER) ? CURRENT_USER : 'Bastien MERCIER',
     field, scope,
     old: oldVal,
     new: newVal,
@@ -3120,7 +3130,7 @@ function saveOpEdits() {
     trackedOpFields.forEach(f => {
       const oldV = _beforeSnap[f];
       const newV = op[f];
-      if (JSON.stringify(oldV) !== JSON.stringify(newV)) {
+      if (!_auditEq(oldV, newV)) {
         logModification(op._uid, f, 'op', oldV, newV);
       }
     });
