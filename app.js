@@ -903,16 +903,19 @@ function findOp(uid) { return DATA.find(o => o._uid === uid) || DATA.find(o => o
 // Normalise une valeur pour comparaison d'audit : null/undefined/"" équivalents,
 // nombres et chaînes comparés en texte trimmé, objets/tableaux en JSON.
 function _auditNorm(v) {
-  if (v === null || v === undefined) return '';
+  if (v === null || v === undefined || v === false) return ''; // false == non renseigné
   if (typeof v === 'object') return JSON.stringify(v);
   return String(v).trim();
 }
 function _auditEq(a, b) { return _auditNorm(a) === _auditNorm(b); }
 
+let _auditBatch = []; // entrées d'historique en attente de persistance (envoi groupé)
+function _auditValToStr(v) { return v == null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v)); }
+
 function logModification(opUid, field, scope, oldVal, newVal) {
   const op = DATA.find(o => o._uid === opUid);
   if (!op) return;
-  if (_auditEq(oldVal, newVal)) return; // double sécurité : ne jamais logger un non-changement
+  if (_auditEq(oldVal, newVal)) return; // ne jamais logger un non-changement
   if (!Array.isArray(op.audit_log)) op.audit_log = [];
   const entry = {
     date: new Date().toISOString(),
@@ -921,36 +924,33 @@ function logModification(opUid, field, scope, oldVal, newVal) {
     old: oldVal,
     new: newVal,
   };
-  op.audit_log.push(entry);          // affichage immédiat
-  persistAuditEntry(op, entry);      // persistance Supabase (asynchrone)
-}
-
-// Persiste une entrée d'historique dans Supabase. Fire-and-forget : n'interrompt
-// jamais l'UI ; en cas d'échec l'entrée reste visible pour la session en cours.
-async function persistAuditEntry(op, entry) {
-  if (!op || !op._supabase_id) return; // op pas encore créée en base → rien à rattacher
-  const toStr = (v) => (v == null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v)));
-  _pendingWrites++; _lastWriteAt = Date.now();
-  try {
-    const payload = {
+  op.audit_log.push(entry); // affichage immédiat
+  // File d'attente pour persistance groupée (un seul POST via flushAuditBatch)
+  if (op._supabase_id) {
+    _auditBatch.push({
       operation_id: op._supabase_id,
       timestamp: entry.date,
       user_name: entry.user || '',
       action: 'update',
       scope: entry.scope || '',
       field: entry.field || '',
-      old_value: toStr(entry.old),
-      new_value: toStr(entry.new),
-    };
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/audit_log`, {
-      method: 'POST', headers: aapHeaders(), body: JSON.stringify(payload)
+      old_value: _auditValToStr(entry.old),
+      new_value: _auditValToStr(entry.new),
     });
-    if (res.ok) {
-      const rows = await res.json().catch(() => null);
-      if (Array.isArray(rows) && rows[0] && rows[0].id) entry._supabase_id = rows[0].id;
-    } else {
-      console.warn('Historique non persisté:', res.status, await res.text().catch(() => ''));
-    }
+  }
+}
+
+// Persiste toutes les entrées en attente en UN seul appel : évite les races et les
+// échecs partiels des POST concurrents. Fire-and-forget : n'interrompt pas l'UI.
+async function flushAuditBatch() {
+  if (!_auditBatch.length) return;
+  const batch = _auditBatch.splice(0, _auditBatch.length);
+  _pendingWrites++; _lastWriteAt = Date.now();
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/audit_log`, {
+      method: 'POST', headers: aapHeaders(), body: JSON.stringify(batch)
+    });
+    if (!res.ok) console.warn('Historique non persisté:', res.status, await res.text().catch(() => ''));
   } catch (e) {
     console.warn('Historique non persisté (exception):', e);
   } finally {
@@ -3170,6 +3170,47 @@ function saveOpEdits() {
       }
     });
   }
+
+  // === Audit log: diff des collections de cartes (prêts, garanties, subventions, avenants) ===
+  if (_beforeSnap) {
+    const AUDIT_COLLECTIONS = {
+      prets:       { label: 'Prêt',       fields: SECTION_FIELD_MAP.prets,       name: it => `${it.ligne || ''} ${it.financeur || ''}`.trim() },
+      garanties:   { label: 'Garantie',   fields: SECTION_FIELD_MAP.garanties,   name: it => (it.garant || '').trim() },
+      subventions: { label: 'Subvention', fields: SECTION_FIELD_MAP.subventions, name: it => (it.financeur || '').trim() },
+      avenants:    { label: 'Avenant',    fields: SECTION_FIELD_MAP.avenants,    name: it => `n°${it.n_avenant || ''}`.trim() },
+    };
+    const keyOf = (it, i) => (it && (it._uid || it.id || it._supabase_id) != null)
+      ? String(it._uid || it.id || it._supabase_id) : ('idx:' + i);
+    Object.entries(AUDIT_COLLECTIONS).forEach(([coll, cfg]) => {
+      const oldArr = Array.isArray(_beforeSnap[coll]) ? _beforeSnap[coll] : [];
+      const newArr = Array.isArray(op[coll]) ? op[coll] : [];
+      const oldMap = new Map(oldArr.map((it, i) => [keyOf(it, i), it]));
+      const newMap = new Map(newArr.map((it, i) => [keyOf(it, i), it]));
+      newMap.forEach((nit, k) => {
+        const oit = oldMap.get(k);
+        const lbl = cfg.name(nit) || cfg.label;
+        if (!oit) {
+          logModification(op._uid, `${cfg.label} ${lbl} — ajout`, coll, '', 'nouvel élément');
+        } else {
+          cfg.fields.forEach(f => {
+            if (f === 'pct_tire') return; // champ dérivé
+            if (!_auditEq(oit[f], nit[f])) {
+              logModification(op._uid, `${cfg.label} ${lbl} · ${f}`, coll, oit[f], nit[f]);
+            }
+          });
+        }
+      });
+      oldMap.forEach((oit, k) => {
+        if (!newMap.has(k)) {
+          const lbl = cfg.name(oit) || cfg.label;
+          logModification(op._uid, `${cfg.label} ${lbl} — suppression`, coll, 'élément supprimé', '');
+        }
+      });
+    });
+  }
+
+  // Envoi groupé de l'historique vers Supabase (un seul POST)
+  flushAuditBatch();
 
   // Dérivation auto des réservataires depuis les sources (ALS, agrément)
   syncReservatairesFromSources(op, op.tranches[selectedTrancheIdx]);
