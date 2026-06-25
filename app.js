@@ -914,13 +914,48 @@ function logModification(opUid, field, scope, oldVal, newVal) {
   if (!op) return;
   if (_auditEq(oldVal, newVal)) return; // double sécurité : ne jamais logger un non-changement
   if (!Array.isArray(op.audit_log)) op.audit_log = [];
-  op.audit_log.push({
+  const entry = {
     date: new Date().toISOString(),
     user: (typeof CURRENT_USER === 'string' && CURRENT_USER) ? CURRENT_USER : 'Bastien MERCIER',
     field, scope,
     old: oldVal,
     new: newVal,
-  });
+  };
+  op.audit_log.push(entry);          // affichage immédiat
+  persistAuditEntry(op, entry);      // persistance Supabase (asynchrone)
+}
+
+// Persiste une entrée d'historique dans Supabase. Fire-and-forget : n'interrompt
+// jamais l'UI ; en cas d'échec l'entrée reste visible pour la session en cours.
+async function persistAuditEntry(op, entry) {
+  if (!op || !op._supabase_id) return; // op pas encore créée en base → rien à rattacher
+  const toStr = (v) => (v == null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v)));
+  _pendingWrites++; _lastWriteAt = Date.now();
+  try {
+    const payload = {
+      operation_id: op._supabase_id,
+      timestamp: entry.date,
+      user_name: entry.user || '',
+      action: 'update',
+      scope: entry.scope || '',
+      field: entry.field || '',
+      old_value: toStr(entry.old),
+      new_value: toStr(entry.new),
+    };
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/audit_log`, {
+      method: 'POST', headers: aapHeaders(), body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      const rows = await res.json().catch(() => null);
+      if (Array.isArray(rows) && rows[0] && rows[0].id) entry._supabase_id = rows[0].id;
+    } else {
+      console.warn('Historique non persisté:', res.status, await res.text().catch(() => ''));
+    }
+  } catch (e) {
+    console.warn('Historique non persisté (exception):', e);
+  } finally {
+    _pendingWrites = Math.max(0, _pendingWrites - 1); _lastWriteAt = Date.now();
+  }
 }
 
 // Show op history modal
@@ -11767,7 +11802,8 @@ async function loadFromSupabase(opts) {
       // Audit log
       const auditForOp = auditRows
         .filter(a => a.operation_id === row.id)
-        .map(a => mapAuditFromSupabase(a));
+        .map(a => mapAuditFromSupabase(a))
+        .sort((x, y) => (x.date || '').localeCompare(y.date || '')); // chronologique
 
       // Tags
       const tagsForOp = tagsRows
@@ -12139,13 +12175,13 @@ function mapWorkflowFromSupabase(w, wfRecipsByWf) {
 function mapAuditFromSupabase(a) {
   return {
     _supabase_id: a.id,
-    timestamp: a.timestamp || '',
+    date: a.timestamp || '',
     user: a.user_name || '',
     action: a.action || '',
     scope: a.scope || '',
     field: a.field || '',
-    old_value: a.old_value || '',
-    new_value: a.new_value || '',
+    old: a.old_value || '',
+    new: a.new_value || '',
   };
 }
 
