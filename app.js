@@ -903,8 +903,9 @@ function findOp(uid) { return DATA.find(o => o._uid === uid) || DATA.find(o => o
 // Normalise une valeur pour comparaison d'audit : null/undefined/"" équivalents,
 // nombres et chaînes comparés en texte trimmé, objets/tableaux en JSON.
 function _auditNorm(v) {
-  if (v === null || v === undefined || v === false) return ''; // false == non renseigné
-  if (typeof v === 'object') return JSON.stringify(v);
+  if (v === null || v === undefined || v === false) return '';        // false == non renseigné
+  if (Array.isArray(v)) return v.length ? JSON.stringify(v) : '';      // [] == vide
+  if (typeof v === 'object') return Object.keys(v).length ? JSON.stringify(v) : ''; // {} == vide
   return String(v).trim();
 }
 function _auditEq(a, b) { return _auditNorm(a) === _auditNorm(b); }
