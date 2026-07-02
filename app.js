@@ -3627,6 +3627,19 @@ function renderOpDetail() {
         ${!isViewingSnapshot && !effectiveEditMode ? `<button class="icon-btn" onclick="toggleEditMode()" title="Modifier la fiche"><i class="ti ti-pencil"></i></button>` : ''}
       </div>
     </div>
+    <div class="op-subnav">
+      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-vol')">Volumétrie</button>
+      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-loc')">Localisation</button>
+      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-team')">Équipe</button>
+      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-montage')">Montage</button>
+      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-cal')">Calendrier</button>
+      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-bat')">Bâtiment</button>
+      ${(op.notes_libres || editMode) ? `<button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-notes')">Notes</button>` : ''}
+      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-bilan')">Bilan</button>
+      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-pf')">Plan de financement</button>
+      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-comites')">Comités</button>
+      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-suivi')">Suivi & alertes</button>
+    </div>
     </div><!-- /op-sticky-top -->
 
     <div class="metric-row" style="--cols: 4;">
@@ -3636,16 +3649,12 @@ function renderOpDetail() {
       <div class="metric-card"><div class="metric-label">Tranches</div><div class="metric-value">${displayedOp.tranches.length}</div></div>
     </div>
 
-    <div class="section">
+    <div class="section" id="sec-op-vol">
       <div class="section-label vol"><i class="ti ti-home"></i>Volumétrie consolidée</div>
       <div class="volumetrie-grid">${volCells}</div>
     </div>
 
-    ${renderBilanOpSection(displayedOp)}
-
-    ${renderPlanFinancementOpSection(displayedOp)}
-
-    <div class="section">
+    <div class="section" id="sec-op-loc">
       <div class="section-label loc"><i class="ti ti-map-pin"></i>Localisation</div>
       <div class="loc-grid">
         <div class="loc-left">
@@ -3681,7 +3690,8 @@ function renderOpDetail() {
       </div>
     </div>
 
-    <div class="section">
+    <div class="section-duo">
+    <div class="section" id="sec-op-team">
       <div class="section-label team"><i class="ti ti-users"></i>Équipe & pilotage</div>
       ${editableKV('Développeur', op.developpeur, 'developpeur')}
       ${editableKV('Resp opération', op.resp_op, 'resp_op')}
@@ -3689,18 +3699,16 @@ function renderOpDetail() {
       ${editableKV('Promoteur', op.promoteur, 'promoteur')}
       ${editableSelect('Notaire', op.notaire, 'notaire', (op.notaire && !getRef('notaires').includes(op.notaire)) ? [op.notaire, ...getRef('notaires')] : getRef('notaires'))}
     </div>
-
-    <div class="section">
+    <div class="section" id="sec-op-montage">
       <div class="section-label montage"><i class="ti ti-folder"></i>Montage</div>
       ${editableSelect('VEFA / MOD', op.vefa_mod, 'vefa_mod', getRef('vefa_mod'))}
       ${editableSelect('Type travaux', op.type_travaux, 'type_travaux', getRef('type_travaux'))}
       ${editableSelect('Maîtrise foncière', op.maitrise_fonciere, 'maitrise_fonciere', getRef('maitrise_fonciere'))}
       ${editableSelect('ANRU', op.anru, 'anru', getRef('oui_non'))}
     </div>
+    </div>
 
-    ${renderComitesSection(op, effectiveEditMode)}
-
-    <div class="section">
+    <div class="section" id="sec-op-cal">
       <div class="section-label cal"><i class="ti ti-clock"></i>Calendrier travaux</div>
       ${editableDateJalon('Signature promesse', op.date_promesse, 'date_promesse', op)}
       ${editableDateJalon('Signature acte authentique', op.date_acte, 'date_acte', op)}
@@ -3714,21 +3722,30 @@ function renderOpDetail() {
       ${(() => { const n = countOpTimelineEvents(op); return n ? `<button class="timeline-open-btn" onclick="openTimelineModal('${escapeHtml(op._uid)}')" type="button"><i class="ti ti-timeline"></i>Voir la chronologie de l'opération<span class="timeline-open-count">${n}</span></button>` : ''; })()}
     </div>
 
-    <div class="section">
+    <div class="section-duo">
+    <div class="section" id="sec-op-bat">
       <div class="section-label batiment"><i class="ti ti-building-skyscraper"></i>Caractéristiques du bâtiment</div>
       ${editableSelect('Label / Certification', op.label_certif, 'label_certif', getRef('labels_certif'))}
       ${editableSelect('Mode constructif', op.mode_constructif, 'mode_constructif', getRef('modes_constructifs'))}
       ${editableSelect('Mode de chauffage', op.mode_chauffage, 'mode_chauffage', getRef('modes_chauffage'))}
       ${editableKV('Nombre de bâtiments', op.nb_batiments, 'nb_batiments')}
     </div>
+    ${(op.notes_libres || editMode) ? `<div class="section" id="sec-op-notes"><div class="section-label notes"><i class="ti ti-message"></i>Notes libres</div>${editableNotes(op.notes_libres, 'notes_libres')}</div>` : ''}
+    </div>
 
-    ${(op.notes_libres || editMode) ? `<div class="section"><div class="section-label notes"><i class="ti ti-message"></i>Notes libres</div>${editableNotes(op.notes_libres, 'notes_libres')}</div>` : ''}
+    <div class="op-anchor" id="sec-op-bilan">${renderBilanOpSection(displayedOp)}</div>
 
+    <div class="op-anchor" id="sec-op-pf">${renderPlanFinancementOpSection(displayedOp)}</div>
+
+    <div class="op-anchor" id="sec-op-comites">${renderComitesSection(op, effectiveEditMode)}</div>
+
+    <div class="op-anchor" id="sec-op-suivi">
     ${renderHistoryChart(op)}
 
     ${renderValidationPanel(displayedOp)}
 
     ${renderAlertsPanel(displayedOp)}
+    </div>
   `;
   document.getElementById('opDetail').innerHTML = html;
   // Restore edit mode flag if temporarily cleared
@@ -3785,6 +3802,29 @@ function renderTrancheDetail() {
           <i class="ti ti-plus"></i>&nbsp;Nouvelle tranche
         </div>` : ''}
       </div>
+      ${(trancheSource.tranches.length > 0 && trancheSource.tranches[selectedTrancheIdx]) ? (() => {
+        const _t = trancheSource.tranches[selectedTrancheIdx];
+        const _k = _t.code_full ? _t.code_full.split('-').slice(1).join('-') : _t.id;
+        const _n = arr => (arr || []).filter(x => x.tranche === _k).length;
+        const chip = (id, label) => `<button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('trancheDetail','${id}')">${label}</button>`;
+        const cnt = n => `&nbsp;<span class="op-subnav-n">${n}</span>`;
+        return `<div class="op-subnav op-subnav-tranche">`
+          + chip('sec-tr-id', 'Identité')
+          + chip('sec-tr-vol', 'Volumétrie')
+          + chip('sec-tr-sim', 'Simulation')
+          + chip('sec-tr-bilan', 'Bilan')
+          + chip('sec-tr-pf', 'Plan de financement')
+          + chip('sec-tr-agr', 'Agrément')
+          + ((_t.type_redevance || _t.montant_redevance || editMode) ? chip('sec-tr-loyer', 'Loyer') : '')
+          + chip('sec-tr-convloc', 'Conv. location')
+          + chip('sec-tr-subv', `Subventions${cnt(_n(op.subventions))}`)
+          + chip('sec-tr-prets', `Prêts${cnt(_n(op.prets))}`)
+          + chip('sec-tr-gar', `Garanties${cnt(_n(op.garanties))}`)
+          + chip('sec-tr-avenants', `Avenants${cnt(_n(op.avenants))}`)
+          + chip('sec-tr-prefi', `Préfis${cnt(_n(op.prefinancements))}`)
+          + chip('sec-tr-res', `Réservataires${cnt(_n(op.reservataires))}`)
+          + `</div>`;
+      })() : ''}
     </div>
   `;
 
@@ -3863,27 +3903,27 @@ function renderTrancheDetail() {
         </div>
       </div>
 
-      <div class="section">
+      <div class="section" id="sec-tr-id">
         <div class="section-label id"><i class="ti ti-building-skyscraper"></i>Identité tranche</div>
         ${editableKV('Gestionnaire', t.gestionnaire, 'gestionnaire', 'text', 'tranche-field')}
       </div>
 
-      <div class="section">
+      <div class="section" id="sec-tr-vol">
         <div class="section-label vol"><i class="ti ti-home"></i>Volumétrie</div>
         <div class="volumetrie-grid">${volCells}</div>
       </div>
 
-      <div class="section">
+      <div class="section" id="sec-tr-sim">
         <div class="section-label sim"><i class="ti ti-chart-bar"></i>Simulation / Budget</div>
         ${editableKV('N° Simulation LEON', t.n_leon, 'n_leon', 'text', 'tranche-field')}
         ${editableKV('Date de référence', t.date_ref, 'date_ref', 'text', 'tranche-field')}
       </div>
 
-      ${renderBilanSection(t, op, trCode)}
+      <div class="op-anchor" id="sec-tr-bilan">${renderBilanSection(t, op, trCode)}</div>
 
-      ${renderPlanFinancementSection(t, op, trCode, trancheSource)}
+      <div class="op-anchor" id="sec-tr-pf">${renderPlanFinancementSection(t, op, trCode, trancheSource)}</div>
 
-      <div class="section">
+      <div class="section" id="sec-tr-agr">
         <div class="section-label agr"><i class="ti ti-check"></i>Agrément</div>
         <div style="font-size:11px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin:2px 0 6px;">Logements agréés par financement</div>
         <div class="volumetrie-grid">${volAgreeCells}</div>
@@ -3901,14 +3941,14 @@ function renderTrancheDetail() {
         ${editableNotes(t.detail_logements, 'detail_logements', 'tranche-field', 'Ex: Dont 75 PLAI T1 prime · 22 PLAI T2 standard…')}
       </div>
 
-      ${(t.type_redevance || t.montant_redevance || editMode) ? `<div class="section">
+      ${(t.type_redevance || t.montant_redevance || editMode) ? `<div class="section" id="sec-tr-loyer">
         <div class="section-label loyer"><i class="ti ti-coin"></i>Loyer</div>
         ${editableSelect('Type redevance', t.type_redevance, 'type_redevance', getRef('type_redevance'), 'tranche-field')}
         ${editableKV('Montant redevance (€/mois)', t.montant_redevance, 'montant_redevance', 'number', 'tranche-field')}
         ${editableKV('Date accord redevance', t.date_accord_redev, 'date_accord_redev', 'text', 'tranche-field')}
       </div>` : ''}
 
-      <div class="section">
+      <div class="section" id="sec-tr-convloc">
         <div class="section-label conv-loc"><i class="ti ti-file-text"></i>Convention de location</div>
         ${editableSelect('Convention signée', t.conv_loc_signee === true ? 'Oui' : (t.conv_loc_signee === false ? 'Non' : ''), 'conv_loc_signee', ['Oui', 'Non'], 'tranche-field')}
         ${editableKV('Accord redevance', t.conv_loc_montant_loyer, 'conv_loc_montant_loyer', 'number', 'tranche-field')}
@@ -3916,12 +3956,12 @@ function renderTrancheDetail() {
         ${editableSelect('Grille', t.conv_loc_grille, 'conv_loc_grille', getRef('grilles_loyer'), 'tranche-field')}
       </div>
 
-      ${renderSubvSection(subv, op)}
-      ${renderPretsSection(prets, op)}
-      ${renderGarantiesSection(garanties, op)}
-      ${renderAvenantsSection(avenants, op)}
-      ${renderPrefinSection(prefin, op)}
-      ${renderReservatairesSection(reservataires, op)}
+      <div class="op-anchor" id="sec-tr-subv">${renderSubvSection(subv, op)}</div>
+      <div class="op-anchor" id="sec-tr-prets">${renderPretsSection(prets, op)}</div>
+      <div class="op-anchor" id="sec-tr-gar">${renderGarantiesSection(garanties, op)}</div>
+      <div class="op-anchor" id="sec-tr-avenants">${renderAvenantsSection(avenants, op)}</div>
+      <div class="op-anchor" id="sec-tr-prefi">${renderPrefinSection(prefin, op)}</div>
+      <div class="op-anchor" id="sec-tr-res">${renderReservatairesSection(reservataires, op)}</div>
     `;
   }
 
@@ -11330,6 +11370,22 @@ function populateSynthFilters() {
 
 // View switching
 // Theme toggle (dark / light)
+// Navigation interne de la fiche : scroll doux vers une section (et dépli si repliée)
+function scrollToPanelSection(panelId, secId) {
+  const c = document.getElementById(panelId);
+  const el = document.getElementById(secId);
+  if (!c || !el) return;
+  const sec = (el.classList && el.classList.contains('section')) ? el : el.querySelector('.section');
+  if (sec && sec.classList.contains('collapsed')) {
+    sec.classList.remove('collapsed');
+    try { const k = osnKeyOf(sec); if (k) { delete collapsedSections[k]; saveCollapsedSections(); } } catch (e) {}
+  }
+  const sticky = c.querySelector('.op-sticky-top, .tranches-selector');
+  const off = (sticky ? sticky.offsetHeight : 0) + 10;
+  const top = el.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop - off;
+  c.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+}
+
 // ============== SECTIONS REPLIABLES (fiche opération) ==============
 let collapsedSections = (() => { try { return JSON.parse(storageGet('collapsedSections') || '{}'); } catch (e) { return {}; } })();
 function saveCollapsedSections() { storageSet('collapsedSections', JSON.stringify(collapsedSections)); }

@@ -5045,3 +5045,106 @@
   .sess-uname { font-size: 12.5px; font-weight: 600; color: var(--text-primary); max-width: 160px; overflow:hidden; text-overflow:ellipsis; }
   .auth-logout { margin-left: 8px; background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; font-family: inherit; white-space: nowrap; }
   .auth-logout:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+  /* ================================================================
+     REFONTE ONGLET OPÉRATIONS — ergonomie & hiérarchie visuelle
+     (sections en cartes, repli visible, duo-grilles, sous-navigation)
+     ================================================================ */
+
+  /* Panneaux sur fond doux : les cartes ressortent */
+  .op-detail { background: var(--bg-secondary); }
+  .tranche-detail { background: var(--bg-secondary); }
+  .op-sticky-top { background: var(--bg-secondary); padding: 10px 24px 0; gap: 6px; }
+  .tranches-selector { background: var(--bg-secondary); padding: 12px 24px 10px; }
+
+  /* Sections = cartes */
+  .op-detail .section, .tranche-detail .section {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 16px 14px;
+    margin-bottom: 12px;
+  }
+  .op-detail .section::before, .tranche-detail .section::before { display: none; }
+
+  /* En-tête de section : pleine largeur, chevron de repli visible */
+  .op-detail .section > .section-label, .tranche-detail .section > .section-label {
+    display: flex; width: 100%; align-items: center; gap: 7px;
+    background: transparent; border: none; border-radius: 0;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 0 9px; margin: 0 0 11px;
+    font-size: 11.5px; letter-spacing: 0.55px;
+    cursor: pointer; user-select: none;
+  }
+  .op-detail .section > .section-label::after,
+  .tranche-detail .section > .section-label::after {
+    content: '▾'; margin-left: auto; font-size: 10px;
+    color: var(--text-tertiary); transition: transform 0.15s ease;
+  }
+  .op-detail .section.collapsed > .section-label::after,
+  .tranche-detail .section.collapsed > .section-label::after { transform: rotate(-90deg); }
+
+  /* En-têtes des blocs d'entités (Prêts, Garanties…) : même traitement */
+  .op-detail .section > .subent-header, .tranche-detail .section > .subent-header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 9px; margin-bottom: 11px;
+    cursor: pointer; user-select: none;
+  }
+  .op-detail .section > .subent-header .subent-title::after,
+  .tranche-detail .section > .subent-header .subent-title::after {
+    content: '▾'; margin-left: 6px; font-size: 10px;
+    color: var(--text-tertiary); transition: transform 0.15s ease;
+  }
+  .op-detail .section.collapsed > .subent-header .subent-title::after,
+  .tranche-detail .section.collapsed > .subent-header .subent-title::after { transform: rotate(-90deg); }
+
+  /* État replié : la carte se réduit à son en-tête */
+  .op-detail .section.collapsed, .tranche-detail .section.collapsed { padding-bottom: 12px; margin-bottom: 10px; }
+  .op-detail .section.collapsed > .section-label, .tranche-detail .section.collapsed > .section-label,
+  .op-detail .section.collapsed > .subent-header, .tranche-detail .section.collapsed > .subent-header {
+    border-bottom: none; margin-bottom: 0; padding-bottom: 0;
+  }
+
+  /* Duo-grilles : deux petites sections côte à côte */
+  .section-duo {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 12px; align-items: start;
+  }
+  .section-duo > .section { margin-bottom: 0; }
+  @media (max-width: 1500px) { .section-duo { grid-template-columns: 1fr; gap: 12px; } }
+
+  /* Sous-navigation par ancres (fiche op + panneau tranche) */
+  .op-subnav {
+    display: flex; gap: 4px; align-items: center;
+    overflow-x: auto; padding: 2px 0 10px;
+    scrollbar-width: thin; -ms-overflow-style: none;
+  }
+  .op-subnav::-webkit-scrollbar { height: 4px; }
+  .op-subnav::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+  .op-subnav-chip {
+    flex: 0 0 auto; display: inline-flex; align-items: center;
+    font-family: inherit; font-size: 11px; font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color); border-radius: 999px;
+    padding: 3px 10px; cursor: pointer; white-space: nowrap;
+    transition: border-color 0.12s ease, color 0.12s ease;
+  }
+  .op-subnav-chip:hover { border-color: var(--info-accent); color: var(--text-primary); }
+  .op-subnav-n {
+    font-size: 9.5px; font-weight: 700; line-height: 1;
+    color: var(--text-tertiary);
+    background: var(--bg-secondary);
+    border-radius: 999px; padding: 2px 5px; margin-left: 2px;
+  }
+  .op-subnav-tranche { padding: 8px 0 0; }
+
+  /* Cartes KPI : ressortent sur le fond doux */
+  .op-detail .metric-row .metric-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+  }
+
+  /* Impression : fond neutre, cartes conservées par leurs bordures */
+  body.printing-op-detail .op-detail { background: #fff; }
+  body.printing-op-detail .op-subnav { display: none !important; }
