@@ -5115,7 +5115,7 @@
   @keyframes authpan { to { transform: translate(64px, 64px); } }
 
   /* L'empreinte AX — immense, vectorielle */
-  .auth-mark-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; will-change: transform; }
+  .auth-mark-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
   .auth-mark { width: 128vmin; max-width: none; margin-top: -6vh; opacity: 0.11;
       filter: drop-shadow(0 0 90px rgba(56,150,205,0.28)) drop-shadow(0 0 40px rgba(194,164,92,0.14)) brightness(1.25);
       -webkit-mask-image: radial-gradient(75% 75% at 50% 44%, #000 55%, transparent 92%);
@@ -5135,12 +5135,14 @@
   @keyframes authburst { from{ transform: translateY(0) scale(1); opacity:1; } to{ transform: translateY(-90px) translateX(var(--dx,0px)) scale(.4); opacity:0; } }
 
   .auth-vignette { position:absolute; inset:0; pointer-events:none; background: radial-gradient(120% 92% at 50% 42%, transparent 52%, rgba(2,4,10,0.6) 100%); }
-  .auth-flash { position:absolute; inset:0; pointer-events:none; opacity:0; background: radial-gradient(62% 52% at 50% 46%, rgba(255,232,180,0.45), transparent 70%); }
-  .auth-overlay.auth-sunrise .auth-flash { animation: authflash 1s ease-out both; }
-  @keyframes authflash { 0%{opacity:0;} 30%{opacity:1;} 100%{opacity:0;} }
+  .auth-flash { position:absolute; left:50%; top:50%; width:24px; height:24px; border-radius:50%; pointer-events:none; opacity:0;
+      transform: translate(-50%,-50%) scale(0);
+      background: radial-gradient(circle, rgba(255,232,180,0.22) 0%, rgba(255,224,160,0.10) 55%, transparent 72%); }
+  .auth-overlay.auth-sunrise .auth-flash { animation: authflash .85s cubic-bezier(.15,.6,.3,1) both; }
+  @keyframes authflash { 0%{ transform: translate(-50%,-50%) scale(0); opacity:1; } 65%{ opacity:.8; } 100%{ transform: translate(-50%,-50%) scale(240); opacity:0; } }
 
   /* Scène centrale */
-  .auth-stage { position: relative; z-index: 4; width: 400px; max-width: 92vw; display: flex; flex-direction: column; align-items: center; text-align: center; will-change: transform; }
+  .auth-stage { position: relative; z-index: 4; width: 400px; max-width: 92vw; display: flex; flex-direction: column; align-items: center; text-align: center; }
   @keyframes authup { from{ opacity:0; transform: translateY(16px);} to{ opacity:1; transform:none;} }
   .auth-stage > * { animation: authup .7s cubic-bezier(.2,.75,.25,1) both; }
   .auth-stage > :nth-child(1){ animation-delay:.1s; } .auth-stage > :nth-child(2){ animation-delay:.22s; }
