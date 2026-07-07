@@ -17,7 +17,7 @@
   })();
 </script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/[email protected]/iconfont/tabler-icons.min.css">
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="styles.css?v=17">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
@@ -48,7 +48,6 @@
     </div>
     <div class="topnav-sep"></div>
     <div class="topnav-group topnav-group-docs">
-      <div class="topnav-tab" data-view="validations"><i class="ti ti-file-certificate"></i>Validations<span class="topnav-badge" id="navBadgePending" style="display:none;"></span></div>
       <div class="topnav-tab" data-view="comites"><i class="ti ti-users"></i>Comités</div>
     </div>
     <div class="topnav-spacer"></div>
@@ -285,33 +284,6 @@
   </div>
 </div>
 
-<div class="view" id="view-validations">
-  <div class="dashboard">
-    <h1 class="dashboard-title">Workflow de validation de documents</h1>
-    <p class="dashboard-sub">Glissez un PDF, choisissez un validateur, suivez le statut. Simulation : la signature électronique réelle passerait par DocuSign / YouSign / Power Automate.</p>
-
-    <div class="wf-dropzone" id="wfDropzone">
-      <i class="ti ti-cloud"></i>
-      <div class="wf-dropzone-title">Glissez un fichier PDF ici</div>
-      <div class="wf-dropzone-sub">ou <button class="wf-dropzone-browse" id="wfBrowseBtn" type="button">parcourir vos fichiers</button></div>
-      <input type="file" id="wfFileInput" accept="application/pdf,.pdf" style="display:none;" />
-    </div>
-
-    <div class="wf-filter-bar">
-      <div class="wf-status-tabs" id="wfStatusTabs">
-        <button class="wf-status-tab active" data-wf-status="all">Tous</button>
-        <button class="wf-status-tab" data-wf-status="draft">Brouillons <span class="wf-status-count" id="wfCount-draft">0</span></button>
-        <button class="wf-status-tab" data-wf-status="pending">En attente <span class="wf-status-count" id="wfCount-pending">0</span></button>
-        <button class="wf-status-tab" data-wf-status="approved">Validés <span class="wf-status-count" id="wfCount-approved">0</span></button>
-        <button class="wf-status-tab" data-wf-status="refused">Refusés <span class="wf-status-count" id="wfCount-refused">0</span></button>
-      </div>
-      <input type="text" class="synth-filter-input wf-search" id="wfSearchInput" placeholder="Recherche : document, opération, validateur…">
-    </div>
-
-    <div class="wf-list" id="wfList"></div>
-  </div>
-</div>
-
 <div class="view" id="view-gantt">
   <div class="dashboard">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -440,7 +412,7 @@
 </div>
 
 
-<script src="app.js?v=15"></script>
+<script src="app.js?v=17"></script>
 
 <div id="cmdpResults" class="cmdp-dropdown" style="display:none;"></div>
 

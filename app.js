@@ -1814,7 +1814,7 @@ function renderCharge() {
 let _searchIndex = null, _searchRes = [], _searchIdx = 0;
 function buildSearchIndex() {
   const items = [];
-  const views = [['accueil','Accueil'],['operations','Opérations'],['dashboard','Synthèse'],['suivi','Suivi'],['validations','Validations'],['comites','Comités'],['gantt','Gantt'],['carte','Carte'],['finances','Finances'],['tresorerie','Trésorerie'],['aap','AAP'],['controles','Contrôles'],['charge','Plan de charge'],['referentiels','Référentiels'],['trash','Corbeille']];
+  const views = [['accueil','Accueil'],['operations','Opérations'],['dashboard','Synthèse'],['suivi','Suivi'],['comites','Comités'],['gantt','Gantt'],['carte','Carte'],['finances','Finances'],['tresorerie','Trésorerie'],['aap','AAP'],['controles','Contrôles'],['charge','Plan de charge'],['referentiels','Référentiels'],['trash','Corbeille']];
   views.forEach(([v, l]) => items.push({ kind: 'Vue', label: l, name: l, fields: [], act: () => searchGoView(v) }));
   (DATA || []).filter(op => !op.deleted && !op._deleted && !op.is_deleted).forEach(op => {
     const name = op.display_name || op.name || op.code || '';
@@ -3626,19 +3626,6 @@ function renderOpDetail() {
         </a>` : ''}
         ${!isViewingSnapshot && !effectiveEditMode ? `<button class="icon-btn" onclick="toggleEditMode()" title="Modifier la fiche"><i class="ti ti-pencil"></i></button>` : ''}
       </div>
-    </div>
-    <div class="op-subnav">
-      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-vol')">Volumétrie</button>
-      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-loc')">Localisation</button>
-      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-team')">Équipe</button>
-      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-montage')">Montage</button>
-      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-cal')">Calendrier</button>
-      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-bat')">Bâtiment</button>
-      ${(op.notes_libres || editMode) ? `<button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-notes')">Notes</button>` : ''}
-      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-bilan')">Bilan</button>
-      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-pf')">Plan de financement</button>
-      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-comites')">Comités</button>
-      <button type="button" class="op-subnav-chip" onclick="scrollToPanelSection('opDetail','sec-op-suivi')">Suivi & alertes</button>
     </div>
     </div><!-- /op-sticky-top -->
 
@@ -5988,31 +5975,8 @@ function revertOpEdits() {
   editSessionSnap = null;
 }
 function selectTranche(idx) { selectedTrancheIdx = idx; renderTrancheDetail(); replaceTablerIcons(); }
-function renderAll() { renderSidebar(); renderOpDetail(); renderTrancheDetail(); refreshNavBadges(); replaceTablerIcons(); }
+function renderAll() { renderSidebar(); renderOpDetail(); renderTrancheDetail(); replaceTablerIcons(); }
 
-// Met à jour le badge "Validations" avec le nombre de workflows en attente pour l'utilisateur courant
-function refreshNavBadges() {
-  const badge = document.getElementById('navBadgePending');
-  if (!badge) return;
-  // Compte les workflows où l'utilisateur courant est destinataire ET le statut est pending
-  const me = (typeof CURRENT_USER !== 'undefined') ? CURRENT_USER : '';
-  let pendingForMe = 0;
-  WORKFLOWS.forEach(w => {
-    if (Array.isArray(w.recipients)) {
-      w.recipients.forEach(r => {
-        if (isCurrentUser(r.name) && r.status === 'pending') pendingForMe++;
-      });
-    } else if (isCurrentUser(w.recipient) && w.status === 'pending') {
-      pendingForMe++;
-    }
-  });
-  if (pendingForMe > 0) {
-    badge.textContent = pendingForMe;
-    badge.style.display = '';
-  } else {
-    badge.style.display = 'none';
-  }
-}
 
 // === Rebuild dashboard KPI tiles + bars dynamically from current DATA ===
 function refreshDashboardKpis() {
@@ -6484,7 +6448,6 @@ function buildMarkerIcon(color) {
 // ============== COMITÉS ==============
 // Each comité is attached to an op (in op.comites array).
 // Fields: id, type ('CA'|'C2I'|'Revue'), date, lien_sharepoint, doc_name, doc_data_url, doc_size, notes,
-//         submitted_wf_id (optional — reference to a WORKFLOWS entry if submitted for validation)
 
 function comiteTypeConfig(type) {
   switch (type) {
@@ -6557,7 +6520,6 @@ function renderComitesSection(op, isEditMode) {
 
 function renderComiteCard(c, op, isEditMode) {
   const conf = comiteTypeConfig(c.type);
-  const wf = c.submitted_wf_id ? WORKFLOWS.find(w => w.id === c.submitted_wf_id) : null;
 
   if (isEditMode) {
     return `
@@ -6596,23 +6558,6 @@ function renderComiteCard(c, op, isEditMode) {
 
   // Read mode
   const isPlanned = isComitePlanifie(c);
-  const wfApproved = wf && computeWfOverallStatus(wf) === 'approved';
-  // Récupérer la date de signature du PV (date du dernier recipient approved du workflow)
-  let pvSignedDate = null;
-  let pvDocUrl = null;
-  if (wfApproved && wf) {
-    const recipients = getWfRecipients(wf);
-    const approvedRecipients = recipients.filter(r => r.status === 'approved' && r.responded_at);
-    if (approvedRecipients.length > 0) {
-      // Dernière signature
-      const latest = approvedRecipients.sort((a, b) => new Date(b.responded_at) - new Date(a.responded_at))[0];
-      const d = new Date(latest.responded_at);
-      if (!isNaN(d.getTime())) {
-        pvSignedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-      }
-    }
-    pvDocUrl = wf.doc_url || wf.doc_data_url;
-  }
 
   return `
     <div class="comite-card comite-card-${conf.color}${isPlanned ? ' comite-card-planned' : ''}" data-comite-id="${escapeHtml(c.id)}">
@@ -6620,34 +6565,13 @@ function renderComiteCard(c, op, isEditMode) {
         <span class="comite-type-pill" style="background:${conf.bg};color:${conf.txt};border-color:${conf.accent};" title="${escapeHtml(conf.full)}">${escapeHtml(conf.label)}</span>
         <span class="comite-date"><i class="ti ti-calendar"></i>${escapeHtml(formatComDate(c.date))}</span>
         ${isPlanned ? `<span class="comite-state-pill planned"><i class="ti ti-clock"></i>Planifié</span>` : ''}
-        ${pvSignedDate ? `<span class="comite-state-pill signed"><i class="ti ti-check"></i>PV signé le ${escapeHtml(pvSignedDate)}</span>` : ''}
-        ${!isPlanned && !pvSignedDate && c.doc_name ? `<span class="comite-doc-name">${escapeHtml(c.doc_name)}</span>` : ''}
-        ${!isPlanned && !pvSignedDate && !c.doc_name ? '<span class="comite-doc-name comite-doc-empty">Aucun document joint</span>' : ''}
+        ${!isPlanned && c.doc_name ? `<span class="comite-doc-name">${escapeHtml(c.doc_name)}</span>` : ''}
+        ${!isPlanned && !c.doc_name ? '<span class="comite-doc-name comite-doc-empty">Aucun document joint</span>' : ''}
         <div class="comite-card-actions">
-          ${pvDocUrl ? `<button class="comite-action-btn" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'PV.pdf')}', ${JSON.stringify(pvDocUrl)})" title="Voir le PV signé"><i class="ti ti-eye"></i></button>` : (c.doc_data_url ? `<button class="comite-action-btn" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'document.pdf')}', findComite('${escapeHtml(c.id)}').comite.doc_data_url)" title="Prévisualiser"><i class="ti ti-eye"></i></button>` : '')}
+          ${c.doc_data_url ? `<button class="comite-action-btn" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'document.pdf')}', findComite('${escapeHtml(c.id)}').comite.doc_data_url)" title="Prévisualiser"><i class="ti ti-eye"></i></button>` : ''}
           ${c.lien_sharepoint ? `<a class="comite-action-btn" href="${escapeHtml(c.lien_sharepoint)}" target="_blank" rel="noopener" title="Ouvrir sur SharePoint"><i class="ti ti-cloud"></i></a>` : ''}
-          ${!wf && c.doc_data_url ? `<button class="comite-action-btn comite-submit-btn" onclick="submitComiteForValidation('${escapeHtml(c.id)}')" title="Soumettre pour validation"><i class="ti ti-file-certificate"></i></button>` : ''}
         </div>
       </div>
-      ${wf && !wfApproved ? (() => {
-        const overall = computeWfOverallStatus(wf);
-        const ovConf = wfStatusConfig(overall);
-        const recipients = getWfRecipients(wf);
-        const total = recipients.length;
-        const approved = recipients.filter(r => r.status === 'approved').length;
-        let detailNames = '';
-        if (overall === 'refused') {
-          const refusers = recipients.filter(r => r.status === 'refused');
-          detailNames = refusers.map(r => `${escapeHtml(r.name)}${r.refused_reason ? ` (« ${escapeHtml(r.refused_reason)} »)` : ''}`).join(' · ');
-        } else {
-          const pending = recipients.filter(r => r.status === 'pending');
-          detailNames = pending.map(r => escapeHtml(r.name)).join(' · ');
-        }
-        return `<div class="comite-wf-status wf-status-${ovConf.color}">
-          <i class="ti ti-${ovConf.icon}"></i>
-          <span><strong>${escapeHtml(ovConf.label)} ${approved}/${total}</strong> — ${detailNames}</span>
-        </div>`;
-      })() : ''}
     </div>
   `;
 }
@@ -6730,132 +6654,8 @@ function bindComiteEditInputs() {
   });
 }
 
-// Submit a comité document for validation (creates a WORKFLOWS entry)
-function submitComiteForValidation(comiteId) {
-  const found = findComite(comiteId);
-  if (!found) return;
-  const { comite, op } = found;
-  if (!comite.doc_data_url) {
-    showToast('Joignez d\'abord un PDF au comité', 'alert-triangle');
-    return;
-  }
-  const conf = comiteTypeConfig(comite.type);
-  // Open the standard workflow modal pre-filled with the comité data
-  openWfModalForComite(comite, op);
-}
 
 // Specialized modal that creates a WF and links it back to the comité
-function openWfModalForComite(comite, op) {
-  document.querySelectorAll('.wf-modal-backdrop').forEach(p => p.remove());
-
-  const persons = [...new Set([...getAllPersons(), 'Aliette GENDRE'])].sort();
-  const conf = comiteTypeConfig(comite.type);
-  const defaultType = comite.type === 'CA' ? 'Note interne CA' : (comite.type === 'C2I' ? 'Note interne CA' : 'Bilan d\'opération');
-
-  const backdrop = document.createElement('div');
-  backdrop.className = 'wf-modal-backdrop';
-  backdrop.innerHTML = `
-    <div class="wf-modal">
-      <div class="wf-modal-head">
-        <i class="ti ti-file-certificate"></i>
-        <span>Soumettre le PV du comité ${escapeHtml(conf.label)} pour validation</span>
-        <button class="wf-modal-close" type="button">×</button>
-      </div>
-      <div class="wf-modal-body">
-        <div class="wf-modal-file">
-          <i class="ti ti-file-text"></i>
-          <div class="wf-modal-file-info">
-            <div class="wf-modal-filename">${escapeHtml(comite.doc_name || 'document.pdf')}</div>
-            <div class="wf-modal-filesize">${formatFileSize(comite.doc_size)} · Comité ${escapeHtml(conf.label)} du ${escapeHtml(comite.date || '?')} — ${escapeHtml(op.display_name || '')}</div>
-          </div>
-          <button class="wf-modal-file-preview" type="button" id="wfModalPreviewBtn"><i class="ti ti-eye"></i>Prévisualiser</button>
-        </div>
-
-        <div class="wf-modal-field">
-          <label>Type de document</label>
-          <select id="wfFormType">
-            ${getRef('types_document').map(t => `<option value="${escapeHtml(t)}"${t === defaultType ? ' selected' : ''}>${escapeHtml(t)}</option>`).join('')}
-          </select>
-        </div>
-
-        <div class="wf-modal-field">
-          <label>Validateur(s) — sélectionnez un ou plusieurs</label>
-          <div class="wf-multi-recipients" id="wfMultiRecipients">
-            ${persons.map(p => `
-              <label class="wf-recipient-check">
-                <input type="checkbox" value="${escapeHtml(p)}"${p === 'Aliette GENDRE' ? ' checked' : ''} />
-                <span>${escapeHtml(p)}</span>
-              </label>
-            `).join('')}
-          </div>
-        </div>
-
-        <div class="wf-modal-field">
-          <label>Message au validateur (optionnel)</label>
-          <textarea id="wfFormMessage" rows="3" placeholder="Ex: Merci de valider le PV avant diffusion.">Validation du PV ${comite.type} du ${comite.date || '?'} pour l'opération ${op.code || op.display_name}.</textarea>
-        </div>
-      </div>
-      <div class="wf-modal-foot">
-        <button class="btn-small" type="button" id="wfFormCancel">Annuler</button>
-        <button class="btn-small btn-primary" type="button" id="wfFormSend"><i class="ti ti-arrow-left" style="transform:rotate(180deg);"></i>Envoyer pour validation</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
-  replaceTablerIcons(backdrop);
-
-  const close = () => backdrop.remove();
-  backdrop.querySelector('.wf-modal-close').addEventListener('click', close);
-  backdrop.querySelector('#wfFormCancel').addEventListener('click', close);
-  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
-
-  backdrop.querySelector('#wfModalPreviewBtn').addEventListener('click', () => {
-    openPdfPreview(comite.doc_name || 'document.pdf', comite.doc_data_url);
-  });
-
-  backdrop.querySelector('#wfFormSend').addEventListener('click', () => {
-    const checks = backdrop.querySelectorAll('#wfMultiRecipients input[type="checkbox"]:checked');
-    const recipientNames = [...checks].map(c => c.value);
-    if (recipientNames.length === 0) {
-      showToast('Sélectionnez au moins un validateur', 'alert-triangle');
-      return;
-    }
-    const wfId = 'wf-' + Date.now();
-    const wf = {
-      id: wfId,
-      doc_name: comite.doc_name,
-      doc_type: backdrop.querySelector('#wfFormType').value,
-      doc_size: comite.doc_size,
-      doc_data_url: comite.doc_data_url,
-      op_uid: op._uid,
-      sender: 'Bastien MERCIER',
-      recipients: recipientNames.map(name => ({
-        name,
-        status: 'pending',
-        responded_at: null,
-        refused_reason: null,
-      })),
-      status: 'pending',
-      sent_at: new Date().toISOString(),
-      message: backdrop.querySelector('#wfFormMessage').value.trim() || null,
-      comite_id: comite.id,
-    };
-    WORKFLOWS.push(wf);
-    // On crée d'abord le workflow en DB pour avoir son _supabase_id, puis on lie le comité
-    persistNewWorkflow(wf).then(() => {
-      comite.submitted_wf_id = wfId;
-      persistComiteChange(comite, op);
-    });
-    comite.submitted_wf_id = wfId; // mémoire locale immédiate
-    const recipientLabel = recipientNames.length === 1
-      ? recipientNames[0]
-      : `${recipientNames.length} validateurs`;
-    showToast(`PV du comité ${comite.type} soumis à ${recipientLabel}`, 'check');
-    close();
-    renderOpDetail();
-    replaceTablerIcons();
-  });
-}
 
 // =========== Planification de comités ===========
 
@@ -7329,15 +7129,7 @@ function renderComiteGroup(g) {
 }
 
 function renderComiteMemberRow(c, op, isPlan) {
-  const wf = c.submitted_wf_id ? WORKFLOWS.find(w => w.id === c.submitted_wf_id) : null;
-  let wfChip = '';
-  if (wf) {
-    const overall = computeWfOverallStatus(wf);
-    const ovConf = wfStatusConfig(overall);
-    const recipients = getWfRecipients(wf);
-    const approved = recipients.filter(r => r.status === 'approved').length;
-    wfChip = `<span class="com-row-wf-mini wf-status-${ovConf.color}"><i class="ti ti-${ovConf.icon}"></i>${escapeHtml(ovConf.label)} ${approved}/${recipients.length}</span>`;
-  }
+  const wfChip = '';
   return `
     <div class="com-group-op-row">
       <a href="#" class="com-row-op-link" data-com-op-uid="${escapeHtml(op._uid)}"><strong>${escapeHtml(op.code || '')}</strong> · ${escapeHtml(op.display_name || '')}</a>
@@ -7346,7 +7138,6 @@ function renderComiteMemberRow(c, op, isPlan) {
       <div class="com-group-op-actions">
         ${c.doc_data_url ? `<button class="comite-action-btn" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'document.pdf')}', findComite('${escapeHtml(c.id)}').comite.doc_data_url)" title="Prévisualiser"><i class="ti ti-eye"></i></button>` : ''}
         ${c.lien_sharepoint ? `<a class="comite-action-btn" href="${escapeHtml(c.lien_sharepoint)}" target="_blank" rel="noopener" title="SharePoint"><i class="ti ti-cloud"></i></a>` : ''}
-        ${!wf && c.doc_data_url ? `<button class="comite-action-btn comite-submit-btn" onclick="submitComiteForValidation('${escapeHtml(c.id)}')" title="Soumettre pour validation"><i class="ti ti-file-certificate"></i></button>` : ''}
       </div>
     </div>
   `;
@@ -7355,29 +7146,7 @@ function renderComiteMemberRow(c, op, isPlan) {
 function renderComiteRowGlobal(c, op) {
   const conf = comiteTypeConfig(c.type);
   const isPlan = isComitePlanifie(c);
-  const wf = c.submitted_wf_id ? WORKFLOWS.find(w => w.id === c.submitted_wf_id) : null;
-  let wfChip = '';
-  if (wf) {
-    const overall = computeWfOverallStatus(wf);
-    const ovConf = wfStatusConfig(overall);
-    const recipients = getWfRecipients(wf);
-    const total = recipients.length;
-    let detailNames = '';
-    if (overall === 'approved') {
-      // All approved — list all approvers
-      detailNames = recipients.map(r => escapeHtml(r.name)).join(' · ');
-    } else if (overall === 'refused') {
-      // Show refusers (with reason on tooltip)
-      const refusers = recipients.filter(r => r.status === 'refused');
-      detailNames = refusers.map(r => escapeHtml(r.name)).join(' · ');
-    } else {
-      // Pending — show who's still pending
-      const pending = recipients.filter(r => r.status === 'pending');
-      detailNames = pending.map(r => escapeHtml(r.name)).join(' · ');
-    }
-    const counters = `${recipients.filter(r => r.status === 'approved').length}/${total}`;
-    wfChip = `<div class="com-row-wf wf-status-${ovConf.color}"><i class="ti ti-${ovConf.icon}"></i><strong>${escapeHtml(ovConf.label)} ${counters}</strong> — ${detailNames}</div>`;
-  }
+  const wfChip = '';
   const statutPill = isPlan
     ? `<span class="com-statut-pill com-statut-planifie"><i class="ti ti-calendar"></i>PLANIFIÉ</span>`
     : `<span class="com-statut-pill com-statut-realise"><i class="ti ti-check"></i>RÉALISÉ</span>`;
@@ -7404,7 +7173,6 @@ function renderComiteRowGlobal(c, op) {
         ${c.doc_data_url ? `<button class="comite-action-btn" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'document.pdf')}', findComite('${escapeHtml(c.id)}').comite.doc_data_url)" title="Prévisualiser"><i class="ti ti-eye"></i></button>` : ''}
         ${c.lien_sharepoint ? `<a class="comite-action-btn" href="${escapeHtml(c.lien_sharepoint)}" target="_blank" rel="noopener" title="SharePoint"><i class="ti ti-cloud"></i></a>` : ''}
         ${isPlan ? `<button class="comite-action-btn comite-submit-btn" onclick="attachPvToComite('${escapeHtml(c.id)}')" title="Joindre le PV (clôture le comité)"><i class="ti ti-cloud"></i></button>` : ''}
-        ${!wf && c.doc_data_url && !isPlan ? `<button class="comite-action-btn comite-submit-btn" onclick="submitComiteForValidation('${escapeHtml(c.id)}')" title="Soumettre pour validation"><i class="ti ti-file-certificate"></i></button>` : ''}
       </div>
     </div>
   `;
@@ -7599,56 +7367,16 @@ function openComiteCreationModal(docName, docSize, dataUrl) {
 }
 // ============== END COMITÉS ==============
 
-// ============== VALIDATIONS / WORKFLOW DE SIGNATURE ==============
-// Les workflows sont chargés depuis Supabase au démarrage. Aucun mock ici.
-const WORKFLOWS = [];
 
-let wfStatusFilter = 'all'; // 'all' | 'draft' | 'pending' | 'approved' | 'refused'
-let wfSearchQuery = '';
 
-function wfStatusConfig(status) {
-  switch (status) {
-    case 'draft': return { label: 'Brouillon', color: 'neutral', icon: 'pencil' };
-    case 'pending': return { label: 'En attente', color: 'warning', icon: 'clock' };
-    case 'approved': return { label: 'Validé', color: 'success', icon: 'check' };
-    case 'refused': return { label: 'Refusé', color: 'danger', icon: 'x' };
-    default: return { label: status, color: 'neutral', icon: 'file-text' };
-  }
-}
 
 // Return a normalized list of recipients [{name, status, responded_at, refused_reason}]
 // Handles both new format (wf.recipients array) and legacy (wf.recipient string)
-function getWfRecipients(wf) {
-  if (Array.isArray(wf.recipients) && wf.recipients.length > 0) {
-    return wf.recipients;
-  }
-  // Legacy: build single-recipient list from old fields
-  if (!wf.recipient) return [];
-  let status = 'pending';
-  if (wf.status === 'approved') status = 'approved';
-  else if (wf.status === 'refused') status = 'refused';
-  else if (wf.status === 'draft') status = 'pending'; // draft means not yet sent
-  return [{
-    name: wf.recipient,
-    status,
-    responded_at: wf.validated_at || null,
-    refused_reason: wf.refused_reason || null,
-  }];
-}
 
-// Compute overall workflow status from its recipients list
 // - draft → draft
 // - any refused → refused
 // - all approved → approved
 // - else → pending
-function computeWfOverallStatus(wf) {
-  if (wf.status === 'draft') return 'draft';
-  const recipients = getWfRecipients(wf);
-  if (recipients.length === 0) return wf.status || 'pending';
-  if (recipients.some(r => r.status === 'refused')) return 'refused';
-  if (recipients.every(r => r.status === 'approved')) return 'approved';
-  return 'pending';
-}
 
 function formatFileSize(bytes) {
   if (bytes == null) return '?';
@@ -7657,152 +7385,12 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + ' Mo';
 }
 
-function formatWfDate(iso) {
-  if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  } catch { return iso; }
-}
 
-function renderValidations() {
-  const list = document.getElementById('wfList');
-  if (!list) return;
-
-  // Update status counts (using computed overall status)
-  ['draft', 'pending', 'approved', 'refused'].forEach(status => {
-    const el = document.getElementById('wfCount-' + status);
-    if (el) el.textContent = WORKFLOWS.filter(w => computeWfOverallStatus(w) === status).length;
-  });
-
-  // Filter
-  const q = (wfSearchQuery || '').trim().toLowerCase();
-  const filtered = WORKFLOWS.filter(w => {
-    const overall = computeWfOverallStatus(w);
-    if (wfStatusFilter !== 'all' && overall !== wfStatusFilter) return false;
-    if (q) {
-      const op = DATA.find(o => o._uid === w.op_uid);
-      const recipientsStr = getWfRecipients(w).map(r => r.name).join(' ');
-      const haystack = [w.doc_name, w.doc_type, w.sender, recipientsStr, op?.display_name, op?.code]
-        .filter(Boolean).join(' ').toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }
-    return true;
-  });
-
-  // Sort: most recent first
-  filtered.sort((a, b) => (b.sent_at || '').localeCompare(a.sent_at || ''));
-
-  if (filtered.length === 0) {
-    list.innerHTML = `
-      <div class="wf-empty">
-        <i class="ti ti-file-text"></i>
-        <p>Aucun document ${wfStatusFilter !== 'all' ? `au statut "${wfStatusConfig(wfStatusFilter).label}"` : 'à afficher'}.</p>
-        <p style="font-size:12px;color:var(--text-tertiary);font-style:italic;">Glissez un PDF en haut pour démarrer un workflow.</p>
-      </div>
-    `;
-    return;
-  }
-
-  list.innerHTML = filtered.map(w => {
-    const conf = wfStatusConfig(w.status);
-    const op = DATA.find(o => o._uid === w.op_uid);
-    const recipients = getWfRecipients(w);
-    const overallStatus = computeWfOverallStatus(w);
-    const ovConf = wfStatusConfig(overallStatus);
-    const pendingRecipients = recipients.filter(r => r.status === 'pending');
-    const approvedRecipients = recipients.filter(r => r.status === 'approved');
-    const refusedRecipients = recipients.filter(r => r.status === 'refused');
-    return `
-      <div class="wf-item wf-item-${ovConf.color}" data-wf-id="${escapeHtml(w.id)}">
-        <div class="wf-item-icon"><i class="ti ti-file-text"></i></div>
-        <div class="wf-item-body">
-          <div class="wf-item-head">
-            <div class="wf-item-name">${escapeHtml(w.doc_name)}</div>
-            <span class="wf-item-status wf-status-${ovConf.color}"><i class="ti ti-${ovConf.icon}"></i>${escapeHtml(ovConf.label)}${recipients.length > 1 ? ` <span class="wf-progress-count">${approvedRecipients.length}/${recipients.length}</span>` : ''}</span>
-          </div>
-          <div class="wf-item-meta">
-            <span class="wf-item-type">${escapeHtml(w.doc_type)}</span>
-            ${op ? `<span>· <strong>${escapeHtml(op.code || '')}</strong> ${escapeHtml(op.display_name || '')}</span>` : ''}
-            <span>· ${formatFileSize(w.doc_size)}</span>
-          </div>
-          <div class="wf-item-flow">
-            <span class="wf-flow-person"><i class="ti ti-user"></i>${escapeHtml(w.sender)}</span>
-            <i class="ti ti-arrow-left wf-flow-arrow" style="transform:rotate(180deg);"></i>
-            <div class="wf-flow-recipients">
-              ${recipients.map(r => {
-                const rConf = wfStatusConfig(r.status);
-                return `<span class="wf-recipient-chip wf-recipient-${rConf.color}" title="${escapeHtml(rConf.label)}${r.responded_at ? ' le ' + formatWfDate(r.responded_at) : ''}${r.refused_reason ? '. Motif : ' + r.refused_reason : ''}">
-                  <i class="ti ti-${rConf.icon}"></i>${escapeHtml(r.name)}
-                </span>`;
-              }).join('')}
-            </div>
-            <span class="wf-flow-date">${w.sent_at ? 'envoyé ' + formatWfDate(w.sent_at) : 'brouillon'}</span>
-          </div>
-          ${w.message ? `<div class="wf-item-message">"${escapeHtml(w.message)}"</div>` : ''}
-          ${approvedRecipients.length > 0 && overallStatus === 'approved' ? `<div class="wf-item-result wf-result-success">
-            <i class="ti ti-check"></i>Validé par ${approvedRecipients.map(r => escapeHtml(r.name)).join(', ')}
-          </div>` : ''}
-          ${refusedRecipients.length > 0 ? `<div class="wf-item-result wf-result-danger">
-            <i class="ti ti-x"></i>Refusé par ${refusedRecipients.map(r => `${escapeHtml(r.name)}${r.refused_reason ? ` (« ${escapeHtml(r.refused_reason)} »)` : ''}`).join(' · ')}
-          </div>` : ''}
-        </div>
-        <div class="wf-item-actions">
-          ${(w.doc_url || w.doc_data_url) ? `
-            <button class="btn-small btn-preview" data-wf-action="preview" data-wf-id="${escapeHtml(w.id)}" title="Prévisualiser le PDF"><i class="ti ti-eye"></i>Voir</button>
-          ` : ''}
-          ${w.status === 'draft' ? `
-            <button class="btn-small btn-primary" data-wf-action="send" data-wf-id="${escapeHtml(w.id)}"><i class="ti ti-arrow-left" style="transform:rotate(180deg);"></i>Envoyer</button>
-            <button class="btn-small btn-perm-delete" data-wf-action="delete" data-wf-id="${escapeHtml(w.id)}"><i class="ti ti-trash"></i></button>
-          ` : ''}
-          ${(() => {
-            // Distinction émetteur / destinataire
-            const me = (typeof CURRENT_USER !== 'undefined') ? CURRENT_USER : '';
-            const iAmSender = (w.sender === me);
-            const myPendingRecipients = (overallStatus === 'pending')
-              ? pendingRecipients.filter(r => r.name === me)
-              : [];
-            const iAmPendingRecipient = myPendingRecipients.length > 0;
-
-            // Aucun cas pertinent en attente → pas d'action
-            if (overallStatus !== 'pending') return '';
-
-            // Construction des boutons selon le rôle
-            const buttons = [];
-            if (iAmPendingRecipient) {
-              buttons.push(`<button class="btn-small btn-restore" data-wf-action="approve" data-wf-recipient="${escapeHtml(me)}" data-wf-id="${escapeHtml(w.id)}"><i class="ti ti-check"></i>Valider</button>`);
-              buttons.push(`<button class="btn-small btn-perm-delete" data-wf-action="refuse" data-wf-recipient="${escapeHtml(me)}" data-wf-id="${escapeHtml(w.id)}"><i class="ti ti-x"></i>Refuser</button>`);
-            }
-            if (iAmSender) {
-              buttons.push(`<button class="btn-small btn-perm-delete" data-wf-action="cancel" data-wf-id="${escapeHtml(w.id)}" title="Annuler ce workflow"><i class="ti ti-x"></i>Annuler</button>`);
-            }
-            return buttons.join('');
-          })()}
-          ${(overallStatus === 'refused' || overallStatus === 'approved') ? `
-            <button class="btn-small" data-wf-action="archive" data-wf-id="${escapeHtml(w.id)}" title="Archiver"><i class="ti ti-trash"></i></button>
-          ` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  // Wire action buttons
-  list.querySelectorAll('[data-wf-action]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const action = btn.dataset.wfAction;
-      const id = btn.dataset.wfId;
-      const recipientName = btn.dataset.wfRecipient || null;
-      handleWfAction(action, id, recipientName);
-    });
-  });
-  replaceTablerIcons(list);
-}
 
 // Open a modal showing the PDF inline via iframe (browser-native PDF viewer)
 function openPdfPreview(docName, dataUrl) {
   if (!dataUrl) {
-    showToast('Aucun fichier disponible — workflow sans document attaché', 'alert-triangle');
+    showToast('Aucun fichier disponible pour ce document', 'alert-triangle');
     return;
   }
   document.querySelectorAll('.pdf-preview-backdrop').forEach(p => p.remove());
@@ -7840,262 +7428,14 @@ function openPdfPreview(docName, dataUrl) {
   document.addEventListener('keydown', escHandler);
 }
 
-function handleWfAction(action, id, recipientName) {
-  const wf = WORKFLOWS.find(w => w.id === id);
-  if (!wf) return;
 
-  if (action === 'preview') {
-    openPdfPreview(wf.doc_name, wf.doc_url || wf.doc_data_url);
-    return;
-  }
 
-  if (action === 'send') {
-    const recipients = getWfRecipients(wf);
-    if (recipients.length === 0) { showToast("Choisis un validateur d'abord", 'alert-triangle'); return; }
-    wf.status = 'pending';
-    wf.sent_at = new Date().toISOString();
-    // Ensure all recipients are pending after sending
-    if (Array.isArray(wf.recipients)) {
-      wf.recipients.forEach(r => { if (!r.status || r.status === 'draft') r.status = 'pending'; });
-    }
-    const label = recipients.length === 1 ? recipients[0].name : `${recipients.length} validateurs`;
-    showToast(`Envoyé à ${label}`, 'check');
-    // Persist
-    persistWorkflowChange(wf);
-  }
-  else if (action === 'approve') {
-    if (!confirm(`Valider le document « ${wf.doc_name} »${recipientName ? ` en tant que ${recipientName}` : ''} ?
 
-Cette action enregistre une signature électronique simulée.`)) return;
-    const now = new Date().toISOString();
-    if (Array.isArray(wf.recipients) && wf.recipients.length > 0) {
-      if (recipientName) {
-        const r = wf.recipients.find(x => x.name === recipientName);
-        if (r) { r.status = 'approved'; r.responded_at = now; persistRecipientChange(r); }
-      } else {
-        wf.recipients.forEach(r => { if (r.status === 'pending') { r.status = 'approved'; r.responded_at = now; persistRecipientChange(r); } });
-      }
-      wf.status = computeWfOverallStatus(wf);
-    } else {
-      wf.status = 'approved';
-      wf.validated_at = now;
-    }
-    persistWorkflowChange(wf);
-    // Si le workflow est entièrement approuvé ET concerne un comité, on le clôture en "réalisé"
-    if (wf.status === 'approved') {
-      DATA.forEach(op => {
-        if (!Array.isArray(op.comites)) return;
-        op.comites.forEach(c => {
-          if (c.submitted_wf_id === wf.id) {
-            c.statut = 'realise';
-            // Si pas encore de doc_data_url sur le comité, on récupère celui du workflow
-            if (!c.doc_data_url && (wf.doc_data_url || wf.doc_url)) {
-              c.doc_data_url = wf.doc_data_url || wf.doc_url;
-              c.doc_name = c.doc_name || wf.doc_name;
-            }
-            persistComiteChange(c, op);
-          }
-        });
-      });
-    }
-    showToast(recipientName ? `Validé par ${recipientName}` : 'Document validé', 'check');
-  }
-  else if (action === 'refuse') {
-    const reason = prompt("Motif du refus (visible par l'émetteur) :");
-    if (reason === null) return;
-    const cleanReason = reason.trim() || 'Non précisé';
-    const now = new Date().toISOString();
-    if (Array.isArray(wf.recipients) && wf.recipients.length > 0) {
-      if (recipientName) {
-        const r = wf.recipients.find(x => x.name === recipientName);
-        if (r) { r.status = 'refused'; r.responded_at = now; r.refused_reason = cleanReason; persistRecipientChange(r); }
-      } else {
-        wf.recipients.forEach(r => { if (r.status === 'pending') { r.status = 'refused'; r.responded_at = now; r.refused_reason = cleanReason; persistRecipientChange(r); } });
-      }
-      wf.status = computeWfOverallStatus(wf);
-    } else {
-      wf.status = 'refused';
-      wf.validated_at = now;
-      wf.refused_reason = cleanReason;
-    }
-    persistWorkflowChange(wf);
-    showToast(recipientName ? `Refusé par ${recipientName}` : 'Document refusé', 'x');
-  }
-  else if (action === 'cancel') {
-    if (!confirm(`Annuler le workflow « ${wf.doc_name} » ?
 
-Il sera définitivement supprimé.`)) return;
-    const idx = WORKFLOWS.indexOf(wf);
-    if (idx >= 0) WORKFLOWS.splice(idx, 1);
-    persistWorkflowDelete(wf);
-    showToast('Workflow annulé', 'x');
-  }
-  else if (action === 'delete' || action === 'archive') {
-    const verb = action === 'delete' ? 'supprimer ce brouillon' : 'archiver ce document';
-    if (!confirm(`Voulez-vous ${verb} ?`)) return;
-    const idx = WORKFLOWS.indexOf(wf);
-    if (idx >= 0) WORKFLOWS.splice(idx, 1);
-    persistWorkflowDelete(wf);
-    showToast(action === 'delete' ? 'Brouillon supprimé' : 'Document archivé', 'trash');
-  }
-  renderValidations();
-  refreshNavBadges();
-  // Si on a modifié un comité (passage à "realise"), rafraîchir aussi les listes concernées
-  if (action === 'approve' && wf.status === 'approved') {
-    if (typeof renderComitesList === 'function') renderComitesList();
-    if (typeof renderOpDetail === 'function') renderOpDetail();
-    if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
-  }
-}
-
-// ===== Persistance workflows vers Supabase =====
-async function persistNewWorkflow(wf) {
-  // POST workflow + POST workflow_recipients
-  try {
-    const headers = {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${AUTH_TOKEN}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-    };
-    // Trouver l'operation_id Supabase à partir de op_uid
-    let operationId = null;
-    if (wf.op_uid) {
-      const op = DATA.find(o => o._uid === wf.op_uid);
-      if (op && op._supabase_id) operationId = op._supabase_id;
-    }
-    const wfPayload = {
-      operation_id: operationId,
-      doc_name: wf.doc_name || '',
-      doc_type: wf.doc_type || '',
-      doc_size: wf.doc_size || null,
-      doc_url: wf.doc_url || null,
-      doc_storage_path: wf.doc_storage_path || null,
-      sender_name: wf.sender || '',
-      status: wf.status || 'pending',
-      sent_at: wf.sent_at || null,
-      message: wf.message || null,
-    };
-    const wfRes = await fetch(`${SUPABASE_URL}/rest/v1/workflows`, {
-      method: 'POST', headers, body: JSON.stringify(wfPayload),
-    });
-    if (!wfRes.ok) throw new Error('Workflow POST: ' + wfRes.status);
-    const wfCreated = await wfRes.json();
-    const wfSupabaseId = Array.isArray(wfCreated) ? wfCreated[0]?.id : wfCreated.id;
-    wf._supabase_id = wfSupabaseId;
-
-    // Insérer les recipients
-    if (Array.isArray(wf.recipients) && wf.recipients.length > 0) {
-      const recipPayloads = wf.recipients.map(r => ({
-        workflow_id: wfSupabaseId,
-        recipient_name: r.name,
-        status: r.status || 'pending',
-        responded_at: r.responded_at || null,
-        refused_reason: r.refused_reason || null,
-      }));
-      const recipRes = await fetch(`${SUPABASE_URL}/rest/v1/workflow_recipients`, {
-        method: 'POST', headers, body: JSON.stringify(recipPayloads),
-      });
-      if (recipRes.ok) {
-        const created = await recipRes.json();
-        if (Array.isArray(created)) {
-          created.forEach((c, idx) => { if (wf.recipients[idx]) wf.recipients[idx]._supabase_id = c.id; });
-        }
-      }
-    }
-    return wfSupabaseId;
-  } catch (err) {
-    console.error('persistNewWorkflow error:', err);
-    showToast('Erreur création workflow Supabase : ' + err.message, 'alert-triangle');
-    return null;
-  }
-}
-
-async function persistWorkflowChange(wf) {
-  if (!wf._supabase_id) {
-    // Création différée si pas encore en DB
-    return persistNewWorkflow(wf);
-  }
-  try {
-    const headers = {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${AUTH_TOKEN}`,
-      'Content-Type': 'application/json',
-    };
-    const payload = {
-      status: wf.status,
-      sent_at: wf.sent_at || null,
-    };
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/workflows?id=eq.${wf._supabase_id}`, {
-      method: 'PATCH', headers, body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error('Status ' + res.status);
-    return true;
-  } catch (err) {
-    console.error('persistWorkflowChange error:', err);
-    return false;
-  }
-}
-
-async function persistRecipientChange(recipient) {
-  if (!recipient._supabase_id) return false;
-  try {
-    const headers = {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${AUTH_TOKEN}`,
-      'Content-Type': 'application/json',
-    };
-    const payload = {
-      status: recipient.status,
-      responded_at: recipient.responded_at || null,
-      refused_reason: recipient.refused_reason || null,
-    };
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/workflow_recipients?id=eq.${recipient._supabase_id}`, {
-      method: 'PATCH', headers, body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error('Status ' + res.status);
-    return true;
-  } catch (err) {
-    console.error('persistRecipientChange error:', err);
-    return false;
-  }
-}
-
-async function persistWorkflowDelete(wf) {
-  if (!wf._supabase_id) return false;
-  try {
-    const headers = {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${AUTH_TOKEN}`,
-    };
-    // Supprimer les recipients liés (au cas où FK cascade n'est pas activée)
-    await fetch(`${SUPABASE_URL}/rest/v1/workflow_recipients?workflow_id=eq.${wf._supabase_id}`, {
-      method: 'DELETE', headers,
-    });
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/workflows?id=eq.${wf._supabase_id}`, {
-      method: 'DELETE', headers,
-    });
-    if (!res.ok) throw new Error('Status ' + res.status);
-    // Supprimer aussi le fichier Storage si présent
-    if (wf.doc_storage_path) {
-      await deleteWorkflowDocument(wf.doc_storage_path);
-    }
-    return true;
-  } catch (err) {
-    console.error('persistWorkflowDelete error:', err);
-    return false;
-  }
-}
 
 // ===== Persistance comités vers Supabase =====
 // Construit le payload Supabase à partir d'un objet comité mockup
 function comitePayloadFromMockup(comite, opSupabaseId) {
-  // Si le comité a un workflow lié, on récupère l'id Supabase du workflow
-  let pvWfId = null;
-  if (comite.submitted_wf_id) {
-    const wf = (typeof WORKFLOWS !== 'undefined') ? WORKFLOWS.find(w => w.id === comite.submitted_wf_id) : null;
-    if (wf && wf._supabase_id) pvWfId = wf._supabase_id;
-  }
   return {
     operation_id: opSupabaseId,
     type: comite.type || null,
@@ -8108,7 +7448,6 @@ function comitePayloadFromMockup(comite, opSupabaseId) {
     doc_size: comite.doc_size || null,
     doc_data_url: comite.doc_data_url || null,
     lien_sharepoint: comite.lien_sharepoint || null,
-    pv_workflow_id: pvWfId,
   };
 }
 
@@ -8183,266 +7522,11 @@ async function persistComiteDelete(comite) {
 }
 
 // ===== Supabase Storage : upload/delete de PDFs =====
-// Bucket public 'workflow-documents' — chaque fichier porte un chemin unique
-async function uploadWorkflowDocument(file) {
-  // Génère un chemin unique : YYYY-MM-DD/timestamp-cleanname.pdf
-  const today = new Date().toISOString().slice(0, 10);
-  const ts = Date.now();
-  const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const storagePath = `${today}/${ts}-${cleanName}`;
-  try {
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/workflow-documents/${storagePath}`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${AUTH_TOKEN}`,
-        'Content-Type': file.type || 'application/pdf',
-        'x-upsert': 'true',
-      },
-      body: file,
-    });
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error('Upload Storage: ' + res.status + ' — ' + errText);
-    }
-    // URL publique du fichier
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/workflow-documents/${storagePath}`;
-    return { path: storagePath, url: publicUrl };
-  } catch (err) {
-    console.error('uploadWorkflowDocument error:', err);
-    showToast('Erreur upload document : ' + err.message, 'alert-triangle');
-    return null;
-  }
-}
 
-async function deleteWorkflowDocument(storagePath) {
-  if (!storagePath) return false;
-  try {
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/workflow-documents/${storagePath}`, {
-      method: 'DELETE',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${AUTH_TOKEN}`,
-      },
-    });
-    return res.ok;
-  } catch (err) {
-    console.error('deleteWorkflowDocument error:', err);
-    return false;
-  }
-}
 
 // Handle file drop / browse
-async function handleWfFile(file) {
-  if (!file) return;
-  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-    showToast('Seuls les fichiers PDF sont acceptés', 'alert-triangle');
-    return;
-  }
-  showToast('Upload du document en cours…', 'cloud-upload');
-  // Upload vers Supabase Storage
-  const uploaded = await uploadWorkflowDocument(file);
-  if (!uploaded) {
-    showToast("Échec de l'upload — workflow non créé", 'alert-triangle');
-    return;
-  }
-  // Ouvrir la modal avec l'URL Supabase
-  openWfModal({
-    doc_name: file.name,
-    doc_size: file.size,
-    doc_url: uploaded.url,
-    doc_storage_path: uploaded.path,
-  });
-}
 
-function openWfModal(prefill) {
-  // Close existing
-  document.querySelectorAll('.wf-modal-backdrop').forEach(p => p.remove());
 
-  // Build persons list (deduped from ops, including known direction)
-  const persons = [...new Set([
-    ...getAllPersons(),
-    'Aliette GENDRE', // Directrice de l'immobilier
-  ])].sort();
-
-  // Build ops list
-  const opOptions = DATA.filter(o => !o.deleted).map(o =>
-    `<option value="${escapeHtml(o._uid)}">${escapeHtml(o.code || '?')} · ${escapeHtml(o.display_name || '')}</option>`
-  ).join('');
-
-  const backdrop = document.createElement('div');
-  backdrop.className = 'wf-modal-backdrop';
-  backdrop.innerHTML = `
-    <div class="wf-modal">
-      <div class="wf-modal-head">
-        <i class="ti ti-file-certificate"></i>
-        <span>Nouveau document à valider</span>
-        <button class="wf-modal-close" type="button">×</button>
-      </div>
-      <div class="wf-modal-body">
-        <div class="wf-modal-file">
-          <i class="ti ti-file-text"></i>
-          <div class="wf-modal-file-info">
-            <div class="wf-modal-filename">${escapeHtml(prefill.doc_name)}</div>
-            <div class="wf-modal-filesize">${formatFileSize(prefill.doc_size)}</div>
-          </div>
-          ${prefill.doc_data_url ? `<button class="wf-modal-file-preview" type="button" id="wfModalPreviewBtn"><i class="ti ti-eye"></i>Prévisualiser</button>` : ''}
-        </div>
-
-        <div class="wf-modal-field">
-          <label>Type de document</label>
-          <select id="wfFormType">
-            ${getRef('types_document').map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')}
-          </select>
-        </div>
-
-        <div class="wf-modal-field">
-          <label>Opération liée</label>
-          <select id="wfFormOp">
-            <option value="">— Aucune opération —</option>
-            ${opOptions}
-          </select>
-        </div>
-
-        <div class="wf-modal-field">
-          <label>Validateur</label>
-          <select id="wfFormRecipient">
-            <option value="">— Sélectionner une personne —</option>
-            ${persons.map(p => `<option value="${escapeHtml(p)}"${p === 'Aliette GENDRE' ? ' selected' : ''}>${escapeHtml(p)}</option>`).join('')}
-          </select>
-        </div>
-
-        <div class="wf-modal-field">
-          <label>Message au validateur (optionnel)</label>
-          <textarea id="wfFormMessage" rows="3" placeholder="Ex: Merci de valider avant la réunion du 28 mai."></textarea>
-        </div>
-      </div>
-      <div class="wf-modal-foot">
-        <button class="btn-small" type="button" id="wfFormCancel">Annuler</button>
-        <button class="btn-small" type="button" id="wfFormDraft">Enregistrer en brouillon</button>
-        <button class="btn-small btn-primary" type="button" id="wfFormSend"><i class="ti ti-arrow-left" style="transform:rotate(180deg);"></i>Envoyer pour validation</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
-  replaceTablerIcons(backdrop);
-
-  // Pre-fill op if currently selected
-  if (selectedOpCode) {
-    const opSelect = backdrop.querySelector('#wfFormOp');
-    if (opSelect) opSelect.value = selectedOpCode;
-  }
-
-  const close = () => backdrop.remove();
-  backdrop.querySelector('.wf-modal-close').addEventListener('click', close);
-  backdrop.querySelector('#wfFormCancel').addEventListener('click', close);
-  backdrop.addEventListener('click', (e) => {
-    if (e.target === backdrop) close();
-  });
-
-  // Preview button (if PDF data is loaded)
-  const previewBtn = backdrop.querySelector('#wfModalPreviewBtn');
-  if (previewBtn && prefill.doc_data_url) {
-    previewBtn.addEventListener('click', () => {
-      openPdfPreview(prefill.doc_name, prefill.doc_data_url);
-    });
-  }
-
-  const buildWf = (status) => {
-    const id = 'wf-' + Date.now();
-    const recipientName = backdrop.querySelector('#wfFormRecipient').value;
-    return {
-      id,
-      doc_name: prefill.doc_name,
-      doc_type: backdrop.querySelector('#wfFormType').value,
-      doc_size: prefill.doc_size,
-      doc_url: prefill.doc_url || null,
-      doc_storage_path: prefill.doc_storage_path || null,
-      doc_data_url: prefill.doc_data_url || null, // fallback legacy
-      op_uid: backdrop.querySelector('#wfFormOp').value || null,
-      sender: (typeof CURRENT_USER !== 'undefined') ? CURRENT_USER : 'Bastien MERCIER',
-      recipients: recipientName ? [{
-        name: recipientName,
-        status: status === 'draft' ? 'draft' : 'pending',
-        responded_at: null,
-        refused_reason: null,
-      }] : [],
-      status,
-      sent_at: status === 'pending' ? new Date().toISOString() : null,
-      message: backdrop.querySelector('#wfFormMessage').value.trim() || null,
-      validated_at: null,
-      refused_reason: null,
-    };
-  };
-
-  backdrop.querySelector('#wfFormDraft').addEventListener('click', () => {
-    const wf = buildWf('draft');
-    WORKFLOWS.push(wf);
-    persistNewWorkflow(wf);
-    showToast('Brouillon enregistré', 'check');
-    close();
-    renderValidations();
-  });
-
-  backdrop.querySelector('#wfFormSend').addEventListener('click', () => {
-    const recipient = backdrop.querySelector('#wfFormRecipient').value;
-    if (!recipient) {
-      showToast("Choisis un validateur avant d'envoyer", 'alert-triangle');
-      return;
-    }
-    const wf = buildWf('pending');
-    WORKFLOWS.push(wf);
-    persistNewWorkflow(wf);
-    showToast(`Envoyé à ${recipient}`, 'check');
-    close();
-    renderValidations();
-  });
-}
-
-function initValidationsView() {
-  // Status tabs
-  document.querySelectorAll('[data-wf-status]').forEach(btn => {
-    if (btn.dataset.wired) return;
-    btn.dataset.wired = '1';
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('[data-wf-status]').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
-      wfStatusFilter = btn.dataset.wfStatus;
-      renderValidations();
-    });
-  });
-  // Search
-  const search = document.getElementById('wfSearchInput');
-  if (search && !search.dataset.wired) {
-    search.dataset.wired = '1';
-    search.addEventListener('input', (e) => { wfSearchQuery = e.target.value; renderValidations(); });
-  }
-  // Drop zone
-  const zone = document.getElementById('wfDropzone');
-  if (zone && !zone.dataset.wired) {
-    zone.dataset.wired = '1';
-    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('wf-dropzone-active'); });
-    zone.addEventListener('dragleave', () => zone.classList.remove('wf-dropzone-active'));
-    zone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      zone.classList.remove('wf-dropzone-active');
-      const file = e.dataTransfer.files[0];
-      handleWfFile(file);
-    });
-  }
-  // Browse button
-  const browseBtn = document.getElementById('wfBrowseBtn');
-  const fileInput = document.getElementById('wfFileInput');
-  if (browseBtn && fileInput && !browseBtn.dataset.wired) {
-    browseBtn.dataset.wired = '1';
-    browseBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      handleWfFile(file);
-      fileInput.value = ''; // reset to allow same file again
-    });
-  }
-}
 // ============== END VALIDATIONS ==============
 
 // ============== SUIVI VIEW ==============
@@ -9344,13 +8428,6 @@ function renderAccueil() {
   allAlerts.sort((a, b) => a.days - b.days);
   const top5Alerts = allAlerts.slice(0, 5);
 
-  // Workflows where I'm a recipient (pending only)
-  const myPendingWorkflows = WORKFLOWS.filter(w => {
-    if (computeWfOverallStatus(w) !== 'pending') return false;
-    const recipients = getWfRecipients(w);
-    return recipients.some(r => isCurrentUser(r.name) && r.status === 'pending');
-  });
-
   // Comités à venir (date > today, ou date dans les 30 derniers jours)
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const upcomingComites = [];
@@ -9393,7 +8470,6 @@ function renderAccueil() {
   const kpis = [
     { label: 'Mes opérations', value: myOps.length, color: 'info', icon: 'building-community' },
     { label: 'Échéances urgentes', value: allAlerts.filter(a => a.level === 'expired' || a.level === 'critical').length, color: allAlerts.some(a => a.level === 'expired' || a.level === 'critical') ? 'danger' : 'success', icon: 'alert-triangle' },
-    { label: 'À valider', value: myPendingWorkflows.length, color: myPendingWorkflows.length > 0 ? 'warning' : 'success', icon: 'file-certificate' },
     { label: 'Comités à venir', value: upcomingComites.filter(x => x.days >= 0).length, color: 'info', icon: 'users' },
   ];
 
@@ -9435,37 +8511,6 @@ function renderAccueil() {
               </li>
             `).join('')}
           </ul>
-        `}
-      </div>
-
-      <!-- Workflows en attente de ma validation -->
-      <div class="accueil-card">
-        <div class="accueil-card-head">
-          <i class="ti ti-file-certificate"></i>
-          <span>En attente de ta validation</span>
-        </div>
-        ${myPendingWorkflows.length === 0 ? `
-          <div class="accueil-empty">
-            <i class="ti ti-check"></i>
-            <p>Aucun document en attente.</p>
-          </div>
-        ` : `
-          <ul class="accueil-wf-list">
-            ${myPendingWorkflows.slice(0, 6).map(w => {
-              const op = DATA.find(o => o._uid === w.op_uid);
-              return `
-                <li class="accueil-wf-item" data-go-tab="validations">
-                  <i class="ti ti-file-text"></i>
-                  <div class="accueil-wf-body">
-                    <div class="accueil-wf-name">${escapeHtml(w.doc_name)}</div>
-                    <div class="accueil-wf-meta">${escapeHtml(w.doc_type)}${op ? ` · ${escapeHtml(op.code || '')}` : ''}</div>
-                  </div>
-                  <span class="accueil-wf-from">de ${escapeHtml(w.sender)}</span>
-                </li>
-              `;
-            }).join('')}
-          </ul>
-          ${myPendingWorkflows.length > 6 ? `<div class="accueil-card-more"><a href="#" data-go-tab="validations">+ ${myPendingWorkflows.length - 6} autres</a></div>` : ''}
         `}
       </div>
 
@@ -9585,7 +8630,6 @@ function switchToTab(viewName) {
   storageSet('activeView', viewName);
   // Trigger the same render as a real click would
   if (viewName === 'suivi') { renderSuivi(); }
-  else if (viewName === 'validations') { initValidationsView(); renderValidations(); }
   else if (viewName === 'comites') { renderComitesTab(); }
   else if (viewName === 'gantt') { renderGantt(); }
   else if (viewName === 'carte') { initMapFilters(); renderMap(); }
@@ -11783,11 +10827,6 @@ document.querySelectorAll('.topnav-tab').forEach(tab => {
       renderTresorerie();
       replaceTablerIcons();
     }
-    if (target === 'validations') {
-      initValidationsView();
-      renderValidations();
-      replaceTablerIcons();
-    }
     if (target === 'comites') {
       renderComitesTab();
       replaceTablerIcons();
@@ -11873,8 +10912,6 @@ async function loadFromSupabase(opts) {
       fetch(`${SUPABASE_URL}/rest/v1/subventions?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/reservataires?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/comites?select=*`, { headers }),
-      fetch(`${SUPABASE_URL}/rest/v1/workflows?select=*`, { headers }),
-      fetch(`${SUPABASE_URL}/rest/v1/workflow_recipients?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/audit_log?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/tags?select=*`, { headers }),
       fetch(`${SUPABASE_URL}/rest/v1/phase_snapshots?select=*`, { headers }),
@@ -11886,7 +10923,7 @@ async function loadFromSupabase(opts) {
     const responses = await Promise.all(fetches);
     if (!responses[0].ok) throw new Error('Operations: ' + responses[0].status);
 
-    const [opsRows, tranchesRows, pretsRows, garantiesRows, subvRows, reservRows, comitesRows, wfRows, wfRecipRows, auditRows, tagsRows, snapsRows, refRows, prefinRows, avenantsRows, aapRows] = await Promise.all(
+    const [opsRows, tranchesRows, pretsRows, garantiesRows, subvRows, reservRows, comitesRows, auditRows, tagsRows, snapsRows, refRows, prefinRows, avenantsRows, aapRows] = await Promise.all(
       responses.map(async (r, i) => r.ok ? await r.json() : [])
     );
 
@@ -11919,7 +10956,7 @@ async function loadFromSupabase(opts) {
       console.warn('Supabase a renvoyé une liste vide, données démo conservées.');
       return;
     }
-    console.log(`Reçu : ${opsRows.length} ops, ${tranchesRows.length} tranches, ${pretsRows.length} prêts, ${garantiesRows.length} garanties, ${subvRows.length} subv, ${reservRows.length} resv, ${comitesRows.length} comités, ${wfRows.length} workflows, ${auditRows.length} audit, ${tagsRows.length} tags, ${snapsRows.length} snapshots`);
+    console.log(`Reçu : ${opsRows.length} ops, ${tranchesRows.length} tranches, ${pretsRows.length} prêts, ${garantiesRows.length} garanties, ${subvRows.length} subv, ${reservRows.length} resv, ${comitesRows.length} comités, ${auditRows.length} audit, ${tagsRows.length} tags, ${snapsRows.length} snapshots`);
 
     // Template d'une op vide complète
     const opTemplate = DATA.length > 0 ? JSON.parse(JSON.stringify(DATA[0])) : {};
@@ -11949,18 +10986,10 @@ async function loadFromSupabase(opts) {
       prefinancements: [],
       avenants: [],
       comites: [],
-      workflows: [],
       tags: [],
       audit_log: [],
       phases_history: [],
     };
-
-    // Indexer workflow_recipients par workflow_id pour les rattacher
-    const wfRecipsByWf = {};
-    wfRecipRows.forEach(r => {
-      if (!wfRecipsByWf[r.workflow_id]) wfRecipsByWf[r.workflow_id] = [];
-      wfRecipsByWf[r.workflow_id].push(r);
-    });
 
     // Mapper les opérations
     DATA = opsRows.map(row => {
@@ -12014,12 +11043,7 @@ async function loadFromSupabase(opts) {
       // Comités
       const comitesForOp = comitesRows
         .filter(c => c.operation_id === row.id)
-        .map(c => mapComiteFromSupabase(c, wfRecipsByWf));
-
-      // Workflows
-      const workflowsForOp = wfRows
-        .filter(w => w.operation_id === row.id)
-        .map(w => mapWorkflowFromSupabase(w, wfRecipsByWf));
+        .map(c => mapComiteFromSupabase(c));
 
       // Audit log
       const auditForOp = auditRows
@@ -12102,7 +11126,6 @@ async function loadFromSupabase(opts) {
         prefinancements: prefinancementsForOp,
         avenants: avenantsForOp,
         comites: comitesForOp,
-        workflows: workflowsForOp,
         audit_log: auditForOp,
         tags: tagsForOp,
         deleted: !!row.deleted_at,
@@ -12112,14 +11135,6 @@ async function loadFromSupabase(opts) {
     });
 
     console.log('Chargé depuis Supabase :', DATA.length, 'opérations');
-
-    // Remplir WORKFLOWS global (utilisé par l'onglet Validations, compteurs, etc.)
-    WORKFLOWS.length = 0; // clear
-    wfRows.forEach(w => {
-      const mapped = mapWorkflowFromSupabase(w, wfRecipsByWf);
-      WORKFLOWS.push(mapped);
-    });
-    console.log('WORKFLOWS chargés :', WORKFLOWS.length);
 
     // Restaurer l'opération sélectionnée si elle existe encore en DB, sinon première op
     const savedOp = storageGet('selectedOp');
@@ -12142,7 +11157,7 @@ async function loadFromSupabase(opts) {
 
     // Restaurer la vue active si on en a une sauvegardée (mais seulement si elle est valide)
     const savedView = storageGet('activeView');
-    const validViews = ['accueil', 'operations', 'dashboard', 'suivi', 'validations', 'comites', 'gantt', 'carte', 'finances', 'tresorerie', 'referentiels', 'trash'];
+    const validViews = ['accueil', 'operations', 'dashboard', 'suivi', 'comites', 'gantt', 'carte', 'finances', 'tresorerie', 'referentiels', 'trash'];
     if (savedView && validViews.includes(savedView) && savedView !== 'accueil') {
       switchToTab(savedView);
     }
@@ -12346,9 +11361,7 @@ function mapAvenantFromSupabase(a, trancheSuffixMap, pretLigneMap) {
   };
 }
 
-function mapComiteFromSupabase(c, wfRecipsByWf) {
-  // Si pv_workflow_id présent, on reconstitue le submitted_wf_id côté mockup (id avec préfixe)
-  const submittedWfId = c.pv_workflow_id ? ('wf-supabase-' + c.pv_workflow_id) : null;
+function mapComiteFromSupabase(c) {
   return {
     _supabase_id: c.id,
     id: 'com-supabase-' + c.id,
@@ -12362,37 +11375,9 @@ function mapComiteFromSupabase(c, wfRecipsByWf) {
     doc_size: c.doc_size || null,
     doc_data_url: c.doc_data_url || null,
     lien_sharepoint: c.lien_sharepoint || '',
-    submitted_wf_id: submittedWfId,
   };
 }
 
-function mapWorkflowFromSupabase(w, wfRecipsByWf) {
-  const recipients = (wfRecipsByWf[w.id] || []).map(r => ({
-    _supabase_id: r.id,
-    name: r.recipient_name || '',
-    status: r.status || 'pending',
-    responded_at: r.responded_at || null,
-    refused_reason: r.refused_reason || null,
-  }));
-  return {
-    _supabase_id: w.id,
-    id: 'wf-supabase-' + w.id,
-    doc_name: w.doc_name || '',
-    doc_type: w.doc_type || '',
-    doc_size: w.doc_size || null,
-    doc_url: w.doc_url || null,
-    doc_storage_path: w.doc_storage_path || null,
-    doc_data_url: w.doc_data_url || null,
-    sender: w.sender_name || '',
-    op_uid: w.operation_id ? ('op-supabase-' + w.operation_id) : null,
-    status: w.status || 'pending',
-    sent_at: w.sent_at || null,
-    message: w.message || null,
-    notes: w.notes || '',
-    recipients: recipients,
-    created_at: w.created_at || null,
-  };
-}
 
 function mapAuditFromSupabase(a) {
   return {
@@ -12565,7 +11550,7 @@ async function _saveOpToSupabaseImpl(op) {
     });
     if (!opResponse.ok) throw new Error('Op: ' + opResponse.status + ' — ' + await opResponse.text());
 
-    // 2. Synchroniser tranches / prêts / garanties / subventions / réservataires / comités / workflows / tags
+    // 2. Synchroniser tranches / prêts / garanties / subventions / réservataires / comités / tags
     await syncEntitiesToSupabase(op, supabaseId);
 
     console.log('Sauvegardé dans Supabase : op', supabaseId, 'et entités liées');
