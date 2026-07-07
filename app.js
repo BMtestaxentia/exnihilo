@@ -12195,51 +12195,27 @@ function showLoginOverlay(){
   ov.id = 'authOverlay';
   ov.className = 'auth-overlay';
 
-  // --- Génération de la ville ---
   const rnd = (a, b) => a + Math.random() * (b - a);
-  const farB = [];
-  for (let x = -2; x < 100; x += rnd(6, 10)) {
-    farB.push(`<div class="ct-b" style="left:${x.toFixed(1)}%;width:${rnd(46, 96).toFixed(0)}px;height:${rnd(10, 24).toFixed(1)}vh;"></div>`);
-  }
-  const nearB = [];
-  for (let x = -1; x < 100; x += rnd(9, 14)) {
-    const cols = Math.floor(rnd(3, 6));
-    const hvh = rnd(13, 30);
-    const rows = Math.max(4, Math.floor(hvh / 2.4));
-    const wins = Array.from({ length: cols * rows }).map(() => '<i class="ct-w"></i>').join('');
-    const ant = Math.random() < 0.3 ? ' ant' : '';
-    nearB.push(`<div class="ct-b${ant}" style="left:${x.toFixed(1)}%;width:${(cols * 16 + 14).toFixed(0)}px;height:${hvh.toFixed(1)}vh;--c:${cols};">${wins}</div>`);
-  }
-  const stars = Array.from({ length: 46 }).map(() =>
-    `<span class="auth-star" style="left:${rnd(0, 100).toFixed(1)}%;top:${rnd(2, 55).toFixed(1)}%;animation-delay:${rnd(0, 4).toFixed(1)}s;opacity:${rnd(0.25, 0.9).toFixed(2)};"></span>`).join('');
-  const notes = [
-    ['R+7 · 58 logts PLAI', 14, 22], ['SHAB 2 450 m²', 74, 34], ['OS prévu 04/2027', 58, 12],
-  ].map(([t, l, tp]) => `<div class="auth-note" style="left:${l}%;top:${tp}%;">${t}</div>`).join('');
+  const stars = Array.from({ length: 60 }).map(() =>
+    `<span class="auth-star" style="left:${rnd(0, 100).toFixed(1)}%;top:${rnd(0, 70).toFixed(1)}%;animation-delay:${rnd(0, 4.5).toFixed(1)}s;opacity:${rnd(0.15, 0.9).toFixed(2)};"></span>`).join('');
+  const embers = Array.from({ length: 22 }).map(() => {
+    const cy = Math.random() > 0.68; const sz = rnd(2, 5.5).toFixed(1);
+    return `<span class="auth-pt" style="left:${rnd(0, 100).toFixed(1)}%;width:${sz}px;height:${sz}px;animation-duration:${rnd(8, 18).toFixed(1)}s;animation-delay:${rnd(0, 12).toFixed(1)}s;${cy ? 'background:rgba(90,180,225,0.85);box-shadow:0 0 8px rgba(90,180,225,0.7);' : ''}"></span>`;
+  }).join('');
 
   ov.innerHTML = `
-    <div class="auth-sky"></div>
     <div class="auth-stars">${stars}</div>
-    <div class="auth-shoot"></div>
-    <div class="auth-bpgrid"></div>
-    ${notes}
-    <div class="auth-layer auth-city-far" data-depth="7">${farB.join('')}</div>
-    <div class="auth-layer auth-city-near" data-depth="16">
-      ${nearB.join('')}
-      <div class="auth-crane" style="left:68%;--mh:${(innerHeight * 0.36).toFixed(0)}px;">
-        <div class="crane-mast"></div>
-        <div class="crane-top">
-          <div class="crane-peak"></div>
-          <div class="crane-jib"></div>
-          <div class="crane-tie1"></div><div class="crane-tie2"></div>
-          <div class="crane-trolley"><div class="crane-cable"></div><div class="crane-load"></div></div>
-        </div>
-      </div>
-    </div>
-    <div class="auth-haze"></div>
+    <div class="auth-rays" data-depth="8"></div>
+    <div class="auth-mark-wrap" data-depth="20"><img class="auth-mark" src="${AXENTIA_MARK}" alt="" aria-hidden="true"></div>
+    <div class="auth-fog f1"></div>
+    <div class="auth-fog f2"></div>
+    <div class="auth-particles">${embers}</div>
+    <div class="auth-vignette"></div>
+    <div class="auth-flash"></div>
     <div class="auth-stage" data-depth="-9">
       <div class="auth-logo-wrap"><img class="auth-logo-img" src="${AXENTIA_LOGO}" alt="AXENTIA"></div>
-      <div class="auth-word">ExNihilo</div>
-      <div class="auth-kicker">L'espace financement d'opérations</div>
+      <div class="auth-word">Ex<em>Nihilo</em></div>
+      <div class="auth-kicker">Espace financement d'opérations</div>
       <form class="auth-card" id="authForm" autocomplete="on">
         <div class="auth-field">
           <label class="af-lab" for="authEmail">Identifiant</label>
@@ -12255,30 +12231,24 @@ function showLoginOverlay(){
         <button class="auth-btn" type="submit" id="authBtn">Se connecter</button>
       </form>
       <div class="auth-foot"><span class="lk">&#128274;</span> Connexion chiffrée · accès réservé</div>
-      <div class="auth-hint">— la ville s'allume à mesure que vous tapez —</div>
     </div>`;
   document.body.appendChild(ov);
   document.body.style.overflow = 'hidden';
 
-  // --- Fenêtres : éclairage initial, ambiance, et frappe clavier ---
-  const wins = Array.from(ov.querySelectorAll('.ct-w'));
-  const lightUp = (n) => {
-    const unlit = wins.filter(w => !w.classList.contains('lit'));
-    for (let i = 0; i < n && unlit.length; i++) {
-      const k = Math.floor(Math.random() * unlit.length);
-      unlit.splice(k, 1)[0].classList.add('lit');
-    }
+  // Braises à la frappe : chaque caractère fait monter une étincelle depuis le champ
+  const spawnBurst = (input) => {
+    const r = input.getBoundingClientRect();
+    const b = document.createElement('span');
+    b.className = 'auth-burst';
+    b.style.left = (r.left + rnd(10, r.width - 10)) + 'px';
+    b.style.top = (r.top - 2) + 'px';
+    b.style.setProperty('--dx', rnd(-26, 26).toFixed(0) + 'px');
+    ov.appendChild(b);
+    setTimeout(() => b.remove(), 1300);
   };
-  lightUp(Math.floor(wins.length * 0.09));
-  const amb = setInterval(() => {
-    if (!ov.isConnected) { clearInterval(amb); return; }
-    const lit = wins.filter(w => w.classList.contains('lit'));
-    if (lit.length < wins.length * 0.45 && Math.random() < 0.8) lightUp(1);
-    else if (lit.length) lit[Math.floor(Math.random() * lit.length)].classList.remove('lit');
-  }, 900);
-  ov.querySelectorAll('.auth-input').forEach(inp => inp.addEventListener('input', () => lightUp(2)));
+  ov.querySelectorAll('.auth-input').forEach(inp => inp.addEventListener('input', () => spawnBurst(inp)));
 
-  // --- Parallaxe (souris) ---
+  // Parallaxe (souris)
   let _raf = null;
   ov.addEventListener('pointermove', (e) => {
     if (_raf) return;
@@ -12293,7 +12263,6 @@ function showLoginOverlay(){
     });
   });
 
-  // --- Connexion ---
   document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('authBtn');
@@ -12302,13 +12271,12 @@ function showLoginOverlay(){
     btn.disabled = true; btn.textContent = 'Connexion…';
     try {
       await authLogin(document.getElementById('authEmail').value.trim(), document.getElementById('authPwd').value);
-      // Lever de soleil : la ville s'illumine, puis l'écran s'efface
+      // Embrasement du monolithe puis fondu vers l'application
       btn.textContent = 'Bienvenue';
       ov.classList.add('auth-sunrise');
-      wins.forEach(w => w.classList.add('lit'));
       bootAfterAuth();
-      setTimeout(() => ov.classList.add('auth-leave'), 550);
-      setTimeout(() => { ov.remove(); document.body.style.overflow = ''; }, 1150);
+      setTimeout(() => ov.classList.add('auth-leave'), 650);
+      setTimeout(() => { ov.remove(); document.body.style.overflow = ''; }, 1250);
     } catch (ex) {
       err.textContent = ex.message || 'Échec de connexion';
       const card = document.getElementById('authForm');
