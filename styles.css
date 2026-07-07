@@ -5062,31 +5062,13 @@
   .section-duo > .section { margin-bottom: 0; }
   @media (max-width: 1500px) { .section-duo { grid-template-columns: 1fr; gap: 12px; } }
 
-  /* Sous-navigation par ancres (fiche op + panneau tranche) */
-  .op-subnav {
-    display: flex; gap: 4px; align-items: center;
-    overflow-x: auto; padding: 2px 0 10px;
-    scrollbar-width: thin; -ms-overflow-style: none;
-  }
-  .op-subnav::-webkit-scrollbar { height: 4px; }
-  .op-subnav::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
-  .op-subnav-chip {
-    flex: 0 0 auto; display: inline-flex; align-items: center;
-    font-family: inherit; font-size: 11px; font-weight: 500;
-    color: var(--text-secondary);
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color); border-radius: 999px;
-    padding: 3px 10px; cursor: pointer; white-space: nowrap;
-    transition: border-color 0.12s ease, color 0.12s ease;
-  }
-  .op-subnav-chip:hover { border-color: var(--info-accent); color: var(--text-primary); }
-  .op-subnav-n {
-    font-size: 9.5px; font-weight: 700; line-height: 1;
-    color: var(--text-tertiary);
-    background: var(--bg-secondary);
-    border-radius: 999px; padding: 2px 5px; margin-left: 2px;
-  }
-  .op-subnav-tranche { padding: 8px 0 0; }
+  
+  
+  
+  
+  
+  
+  
 
   /* Cartes KPI : ressortent sur le fond doux */
   .op-detail .metric-row .metric-card {
@@ -5096,7 +5078,6 @@
 
   /* Impression : fond neutre, cartes conservées par leurs bordures */
   body.printing-op-detail .op-detail { background: #fff; }
-  body.printing-op-detail .op-subnav { display: none !important; }
 
 
 
@@ -5141,7 +5122,7 @@
       mask-image: radial-gradient(75% 75% at 50% 44%, #000 55%, transparent 92%);
       animation: authbreathe 11s ease-in-out infinite, authmarkin 1.6s cubic-bezier(.2,.7,.2,1) both; }
   @keyframes authbreathe { 0%,100%{ transform: scale(1); } 50%{ transform: scale(1.02); } }
-  @keyframes authmarkin { from{ opacity:0; transform: scale(1.05);} to{ opacity:0.11; transform: scale(1);} }
+  @keyframes authmarkin { from{ opacity:0; } to{ opacity:0.11; } }
   .auth-overlay.auth-sunrise .auth-mark { opacity: 0.30; filter: drop-shadow(0 0 130px rgba(90,190,235,0.6)) drop-shadow(0 0 70px rgba(233,196,106,0.5)) brightness(1.7); transition: all .9s ease; }
 
   /* Braises */
