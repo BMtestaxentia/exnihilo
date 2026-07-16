@@ -5203,3 +5203,56 @@
     .auth-overlay *, .auth-overlay *::before, .auth-overlay *::after { animation: none !important; }
   }
   @media (max-width: 560px) { .auth-logo-img { width: 164px; } .auth-word { font-size: 26px; } .auth-mark { width: 210vmin; } }
+
+  /* ================================================================
+     ESPACE OPÉRATIONS — architecture en onglets
+     En-tête permanent (identité + actions) puis 6 vues focalisées.
+     ================================================================ */
+  .ops-shell { grid-template-rows: auto minmax(0, 1fr); }
+  .ops-shell > .sidebar { grid-row: 1 / 3; grid-column: 1; }
+  .ops-header { grid-column: 2 / 4; grid-row: 1; min-width: 0; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); }
+  .ops-header:empty { display: none; }
+  .ops-header .op-sticky-top { position: static; }
+  .op-detail { grid-row: 2; grid-column: 2; }
+  .tranche-detail { grid-row: 2; grid-column: 3; }
+
+  /* Barre d'onglets */
+  .ops-tabs { display: flex; gap: 2px; padding: 2px 24px 0; overflow-x: auto; scrollbar-width: thin; }
+  .ops-tab { appearance: none; border: none; background: transparent; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px 10px;
+    font-size: 12.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+    border-bottom: 2px solid transparent; white-space: nowrap; border-radius: 6px 6px 0 0;
+    transition: color .12s ease, border-color .12s ease, background .12s ease; }
+  .ops-tab i { font-size: 15px; opacity: .85; }
+  .ops-tab:hover { color: var(--text-primary); background: var(--bg-primary); }
+  .ops-tab.active { color: var(--info-accent); border-bottom-color: var(--info-accent); }
+  .ops-tab-n { font-size: 10px; font-weight: 700; line-height: 1;
+    background: var(--bg-primary); border: 1px solid var(--border-color);
+    border-radius: 999px; padding: 2px 6px; color: var(--text-tertiary); }
+  .ops-tab-alert { background: #d64545; border-color: transparent; color: #fff; }
+
+  /* Visibilité des colonnes selon l'onglet */
+  .ops-shell[data-tab="syn"] .tranche-detail, .ops-shell[data-tab="dos"] .tranche-detail,
+  .ops-shell[data-tab="bilan"] .tranche-detail, .ops-shell[data-tab="suivi"] .tranche-detail { display: none; }
+  .ops-shell[data-tab="syn"] .op-detail, .ops-shell[data-tab="dos"] .op-detail,
+  .ops-shell[data-tab="bilan"] .op-detail, .ops-shell[data-tab="suivi"] .op-detail { grid-column: 2 / 4; }
+  .ops-shell[data-tab="tr"] .op-detail, .ops-shell[data-tab="fin"] .op-detail { display: none; }
+  .ops-shell[data-tab="tr"] .tranche-detail, .ops-shell[data-tab="fin"] .tranche-detail { grid-column: 2 / 4; }
+
+  /* Visibilité des blocs selon l'onglet (les blocs sans data-grp restent toujours visibles) */
+  .ops-shell[data-tab="syn"] .op-detail > [data-grp]:not([data-grp~="syn"]),
+  .ops-shell[data-tab="dos"] .op-detail > [data-grp]:not([data-grp~="dos"]),
+  .ops-shell[data-tab="bilan"] .op-detail > [data-grp]:not([data-grp~="bilan"]),
+  .ops-shell[data-tab="suivi"] .op-detail > [data-grp]:not([data-grp~="suivi"]),
+  .ops-shell[data-tab="tr"] .tranche-detail > [data-grp]:not([data-grp~="tr"]),
+  .ops-shell[data-tab="fin"] .tranche-detail > [data-grp]:not([data-grp~="fin"]) { display: none !important; }
+
+  /* Largeur de lecture confortable en pleine largeur */
+  .op-detail > *:not(.op-sticky-top), .tranche-detail > *:not(.tranches-selector) {
+    max-width: 1240px; margin-left: auto; margin-right: auto; }
+
+  /* Impression : la fiche complète, sans les onglets */
+  body.printing-op-detail .ops-header { display: block !important; }
+  body.printing-op-detail .ops-tabs { display: none !important; }
+  body.printing-op-detail .op-detail { display: block !important; }
+  body.printing-op-detail .op-detail > [data-grp] { display: block !important; max-width: none; }

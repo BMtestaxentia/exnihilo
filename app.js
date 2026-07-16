@@ -3442,9 +3442,49 @@ function renderSidebar() {
 function sumVolKey(op, key) { return op.tranches.reduce((s, t) => s + ((t.vol && t.vol[key]) || 0), 0); }
 function sumSurfaceKey(op, key) { return op.tranches.reduce((s, t) => s + ((t.surfaces && t.surfaces[key]) || 0), 0); }
 
+// ===== Espace Opérations : onglets du dossier =====
+let OPS_TAB = sessionStorage.getItem('exnihilo_ops_tab') || 'syn';
+const OPS_TABS_DEF = [
+  ['syn',   'Synthèse',        'layout-dashboard'],
+  ['dos',   'Dossier',         'folder'],
+  ['bilan', 'Bilan',           'report-money'],
+  ['tr',    'Tranches',        'building-skyscraper'],
+  ['fin',   'Financements',    'coin'],
+  ['suivi', 'Comités & suivi', 'activity'],
+];
+function opsTabsHtml(op) {
+  const nAlerts = (typeof computeAlerts === 'function')
+    ? computeAlerts(op).filter(al => al.level === 'expired' || al.level === 'critical').length : 0;
+  const nFin = ['prets', 'garanties', 'subventions', 'prefinancements', 'avenants', 'reservataires']
+    .reduce((s, k) => s + ((op[k] || []).length), 0);
+  const counts = {
+    syn: nAlerts ? `<span class="ops-tab-n ops-tab-alert">${nAlerts}</span>` : '',
+    tr: `<span class="ops-tab-n">${(op.tranches || []).length}</span>`,
+    fin: nFin ? `<span class="ops-tab-n">${nFin}</span>` : '',
+    suivi: (op.comites || []).length ? `<span class="ops-tab-n">${(op.comites || []).length}</span>` : '',
+  };
+  return `<nav class="ops-tabs">` + OPS_TABS_DEF.map(([id, label, icon]) =>
+    `<button type="button" class="ops-tab${OPS_TAB === id ? ' active' : ''}" data-tabid="${id}" onclick="switchOpsTab('${id}')"><i class="ti ti-${icon}"></i>${label}${counts[id] || ''}</button>`
+  ).join('') + `</nav>`;
+}
+function applyOpsTab() {
+  const sh = document.getElementById('opsShell');
+  if (sh) sh.dataset.tab = OPS_TAB;
+}
+function switchOpsTab(t) {
+  OPS_TAB = t;
+  try { sessionStorage.setItem('exnihilo_ops_tab', t); } catch (e) {}
+  applyOpsTab();
+  document.querySelectorAll('.ops-tab').forEach(b => b.classList.toggle('active', b.dataset.tabid === t));
+  // La mini-carte Leaflet doit se recalibrer si elle a été créée dans un onglet masqué
+  if (t === 'syn' && typeof opLocationMapInstance !== 'undefined' && opLocationMapInstance) {
+    setTimeout(() => { try { opLocationMapInstance.invalidateSize(); } catch (e) {} }, 80);
+  }
+}
+
 function renderOpDetail() {
   const op = findOp(selectedOpCode);
-  if (!op) { document.getElementById('opDetail').innerHTML = ''; return; }
+  if (!op) { document.getElementById('opDetail').innerHTML = ''; const _h = document.getElementById('opsHeader'); if (_h) _h.innerHTML = ''; return; }
 
   // Force edit mode off when viewing a past phase snapshot
   const displayedOp = getDisplayedOp(op);
@@ -3629,19 +3669,21 @@ function renderOpDetail() {
     </div>
     </div><!-- /op-sticky-top -->
 
-    <div class="metric-row" style="--cols: 4;">
+    <div class="metric-row" data-grp="syn" style="--cols: 4;">
       <div class="metric-card"><div class="metric-label">Logements</div><div class="metric-value" id="op-total-lgts-live">${diffWrap(String(totalLgts(displayedOp) || '—'), totalLgts(displayedOp), compareWithIdx != null ? totalLgtsFromSnap(op) : null)}</div></div>
       <div class="metric-card"><div class="metric-label">Surface utile</div><div class="metric-value">${fmtSurface(opTotalSurface(displayedOp))}</div></div>
       <div class="metric-card"><div class="metric-label">Prix de revient TTC</div><div class="metric-value">${diffWrap(fmtMontant(totalBudget(displayedOp)), totalBudget(displayedOp), compareWithIdx != null ? totalBudgetFromSnap(op) : null)}</div></div>
       <div class="metric-card"><div class="metric-label">Tranches</div><div class="metric-value">${displayedOp.tranches.length}</div></div>
     </div>
 
-    <div class="section" id="sec-op-vol">
+    <div class="op-anchor" data-grp="syn">${renderAlertsPanel(displayedOp)}</div>
+
+    <div class="section" id="sec-op-vol" data-grp="syn">
       <div class="section-label vol"><i class="ti ti-home"></i>Volumétrie consolidée</div>
       <div class="volumetrie-grid">${volCells}</div>
     </div>
 
-    <div class="section" id="sec-op-loc">
+    <div class="section" id="sec-op-loc" data-grp="syn">
       <div class="section-label loc"><i class="ti ti-map-pin"></i>Localisation</div>
       <div class="loc-grid">
         <div class="loc-left">
@@ -3677,7 +3719,7 @@ function renderOpDetail() {
       </div>
     </div>
 
-    <div class="section-duo">
+    <div class="section-duo" data-grp="dos">
     <div class="section" id="sec-op-team">
       <div class="section-label team"><i class="ti ti-users"></i>Équipe & pilotage</div>
       ${editableKV('Développeur', op.developpeur, 'developpeur')}
@@ -3695,7 +3737,7 @@ function renderOpDetail() {
     </div>
     </div>
 
-    <div class="section" id="sec-op-cal">
+    <div class="section" id="sec-op-cal" data-grp="dos">
       <div class="section-label cal"><i class="ti ti-clock"></i>Calendrier travaux</div>
       ${editableDateJalon('Signature promesse', op.date_promesse, 'date_promesse', op)}
       ${editableDateJalon('Signature acte authentique', op.date_acte, 'date_acte', op)}
@@ -3709,7 +3751,7 @@ function renderOpDetail() {
       ${(() => { const n = countOpTimelineEvents(op); return n ? `<button class="timeline-open-btn" onclick="openTimelineModal('${escapeHtml(op._uid)}')" type="button"><i class="ti ti-timeline"></i>Voir la chronologie de l'opération<span class="timeline-open-count">${n}</span></button>` : ''; })()}
     </div>
 
-    <div class="section-duo">
+    <div class="section-duo" data-grp="dos">
     <div class="section" id="sec-op-bat">
       <div class="section-label batiment"><i class="ti ti-building-skyscraper"></i>Caractéristiques du bâtiment</div>
       ${editableSelect('Label / Certification', op.label_certif, 'label_certif', getRef('labels_certif'))}
@@ -3720,21 +3762,21 @@ function renderOpDetail() {
     ${(op.notes_libres || editMode) ? `<div class="section" id="sec-op-notes"><div class="section-label notes"><i class="ti ti-message"></i>Notes libres</div>${editableNotes(op.notes_libres, 'notes_libres')}</div>` : ''}
     </div>
 
-    <div class="op-anchor" id="sec-op-bilan">${renderBilanOpSection(displayedOp)}</div>
+    <div class="op-anchor" id="sec-op-bilan" data-grp="bilan">${renderBilanOpSection(displayedOp)}</div>
 
-    <div class="op-anchor" id="sec-op-pf">${renderPlanFinancementOpSection(displayedOp)}</div>
+    <div class="op-anchor" id="sec-op-pf" data-grp="bilan">${renderPlanFinancementOpSection(displayedOp)}</div>
 
-    <div class="op-anchor" id="sec-op-comites">${renderComitesSection(op, effectiveEditMode)}</div>
+    <div class="op-anchor" id="sec-op-comites" data-grp="suivi">${renderComitesSection(op, effectiveEditMode)}</div>
 
-    <div class="op-anchor" id="sec-op-suivi">
-    ${renderHistoryChart(op)}
+    <div class="op-anchor" data-grp="suivi">${renderHistoryChart(op)}</div>
 
-    ${renderValidationPanel(displayedOp)}
-
-    ${renderAlertsPanel(displayedOp)}
-    </div>
+    <div class="op-anchor" data-grp="suivi">${renderValidationPanel(displayedOp)}</div>
   `;
-  document.getElementById('opDetail').innerHTML = html;
+  const _hmk = '</div><!-- /op-sticky-top -->';
+  const _hcut = html.indexOf(_hmk) + _hmk.length;
+  document.getElementById('opsHeader').innerHTML = html.slice(0, _hcut) + opsTabsHtml(op);
+  document.getElementById('opDetail').innerHTML = html.slice(_hcut);
+  applyOpsTab();
   // Restore edit mode flag if temporarily cleared
   editMode = _savedEditMode;
   // Initialize the mini-map for this op's location (if coords present)
@@ -3867,27 +3909,27 @@ function renderTrancheDetail() {
         </div>
       </div>
 
-      <div class="section" id="sec-tr-id">
+      <div class="section" id="sec-tr-id" data-grp="tr">
         <div class="section-label id"><i class="ti ti-building-skyscraper"></i>Identité tranche</div>
         ${editableKV('Gestionnaire', t.gestionnaire, 'gestionnaire', 'text', 'tranche-field')}
       </div>
 
-      <div class="section" id="sec-tr-vol">
+      <div class="section" id="sec-tr-vol" data-grp="tr">
         <div class="section-label vol"><i class="ti ti-home"></i>Volumétrie</div>
         <div class="volumetrie-grid">${volCells}</div>
       </div>
 
-      <div class="section" id="sec-tr-sim">
+      <div class="section" id="sec-tr-sim" data-grp="tr">
         <div class="section-label sim"><i class="ti ti-chart-bar"></i>Simulation / Budget</div>
         ${editableKV('N° Simulation LEON', t.n_leon, 'n_leon', 'text', 'tranche-field')}
         ${editableKV('Date de référence', t.date_ref, 'date_ref', 'text', 'tranche-field')}
       </div>
 
-      <div class="op-anchor" id="sec-tr-bilan">${renderBilanSection(t, op, trCode)}</div>
+      <div class="op-anchor" id="sec-tr-bilan" data-grp="tr">${renderBilanSection(t, op, trCode)}</div>
 
-      <div class="op-anchor" id="sec-tr-pf">${renderPlanFinancementSection(t, op, trCode, trancheSource)}</div>
+      <div class="op-anchor" id="sec-tr-pf" data-grp="tr">${renderPlanFinancementSection(t, op, trCode, trancheSource)}</div>
 
-      <div class="section" id="sec-tr-agr">
+      <div class="section" id="sec-tr-agr" data-grp="tr">
         <div class="section-label agr"><i class="ti ti-check"></i>Agrément</div>
         <div style="font-size:11px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin:2px 0 6px;">Logements agréés par financement</div>
         <div class="volumetrie-grid">${volAgreeCells}</div>
@@ -3905,14 +3947,14 @@ function renderTrancheDetail() {
         ${editableNotes(t.detail_logements, 'detail_logements', 'tranche-field', 'Ex: Dont 75 PLAI T1 prime · 22 PLAI T2 standard…')}
       </div>
 
-      ${(t.type_redevance || t.montant_redevance || editMode) ? `<div class="section" id="sec-tr-loyer">
+      ${(t.type_redevance || t.montant_redevance || editMode) ? `<div class="section" id="sec-tr-loyer" data-grp="tr">
         <div class="section-label loyer"><i class="ti ti-coin"></i>Loyer</div>
         ${editableSelect('Type redevance', t.type_redevance, 'type_redevance', getRef('type_redevance'), 'tranche-field')}
         ${editableKV('Montant redevance (€/mois)', t.montant_redevance, 'montant_redevance', 'number', 'tranche-field')}
         ${editableKV('Date accord redevance', t.date_accord_redev, 'date_accord_redev', 'text', 'tranche-field')}
       </div>` : ''}
 
-      <div class="section" id="sec-tr-convloc">
+      <div class="section" id="sec-tr-convloc" data-grp="tr">
         <div class="section-label conv-loc"><i class="ti ti-file-text"></i>Convention de location</div>
         ${editableSelect('Convention signée', t.conv_loc_signee === true ? 'Oui' : (t.conv_loc_signee === false ? 'Non' : ''), 'conv_loc_signee', ['Oui', 'Non'], 'tranche-field')}
         ${editableKV('Accord redevance', t.conv_loc_montant_loyer, 'conv_loc_montant_loyer', 'number', 'tranche-field')}
@@ -3920,12 +3962,12 @@ function renderTrancheDetail() {
         ${editableSelect('Grille', t.conv_loc_grille, 'conv_loc_grille', getRef('grilles_loyer'), 'tranche-field')}
       </div>
 
-      <div class="op-anchor" id="sec-tr-subv">${renderSubvSection(subv, op)}</div>
-      <div class="op-anchor" id="sec-tr-prets">${renderPretsSection(prets, op)}</div>
-      <div class="op-anchor" id="sec-tr-gar">${renderGarantiesSection(garanties, op)}</div>
-      <div class="op-anchor" id="sec-tr-avenants">${renderAvenantsSection(avenants, op)}</div>
-      <div class="op-anchor" id="sec-tr-prefi">${renderPrefinSection(prefin, op)}</div>
-      <div class="op-anchor" id="sec-tr-res">${renderReservatairesSection(reservataires, op)}</div>
+      <div class="op-anchor" id="sec-tr-subv" data-grp="fin">${renderSubvSection(subv, op)}</div>
+      <div class="op-anchor" id="sec-tr-prets" data-grp="fin">${renderPretsSection(prets, op)}</div>
+      <div class="op-anchor" id="sec-tr-gar" data-grp="fin">${renderGarantiesSection(garanties, op)}</div>
+      <div class="op-anchor" id="sec-tr-avenants" data-grp="fin">${renderAvenantsSection(avenants, op)}</div>
+      <div class="op-anchor" id="sec-tr-prefi" data-grp="fin">${renderPrefinSection(prefin, op)}</div>
+      <div class="op-anchor" id="sec-tr-res" data-grp="fin">${renderReservatairesSection(reservataires, op)}</div>
     `;
   }
 
