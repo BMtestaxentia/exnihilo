@@ -3604,9 +3604,8 @@ function renderOpDetail() {
       <div class="phase-stepper">${stepperItems}</div>
       ${nextPhaseBtn}
     </div>
-    ${compareSelector}
-    ${snapshotBanner}
   `;
+  const stickyExtrasHtml = `${compareSelector}${snapshotBanner}`;
 
   const editToolbar = effectiveEditMode ? `
     <div class="edit-toolbar">
@@ -3622,10 +3621,8 @@ function renderOpDetail() {
 
   const html = `
     <div class="op-sticky-top">
-      ${phaseStepperHtml}
-      ${editToolbar}
-      <div class="detail-header">
-      <div style="flex:1; min-width: 0;">
+      <div class="ops-hd">
+      <div class="ops-hd-id">
         ${effectiveEditMode
           ? `<div class="detail-eyebrow" style="display:flex;align-items:center;gap:6px;"><span style="white-space:nowrap;">Code analytique</span><input type="text" class="editable-input" style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;padding:2px 6px;max-width:180px;" data-edit-op-code data-original-code="${escapeHtml(op.code || '')}" value="${escapeHtml(op.code || '')}" placeholder="A2405"></div>`
           : `<div class="detail-eyebrow">${escapeHtml(displayedOp.code || displayedOp.sheet || op.code)}</div>`}
@@ -3653,7 +3650,8 @@ function renderOpDetail() {
           ${renderOpTags(op, effectiveEditMode)}
         </div>
       </div>
-      <div style="display: flex; gap: 8px; align-self: center; flex-shrink: 0;">
+      <div class="ops-hd-mid">${phaseStepperHtml}</div>
+      <div class="ops-hd-actions">
         ${!effectiveEditMode ? `<button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-fold-all"></i></button>` : ''}
         ${!effectiveEditMode ? `<button class="icon-btn" onclick="showOpHistory()" title="Historique des modifications"><i class="ti ti-history"></i></button>` : ''}
         ${op.lien_sharepoint && !effectiveEditMode ? `<a href="${escapeHtml(op.lien_sharepoint)}" target="_blank" class="icon-btn sharepoint-btn" title="Ouvrir dans SharePoint">
@@ -3666,7 +3664,9 @@ function renderOpDetail() {
         </a>` : ''}
         ${!isViewingSnapshot && !effectiveEditMode ? `<button class="icon-btn" onclick="toggleEditMode()" title="Modifier la fiche"><i class="ti ti-pencil"></i></button>` : ''}
       </div>
-    </div>
+      </div>
+      ${stickyExtrasHtml}
+      ${editToolbar}
     </div><!-- /op-sticky-top -->
 
     <div class="metric-row" data-grp="syn" style="--cols: 4;">

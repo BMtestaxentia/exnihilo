@@ -5254,33 +5254,30 @@
   body.printing-op-detail .op-detail { display: block !important; }
   body.printing-op-detail .op-detail > [data-grp] { display: block !important; max-width: none; }
 
+
   /* ================================================================
-     ONGLETS OPÉRATIONS v2 — en-tête compact, grilles calibrées 1920px
+     ONGLETS OPÉRATIONS v3 — bandeau en slots, grilles denses 1920px
      ================================================================ */
 
-  /* --- Bande d'en-tête : neutralisation du sticky hérité (chevauchait la sidebar) --- */
+  /* --- Bandeau : une ligne [identité | stepper | actions] --- */
   .ops-shell > .sidebar { position: relative; z-index: 6; }
   .ops-header { position: relative; z-index: 4; }
-  .ops-header .op-sticky-top {
-    position: static; z-index: auto; margin: 0;
-    padding: 9px 28px 0;
-    display: flex; flex-wrap: wrap; align-items: center; gap: 2px 26px;
-  }
-  .ops-header .op-sticky-top > * { order: 5; flex: 1 1 100%; min-width: 0; }
-  .ops-header .op-sticky-top > .detail-header { display: contents; }
-  .ops-header .detail-header > div:first-child { order: 1; flex: 0 1 auto; min-width: 250px; max-width: 46%; }
-  .ops-header .phase-stepper-wrap { order: 2; flex: 0 1 auto; margin-left: auto; transform: scale(0.92); transform-origin: right center; }
-  .ops-header .detail-header > div:last-child { order: 3; flex: 0 0 auto; align-self: center; }
-  .ops-header .edit-toolbar { order: 4; }
+  .ops-header .op-sticky-top { position: static; z-index: auto; margin: 0; padding: 8px 28px 0; display: block; }
+  .ops-hd { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 26px; }
+  .ops-hd-id { flex: 0 1 auto; min-width: 0; max-width: 52%; }
+  .ops-hd-mid { flex: 1 1 auto; min-width: 0; display: flex; justify-content: flex-end; }
+  .ops-hd-mid .phase-stepper-wrap { margin: 0; transform: scale(0.94); transform-origin: right center; }
+  .ops-hd-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
   .ops-header .detail-title { font-size: 19px; margin: 1px 0 4px; line-height: 1.2; }
-  .ops-header .detail-badges { margin: 0 0 2px; }
-  .ops-tabs { padding: 2px 28px 0; }
+  .ops-header .detail-badges { margin: 0; }
+  .ops-header .edit-toolbar, .ops-header .compare-row, .ops-header .snapshot-banner { margin: 8px 0 0; }
+  .ops-tabs { padding: 7px 28px 0; }
   .ops-tab { padding: 8px 13px 9px; font-size: 12px; }
 
-  /* --- Conteneurs : centrage fluide, largeur exploitée jusqu'à 1560px --- */
+  /* --- Conteneurs : centrage fluide jusqu'à 1560px --- */
   .op-detail, .tranche-detail { padding: 16px max(28px, calc((100% - 1560px) / 2)) 26px; }
 
-  /* --- Grilles par onglet (base : chaque bloc pleine largeur) --- */
+  /* --- Grilles par onglet (base : pleine largeur) --- */
   .ops-shell[data-tab="syn"] .op-detail, .ops-shell[data-tab="dos"] .op-detail,
   .ops-shell[data-tab="bilan"] .op-detail, .ops-shell[data-tab="suivi"] .op-detail,
   .ops-shell[data-tab="tr"] .tranche-detail, .ops-shell[data-tab="fin"] .tranche-detail {
@@ -5294,26 +5291,41 @@
   .op-anchor > .section, .op-anchor > div { margin-bottom: 0; }
 
   @media (min-width: 1400px) {
-    /* Synthèse : tout tient à l'écran */
+    /* Synthèse */
     .ops-shell[data-tab="syn"] .op-detail > #sec-op-vol { grid-column: span 5; }
     .ops-shell[data-tab="syn"] .op-detail > #sec-op-loc { grid-column: span 7; }
-    /* Dossier : cartes en vis-à-vis */
+    /* Dossier : rangée de 3 cartes, puis calendrier 2 colonnes internes + notes */
     .ops-shell[data-tab="dos"] .op-detail > .section-duo { display: contents; }
-    .ops-shell[data-tab="dos"] .section-duo > .section { grid-column: span 6; margin: 0; }
-    .ops-shell[data-tab="dos"] .op-detail > #sec-op-cal { grid-column: 1 / -1; }
-    /* Bilan : bilan et plan de financement côte à côte */
+    .ops-shell[data-tab="dos"] .section-duo > .section { margin: 0; }
+    .ops-shell[data-tab="dos"] #sec-op-team { grid-column: span 4; order: 1; }
+    .ops-shell[data-tab="dos"] #sec-op-montage { grid-column: span 4; order: 2; }
+    .ops-shell[data-tab="dos"] #sec-op-bat { grid-column: span 4; order: 3; }
+    .ops-shell[data-tab="dos"] .op-detail > #sec-op-cal { grid-column: span 8; order: 4;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0 26px; align-content: start; }
+    .ops-shell[data-tab="dos"] #sec-op-cal > .section-label { grid-column: 1 / -1; }
+    .ops-shell[data-tab="dos"] #sec-op-notes { grid-column: span 4; order: 5; }
+    /* Bilan */
     .ops-shell[data-tab="bilan"] .op-detail > #sec-op-bilan { grid-column: span 6; }
     .ops-shell[data-tab="bilan"] .op-detail > #sec-op-pf { grid-column: span 6; }
-    /* Tranches : deux colonnes de cartes */
-    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-id,
-    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-vol,
-    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-sim,
-    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-agr,
-    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-loyer,
-    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-convloc,
-    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-bilan,
+    /* Tranches : identité compacte + volumétrie large, puis paires */
+    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-id { grid-column: span 4; }
+    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-vol { grid-column: span 8; }
+    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-sim { grid-column: span 6; }
+    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-agr { grid-column: span 6; }
+    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-loyer { grid-column: span 6; }
+    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-convloc { grid-column: span 6; }
+    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-bilan { grid-column: span 6; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-pf { grid-column: span 6; }
-    /* Suivi : historique et contrôle en vis-à-vis */
+    /* Financements : prêts en majesté, familles liées appariées */
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-prets { order: 1; }
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-gar { grid-column: span 6; order: 2; }
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-prefi { grid-column: span 6; order: 3; }
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-subv { grid-column: span 6; order: 4; }
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-res { grid-column: span 6; order: 5; }
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-avenants { order: 6; }
+    .ops-shell[data-tab="fin"] .tranche-detail > .tranches-selector { order: 0; }
+    .ops-shell[data-tab="fin"] .tranche-detail > .metric-row { order: 0; }
+    /* Suivi */
     .ops-shell[data-tab="suivi"] .op-detail > #sec-op-histo { grid-column: span 6; }
     .ops-shell[data-tab="suivi"] .op-detail > #sec-op-controle { grid-column: span 6; }
   }
