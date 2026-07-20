@@ -5229,6 +5229,23 @@ function renderPretCard(i) {
   `;
 }
 
+// Cycle de vie d'un prêt, déduit des dates renseignées (lecture seule, indicatif).
+function pretCycleHtml(i) {
+  const steps = [
+    { l: 'Simul.', on: !!i.montant_sim },
+    { l: 'Demande', on: !!i.date_demande },
+    { l: 'Comité', on: !!i.date_comite_banque },
+    { l: 'LO', on: !!i.date_lo },
+    { l: 'Contrat', on: !!i.date_contrat },
+  ];
+  let last = -1;
+  steps.forEach((s, idx) => { if (s.on) last = idx; });
+  return `<div class="fin-cyc">` + steps.map((s, idx) => {
+    const cls = idx <= last ? 'done' : (idx === last + 1 ? 'current' : '');
+    return `<div class="st ${cls}"><span class="conn"></span><span class="dot"></span><span class="lbl">${s.l}</span></div>`;
+  }).join('') + `</div>`;
+}
+
 function renderPretCardEdit(i, op) {
   const parsed = parseTaux(i.taux);
   const tauxIdx = parsed.index || 'TLA';
@@ -5236,37 +5253,34 @@ function renderPretCardEdit(i, op) {
   const isFixe = tauxIdx === 'Fixe';
   const showSpread = !isLibre;
   return `
-    <div class="entity-card editing${diffEntityClass('prets', i)}" data-section="prets" data-row-idx="${i._originalIdx}">
-      <div class="entity-card-head">
-        <div style="flex:1;font-size:11px;color:var(--text-tertiary);font-weight:600;">PRÊT</div>
-        <div class="entity-card-actions">
-          <button class="danger" onclick="deleteEntityRow('prets', ${i._originalIdx})" title="Supprimer"><i class="ti ti-trash"></i></button>
-        </div>
+    <div class="entity-card editing fin-erow${diffEntityClass('prets', i)}" data-section="prets" data-row-idx="${i._originalIdx}">
+      <!-- Ligne compacte (toujours visible) -->
+      <div class="fin-emain">
+        <select class="card-input fin-cell" data-field="ligne" title="Ligne de prêt">
+          <option value=""></option>
+          ${getRef('lignes_prets').map(s => `<option value="${s}"${i.ligne===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+        <select class="card-input fin-cell" data-field="financeur" title="Financeur">
+          <option value=""></option>
+          ${getRef('banques').map(s => `<option value="${s}"${i.financeur===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+        <input type="number" min="0" class="card-input fin-cell fin-num" data-field="montant_sim" value="${i.montant_sim || ''}" placeholder="Montant sim (€)" title="Montant de simulation">
+        <select class="card-input fin-cell" data-field="statut" title="Statut">
+          <option value=""></option>
+          ${getRef('statuts_pret').map(s => `<option value="${s}"${i.statut===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+        ${pretCycleHtml(i)}
+        <button type="button" class="fin-expand" onclick="toggleFinRow(this)" title="Déplier / replier le détail"><i class="ti ti-chevron-down"></i></button>
+        <button type="button" class="fin-del danger" onclick="deleteEntityRow('prets', ${i._originalIdx})" title="Supprimer le prêt"><i class="ti ti-trash"></i></button>
       </div>
 
+      <!-- Détail replié -->
+      <div class="fin-edetail">
       <!-- Group 1 - Identité -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Identité</div>
         <div class="card-edit-grid">
           <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
-          <div class="card-edit-field"><label>Ligne de prêt</label>
-            <select class="card-input" data-field="ligne">
-              <option value=""></option>
-              ${getRef('lignes_prets').map(s => `<option value="${s}"${i.ligne===s?' selected':''}>${s}</option>`).join('')}
-            </select>
-          </div>
-          <div class="card-edit-field"><label>Financeur</label>
-            <select class="card-input" data-field="financeur">
-              <option value=""></option>
-              ${getRef('banques').map(s => `<option value="${s}"${i.financeur===s?' selected':''}>${s}</option>`).join('')}
-            </select>
-          </div>
-          <div class="card-edit-field"><label>Statut</label>
-            <select class="card-input" data-field="statut">
-              <option value=""></option>
-              ${getRef('statuts_pret').map(s => `<option value="${s}"${i.statut===s?' selected':''}>${s}</option>`).join('')}
-            </select>
-          </div>
           <div class="card-edit-field"><label>Source du montant</label>
             <select class="card-input" data-field="source">
               <option value=""></option>
@@ -5280,7 +5294,6 @@ function renderPretCardEdit(i, op) {
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Montants</div>
         <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Simulation (€)</label><input type="number" min="0" class="card-input" data-field="montant_sim" value="${i.montant_sim || ''}"></div>
           <div class="card-edit-field"><label>Lettre d'offre (€)</label><input type="number" min="0" class="card-input" data-field="montant_lo" value="${i.montant_lo || ''}"></div>
           <div class="card-edit-field"><label>Contrat (€)</label><input type="number" min="0" class="card-input" data-field="montant_contrat" value="${i.montant_contrat || ''}"></div>
         </div>
@@ -5364,8 +5377,15 @@ function renderPretCardEdit(i, op) {
         ])}
         </div>
       </div>
+      </div><!-- /fin-edetail -->
     </div>
   `;
+}
+
+// Déplie / replie le détail d'une ligne de financement en édition.
+function toggleFinRow(btn) {
+  const row = btn.closest('.fin-erow');
+  if (row) row.classList.toggle('open');
 }
 
 // Handle taux index dropdown change: toggle visibility of spread vs libre input
