@@ -49,7 +49,7 @@
   }
   *::-webkit-scrollbar-thumb:hover { background: var(--border-color-strong); }
   *::-webkit-scrollbar-corner { background: var(--scrollbar-track); }
-  /* Field modified during current edit session — visual indicator */
+  /* Field modified during current edit session - visual indicator */
   .field-modified-session {
     background: rgba(186, 117, 23, 0.07) !important;
     border-color: var(--warning-accent) !important;
@@ -298,7 +298,7 @@
     border-color: var(--info-accent);
   }
 
-  /* Comités — fiche op section + global tab */
+  /* Comités - fiche op section + global tab */
   .comites-empty {
     padding: 10px 12px;
     font-size: 12.5px; font-style: italic;
@@ -1273,7 +1273,7 @@
     margin-top: 2px;
   }
 
-  /* Accueil — personal dashboard */
+  /* Accueil - personal dashboard */
   .accueil-kpis {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -2340,7 +2340,7 @@
     font-size: 32px; color: var(--success-accent);
   }
 
-  /* Suivi — tâches priorisées */
+  /* Suivi - tâches priorisées */
   .suivi-cat-chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 18px; }
   .suivi-cat-chip {
     display: inline-flex; align-items: center; gap: 6px;
@@ -2674,7 +2674,7 @@
   .alert-info .alert-days { background: var(--info-bg); color: var(--info-text); }
   .alert-msg { flex: 1; color: var(--text-primary); }
 
-  /* Validation panel — inconsistency warnings */
+  /* Validation panel - inconsistency warnings */
   .validation-panel {
     border-radius: var(--radius-md);
     margin-bottom: 14px;
@@ -2862,7 +2862,7 @@
   }
   .topnav-spacer { flex: 1; min-width: 12px; flex-shrink: 0; }
 
-  /* Adaptation aux écrans laptop (≤ 1500 px) — densifier la navbar */
+  /* Adaptation aux écrans laptop (≤ 1500 px) - densifier la navbar */
   @media (max-width: 1500px) {
     .topnav { padding: 0 14px; gap: 12px; }
     .topnav-tabs { margin-left: 12px; }
@@ -2871,7 +2871,7 @@
     .topnav-user { gap: 6px; }
   }
   @media (max-width: 1024px) { .topnav-user span { display: none; } }
-  /* Écrans plus serrés (≤ 1280 px) — encore plus compact */
+  /* Écrans plus serrés (≤ 1280 px) - encore plus compact */
   @media (max-width: 1280px) {
     .topnav { padding: 0 10px; gap: 8px; }
     .topnav-tabs { margin-left: 8px; }
@@ -3186,7 +3186,7 @@
     background: var(--neutral-accent);
     opacity: 0.55;
   }
-  /* Section category colors — side bar */
+  /* Section category colors - side bar */
   .section:has(.section-label.vol)::before    { background: var(--purple-accent); }
   .section:has(.section-label.fin)::before    { background: var(--info-accent); }
   .section:has(.section-label.loc)::before    { background: var(--success-accent); }
@@ -3845,7 +3845,7 @@
   }
 
   /* PHASE STEPPER (top of op detail) */
-  /* PHASE STEPPER (top of op detail) — compact horizontal layout */
+  /* PHASE STEPPER (top of op detail) - compact horizontal layout */
   .phase-stepper-wrap {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -4608,7 +4608,7 @@
   .chart-legend-dot {
     width: 14px; height: 3px; border-radius: 2px; display: inline-block;
   }
-  /* Plan de charge — graphe + légende */
+  /* Plan de charge - graphe + légende */
   .charge-chart-wrap { width: 100%; }
   .charge-svg { width: 100%; height: auto; display: block; }
   .charge-legend {
@@ -4996,7 +4996,7 @@
   .auth-logout:hover { background: var(--bg-secondary); color: var(--text-primary); }
 
   /* ================================================================
-     REFONTE ONGLET OPÉRATIONS — ergonomie & hiérarchie visuelle
+     REFONTE ONGLET OPÉRATIONS - ergonomie & hiérarchie visuelle
      (sections en cartes, repli visible, duo-grilles, sous-navigation)
      ================================================================ */
 
@@ -5082,7 +5082,7 @@
 
 
   /* ================================================================
-     ÉCRAN DE CONNEXION — "L'empreinte"
+     ÉCRAN DE CONNEXION - "L'empreinte"
      AX vectoriel immense en filigrane, mesh profond, UI épurée.
      ================================================================ */
   @keyframes authspin { to{transform:rotate(360deg);} }
@@ -5114,7 +5114,7 @@
       background-size: 64px 64px; animation: authpan 80s linear infinite; }
   @keyframes authpan { to { transform: translate(64px, 64px); } }
 
-  /* L'empreinte AX — immense, vectorielle */
+  /* L'empreinte AX - immense, vectorielle */
   .auth-mark-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
   .auth-mark { width: 128vmin; max-width: none; margin-top: -6vh; opacity: 0.11;
       filter: drop-shadow(0 0 90px rgba(56,150,205,0.28)) drop-shadow(0 0 40px rgba(194,164,92,0.14)) brightness(1.25);
@@ -5205,7 +5205,7 @@
   @media (max-width: 560px) { .auth-logo-img { width: 164px; } .auth-word { font-size: 26px; } .auth-mark { width: 210vmin; } }
 
   /* ================================================================
-     ESPACE OPÉRATIONS — architecture en onglets
+     ESPACE OPÉRATIONS - architecture en onglets
      En-tête permanent (identité + actions) puis 6 vues focalisées.
      ================================================================ */
   .ops-shell { grid-template-rows: auto minmax(0, 1fr); }
@@ -5263,7 +5263,7 @@
 
 
   /* ================================================================
-     ONGLETS OPÉRATIONS v3 — bandeau en slots, grilles denses 1920px
+     ONGLETS OPÉRATIONS v3 - bandeau en slots, grilles denses 1920px
      ================================================================ */
 
   /* --- Bandeau : une ligne [identité | stepper | actions] --- */

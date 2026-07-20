@@ -9,11 +9,11 @@ const AXENTIA_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcgAAAB4CAYA
 const AXENTIA_MARK = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNTAzLjkgMTM2NS45Ij48cGF0aCBmaWxsPSIjNWI1YjViIiBkPSJNNjMwLjMsMTAxMy45IEw1MzguMywxMDEzLjkgTDUyNC4wLDEwMDAuNSBMMzIyLjMsNTAyLjAgTDIxMS42LDc2NC40IEwzMjAuOCw3NjQuNCBMMzIwLjgsODQxLjAgTDMwOS4zLDg1NC4xIEwxNzMuMyw4NTQuMSBMMTA2LjcsMTAxMy4wIEw4LjAsMTAxMy4wIEwxMi4wLDk3NS41IEwyODUuMywzNTIuMSBMMzQxLjMsMzUyLjEgTDM2Ny42LDM2Ny41IEw2MzUuNiw5OTEuNSBMNjMwLjMsMTAxMy44IFoiLz48cGF0aCBmaWxsPSIjMDFhY2RmIiBkPSJNMTQ5MC4zLDEzNTMuNyBMMTM1Ni4xLDEzNTMuNyBMMTAzMC4zLDgwMi4xIEw5MDMuMywxMDA4LjYgTDc2Ny43LDEwMDguNiBMNzcxLjgsOTgyLjUgTDk1MS44LDY5MC41IEw5NTEuOCw2NjcuNSBMNzY4LjAsMzYzLjUgTDc3OC4zLDM1MC4wIEw4ODUuMywzNTAuMCBMOTEwLjksMzY2LjUgTDEwMzEuMSw1NjEuNSBMMTM0MC4zLDM5LjAgTDEzODEuMyw4LjAgTDE0ODkuMyw4LjAgTDE0OTUuOSwyMy41IEwxMTAzLjgsNjcxLjUgTDExMDMuOCw2OTEuNSBMMTQ3MS41LDEyOTAuNSBMMTQ5NS45LDEzNDQuNSBMMTQ5MC4zLDEzNTcuOSBaIi8+PC9zdmc+';
 
 
-let DATA = [{"_uid": "op-demo-001", "code": "A2406", "sheet": "A2406-Albi-Foyer", "display_name": "DÉMO · Albi Foyer Jeunes Actifs", "name": "DÉMO · Albi Foyer Jeunes Actifs", "commune": "Albi", "departement": "Tarn (81)", "region": "Occitanie", "adresse": "12 avenue Maréchal Foch, 81000 Albi", "zone_abc": "B2", "zone_123": "2", "qpv": "Non", "anru": "Non", "maitrise_fonciere": "Pleine propriété", "vefa_mod": "VEFA", "type_travaux": "Neuf", "developpeur": "Maxime CHANCA", "resp_op": "Olivier LE ROUX", "charge_fin": "Bastien MERCIER", "promoteur": "Nexity", "statut": "Travaux", "phase_actuelle": "Travaux", "badge_bg": "#faece7", "badge_text": "#993c1d", "badge_dot": "#d85a30", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406", "code_postal": "81000", "latitude": 43.9298, "longitude": 2.1481, "label_certif": "RE2020", "mode_constructif": "Mixte béton / bois", "mode_chauffage": "Pompe à chaleur (PAC) aérothermique", "nb_batiments": 2, "tags": ["Programme Albi 2024", "APART'AGES"], "comites": [{"id": "com-demo-001", "type": "CA", "date": "15/03/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/CA-15032026.pdf", "doc_name": "PV CA 15-03-2026 - Approbation Albi A2406.pdf", "doc_size": 285600, "doc_data_url": null, "notes": ""}, {"id": "com-demo-002", "type": "C2I", "date": "08/02/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/C2I-08022026.pdf", "doc_name": "PV C2I 08-02-2026 - Validation montage Albi.pdf", "doc_size": 198400, "doc_data_url": null, "notes": ""}, {"id": "com-demo-003", "type": "Revue", "date": "20/05/2026", "lien_sharepoint": "", "doc_name": "Revue OP Albi A2406 - mai 2026.pdf", "doc_size": 410000, "doc_data_url": null, "notes": "Revue trimestrielle avec Aliette"}, {"id": "com-demo-004", "type": "CA", "date": "15/07/2026", "lien_sharepoint": "", "doc_name": null, "doc_size": null, "doc_data_url": null, "notes": "Validation budget complémentaire", "statut": "planifie", "lieu": "AXENTIA Toulouse", "planning_id": "plan-demo-001"}], "date_promesse": "12/03/2024", "date_acte_auth": "28/06/2024", "date_depot_pc": "15/09/2024", "date_obt_pc": "10/02/2025", "date_os": "22/06/2025", "date_livraison": "01/09/2026", "date_conv_loc": "15/07/2026", "date_conv_apl": "15/07/2026", "date_ca_axentia": "18/02/2025", "notes_libres": "Opération de démonstration · 3 tranches mixtes (RSJA + Foyer PMR + résidence étudiante). Suivi rigoureux des appels de fonds promoteur.", "fmt_total_budget": "—", "fmt_total_prets": "—", "fmt_total_subv": "—", "fmt_total_fonds_propres": "—", "fmt_total_surface": "—", "total_surface": null, "tranches": [{"id": "T1", "code_full": "A2406-RSJA", "type_structure": "Résidence Sociale Jeunes Actifs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 5180000, "n_siap": "2024SI08100012", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "Foyer 2024", "beneficiaire_agrement": "Jeunes Actifs <30 ans", "plai_adapte": 8, "detail_logements": "Dont 38 PLAI T1 prime · 12 PLAI T1 standard · 8 PLAI adaptés (mobilité réduite)", "n_leon": "3421", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 340, "date_accord_redev": "12/02/2025", "vol": {"plai": 58, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 1650, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 58, "fonds_propres": 622800, "bilan": {"charge_fonciere": {"Terrain": 1850000, "Frais d'acquisition": 24800, "VRD": 35000, "Droits et taxes": 18500}, "batiment": {"Travaux de construction": 2640000, "Aléas": 132000}, "honoraires": {"Architecte": 158000, "Bureau d'étude": 42000, "OPC / SPS / CT": 28500, "Conduite d'opération": 26200}, "frais_divers": {"Actualisation / Révision": 32000}, "frais_financiers": {"Frais financiers": 192800}}}, {"id": "T2", "code_full": "A2406-FOYER", "type_structure": "Foyer Jeunes Travailleurs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 2350000, "n_siap": "2024SI08100013", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "FJT 2024", "beneficiaire_agrement": "Apprentis & alternants", "plai_adapte": 3, "detail_logements": "Dont 18 PLAI T1 prime · 6 PLUS T1 · 3 PLAI adaptés", "n_leon": "3422", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 320, "vol": {"plai": 21, "plus": 6, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 580, "plus": 165, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 27, "fonds_propres": 47000, "bilan": {"charge_fonciere": {"Terrain": 820000, "Frais d'acquisition": 11200}, "batiment": {"Travaux de construction": 1402000, "Aléas": 59000}, "honoraires": {"Architecte": 72500, "Bureau d'étude": 19000, "Conduite d'opération": 12000}, "frais_divers": {"Actualisation / Révision": 14500}, "frais_financiers": {"Frais financiers": 87800}}}, {"id": "T3", "code_full": "A2406-ETUD", "type_structure": "Résidence Étudiante", "gestionnaire": "ARPEJ", "annee_prog": "2024", "budget_ttc": 1820000, "n_siap": "2024SI08100014", "statut_agrement": "Obtenu", "date_depot_agr": "08/09/2024", "date_dfa": "12/02/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "PLS étudiant", "beneficiaire_agrement": "Étudiants", "plai_adapte": 0, "detail_logements": "Dont 22 PLS T1 · pas de PLAI", "n_leon": "3423", "date_ref": "08/04/2025", "vol": {"plai": 0, "plus": 0, "pls": 22, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 0, "plus": 0, "pls": 615, "pli": 0, "libre": 0, "autre": 0}, "logements": 22, "fonds_propres": 38000, "bilan": {"charge_fonciere": {"Terrain": 620000, "Frais d'acquisition": 8400}, "batiment": {"Travaux de construction": 1103200, "Aléas": 46000}, "honoraires": {"Architecte": 56000, "Bureau d'étude": 15500, "Conduite d'opération": 9800}, "frais_divers": {"Actualisation / Révision": 11200}, "frais_financiers": {"Frais financiers": 67900}}}], "prets": [{"tranche": "RSJA", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1980000, "montant_lo": 1980000, "montant_contrat": 2050000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178432-PLAI", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 40, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "non_garanti": false, "pieces_attendues": [], "source": "Contrat", "lien_sp_lo": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-bati-LO.pdf", "lien_sp_contrat": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-bati-contrat.pdf"}, {"tranche": "RSJA", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 1450000, "montant_lo": 1450000, "montant_contrat": 1480000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178432-PLAIF", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 50, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "non_garanti": false, "source": "Contrat", "lien_sp_lo": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-foncier-LO.pdf", "lien_sp_contrat": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-foncier-contrat.pdf"}, {"tranche": "RSJA", "ligne": "ALS", "financeur": "Action Logement", "montant_sim": 470000, "montant_contrat": 470000, "date_demande": "10/02/2025", "date_contrat": "18/04/2025", "n_contrat": "1208743-ALS", "statut": "Contrat signé", "taux": "0,5%", "duree_emprunt": 35, "duree_prefi": 0, "revision": "Simple", "non_garanti": true, "source": "Contrat"}, {"tranche": "RSJA", "ligne": "PHARE", "financeur": "CDC", "montant_sim": 80000, "montant_contrat": 80000, "date_demande": "10/02/2025", "date_contrat": "22/05/2025", "n_contrat": "U178432-PHARE", "statut": "Contrat signé", "taux": "TLA -0,75%", "duree_emprunt": 25, "revision": "Simple", "non_garanti": false, "source": "Contrat"}, {"tranche": "FOYER", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1180000, "montant_lo": 1180000, "montant_contrat": 1180000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178433-PLAI", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 40, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "source": "Contrat"}, {"tranche": "FOYER", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 580000, "montant_lo": 580000, "montant_contrat": 580000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178433-PLAIF", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 50, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "source": "Contrat"}, {"tranche": "FOYER", "ligne": "PLUS bâti", "financeur": "CDC", "montant_sim": 540000, "montant_lo": 540000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre", "taux": "TLA +0,60%", "duree_emprunt": 40, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "pieces_attendues": ["Acte authentique de propriété", "Convention APL"], "source": "Lettre d'offre"}, {"tranche": "ETUD", "ligne": "PLS bâti", "financeur": "Crédit Agricole", "montant_sim": 1480000, "montant_lo": 1480000, "montant_contrat": 1480000, "date_demande": "05/02/2025", "date_comite_banque": "20/03/2025", "date_lo": "10/04/2025", "date_contrat": "28/05/2025", "n_contrat": "CA-08-2025-541", "statut": "Contrat signé", "taux": "Livret A +1,11%", "duree_emprunt": 35, "duree_prefi": 24, "revision": "Simple", "contact": "Hélène DUPRÉ", "source": "Contrat"}, {"tranche": "ETUD", "ligne": "PLS foncier", "financeur": "Crédit Agricole", "montant_sim": 320000, "montant_lo": 320000, "montant_contrat": 320000, "date_demande": "05/02/2025", "date_comite_banque": "20/03/2025", "date_lo": "10/04/2025", "date_contrat": "28/05/2025", "n_contrat": "CA-08-2025-542", "statut": "Contrat signé", "taux": "Livret A +1,11%", "duree_emprunt": 50, "duree_prefi": 24, "revision": "Simple", "contact": "Hélène DUPRÉ", "source": "Contrat"}], "subventions": [{"tranche": "RSJA", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 232000, "montant_notifie": 232000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée", "contact": "DDT Tarn", "n_arrete": "2025-PLAI-081-012", "lien_sp_notif": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Subv/Etat-PLAI-notif.pdf"}, {"tranche": "RSJA", "financeur": "Région Occitanie", "financement": "Aide foyer jeunes actifs", "montant_demande": 145000, "montant_notifie": 130000, "date_demande": "01/03/2025", "date_notification": "12/04/2025", "date_conv": "05/05/2025", "statut": "Convention signée", "contact": "DRJSCS"}, {"tranche": "RSJA", "financeur": "Commune Albi", "financement": "Subvention équilibre", "montant_demande": 80000, "montant_notifie": 80000, "date_demande": "15/03/2025", "date_notification": "10/05/2025", "statut": "Notifiée"}, {"tranche": "RSJA", "financeur": "CD81", "financement": "Aide logement jeunes", "montant_demande": 35000, "montant_notifie": 35000, "date_demande": "01/03/2025", "date_notification": "20/04/2025", "statut": "Notifiée"}, {"tranche": "FOYER", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 84000, "montant_notifie": 84000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée"}, {"tranche": "FOYER", "financeur": "Région Occitanie", "financement": "FJT 2024", "montant_demande": 45000, "montant_notifie": 42000, "date_demande": "01/03/2025", "date_notification": "12/04/2025", "date_conv": "05/05/2025", "statut": "Convention signée"}, {"tranche": "FOYER", "financeur": "Action Logement", "financement": "Subvention 1% logement", "montant_demande": 25000, "date_demande": "15/03/2025", "statut": "En instruction"}, {"tranche": "ETUD", "financeur": "CD81", "financement": "Aide résidence étudiante", "montant_demande": 65000, "montant_notifie": 60000, "date_demande": "20/03/2025", "date_notification": "28/05/2025", "statut": "Notifiée"}, {"tranche": "ETUD", "financeur": "Université Champollion", "financement": "Participation maître ouvrage", "montant_demande": 40000, "montant_notifie": 40000, "date_demande": "01/03/2025", "date_conv": "20/04/2025", "statut": "Convention signée"}], "garanties": [{"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 50, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "10/04/2025", "contact": "Mairie Albi - DGS", "lien_sp_accord": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Garanties/Commune-AP.pdf", "lien_sp_delib": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Garanties/Commune-delib.pdf"}, {"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Département", "quotite": 50, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "20/03/2025", "date_conv": "15/04/2025", "contact": "CD81 - DGA Finances"}, {"tranche": "RSJA", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "10/04/2025"}, {"tranche": "RSJA", "pret_lie": "PHARE", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "10/04/2025"}, {"tranche": "FOYER", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "08/05/2025"}, {"tranche": "FOYER", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "08/05/2025"}, {"tranche": "FOYER", "pret_lie": "PLUS bâti", "garant": "Commune", "quotite": 100, "statut": "Délibération exécutoire", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_ap": "10/02/2025"}, {"tranche": "ETUD", "pret_lie": "PLS bâti", "garant": "CEGC", "quotite": 100, "statut": "Convention signée", "caution_relais": false, "date_conv": "28/05/2025", "contact": "CEGC Toulouse", "commission": 1.8}, {"tranche": "ETUD", "pret_lie": "PLS foncier", "garant": "CEGC", "quotite": 100, "statut": "Convention signée", "caution_relais": false, "date_conv": "28/05/2025", "commission": 1.8}], "prefinancements": [{"tranche": "RSJA", "banque": "CDC", "pret_lie": "PLAI bâti", "montant_couvert": 2050000, "montant_tire": 1230000, "pct_tire": 60, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours", "taux": "TLA +0,15%"}, {"tranche": "RSJA", "banque": "CDC", "pret_lie": "PLAI foncier", "montant_couvert": 1480000, "montant_tire": 890000, "pct_tire": 60, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours"}, {"tranche": "FOYER", "banque": "CDC", "pret_lie": "PLAI bâti", "montant_couvert": 1180000, "montant_tire": 590000, "pct_tire": 50, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours"}, {"tranche": "FOYER", "banque": "CDC", "pret_lie": "PLAI foncier", "montant_couvert": 580000, "montant_tire": 290000, "pct_tire": 50, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours"}, {"tranche": "ETUD", "banque": "Crédit Agricole", "pret_lie": "PLS bâti", "montant_couvert": 1480000, "montant_tire": 800000, "pct_tire": 54, "date_debut": "28/05/2025", "date_fin": "28/05/2027", "statut": "En cours"}, {"tranche": "ETUD", "banque": "Crédit Agricole", "pret_lie": "PLS foncier", "montant_couvert": 320000, "montant_tire": 170000, "pct_tire": 53, "date_debut": "28/05/2025", "date_fin": "28/05/2027", "statut": "En cours"}], "reservataires": [{"tranche": "RSJA", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 12, "pct_reserve": 21, "etape": "Conventionné", "date_conv": "15/04/2025"}, {"tranche": "RSJA", "reservataire": "Préfecture 81", "financement": "Contingent préfectoral", "nb_logements": 17, "pct_reserve": 30, "etape": "Conventionné", "date_conv": "20/04/2025"}, {"tranche": "RSJA", "reservataire": "Commune Albi", "financement": "Contingent communal", "nb_logements": 6, "pct_reserve": 10, "etape": "Conventionné", "date_conv": "10/04/2025"}, {"tranche": "FOYER", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 8, "pct_reserve": 30, "etape": "Conventionné", "date_conv": "15/04/2025"}, {"tranche": "FOYER", "reservataire": "Préfecture 81", "financement": "Contingent préfectoral", "nb_logements": 5, "pct_reserve": 19, "etape": "Conventionné", "date_conv": "20/04/2025"}, {"tranche": "ETUD", "reservataire": "Université Champollion", "financement": "Convention résidence", "nb_logements": 22, "pct_reserve": 100, "etape": "Conventionné", "date_conv": "10/05/2025"}], "phases_history": [{"name": "Montage", "date_fige": "18/03/2025", "snapshot": {"_uid": "op-demo-001", "code": "A2406", "sheet": "A2406-Albi-Foyer", "display_name": "DÉMO · Albi Foyer Jeunes Actifs", "name": "DÉMO · Albi Foyer Jeunes Actifs", "commune": "Albi", "departement": "Tarn (81)", "region": "Occitanie", "adresse": "12 avenue Maréchal Foch, 81000 Albi", "zone_abc": "B2", "zone_123": "2", "qpv": "Non", "anru": "Non", "maitrise_fonciere": "Pleine propriété", "vefa_mod": "VEFA", "type_travaux": "Neuf", "developpeur": "Maxime CHANCA", "resp_op": "Olivier LE ROUX", "charge_fin": "Bastien MERCIER", "promoteur": "Nexity", "statut": "Travaux", "phase_actuelle": "Montage", "badge_bg": "#faece7", "badge_text": "#993c1d", "badge_dot": "#d85a30", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406", "code_postal": "81000", "latitude": 43.9298, "longitude": 2.1481, "label_certif": "RE2020", "mode_constructif": "Mixte béton / bois", "mode_chauffage": "Pompe à chaleur (PAC) aérothermique", "nb_batiments": 2, "tags": ["Programme Albi 2024", "APART'AGES"], "comites": [{"id": "com-demo-001", "type": "CA", "date": "15/03/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/CA-15032026.pdf", "doc_name": "PV CA 15-03-2026 - Approbation Albi A2406.pdf", "doc_size": 285600, "doc_data_url": null, "notes": ""}, {"id": "com-demo-002", "type": "C2I", "date": "08/02/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/C2I-08022026.pdf", "doc_name": "PV C2I 08-02-2026 - Validation montage Albi.pdf", "doc_size": 198400, "doc_data_url": null, "notes": ""}, {"id": "com-demo-003", "type": "Revue", "date": "20/05/2026", "lien_sharepoint": "", "doc_name": "Revue OP Albi A2406 - mai 2026.pdf", "doc_size": 410000, "doc_data_url": null, "notes": "Revue trimestrielle avec Aliette"}, {"id": "com-demo-004", "type": "CA", "date": "15/07/2026", "lien_sharepoint": "", "doc_name": null, "doc_size": null, "doc_data_url": null, "notes": "Validation budget complémentaire", "statut": "planifie", "lieu": "AXENTIA Toulouse", "planning_id": "plan-demo-001"}], "date_promesse": "12/03/2024", "date_acte_auth": "28/06/2024", "date_depot_pc": "15/09/2024", "date_obt_pc": "10/02/2025", "date_os": "22/06/2025", "date_livraison": "01/09/2026", "date_conv_loc": "15/07/2026", "date_conv_apl": "15/07/2026", "date_ca_axentia": "18/02/2025", "notes_libres": "Opération de démonstration · 3 tranches mixtes (RSJA + Foyer PMR + résidence étudiante). Suivi rigoureux des appels de fonds promoteur.", "fmt_total_budget": "—", "fmt_total_prets": "—", "fmt_total_subv": "—", "fmt_total_fonds_propres": "—", "fmt_total_surface": "—", "total_surface": null, "tranches": [{"id": "T1", "code_full": "A2406-RSJA", "type_structure": "Résidence Sociale Jeunes Actifs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 4850000, "n_siap": "2024SI08100012", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "Foyer 2024", "beneficiaire_agrement": "Jeunes Actifs <30 ans", "plai_adapte": 6, "detail_logements": "Dont 38 PLAI T1 prime · 12 PLAI T1 standard · 8 PLAI adaptés (mobilité réduite)", "n_leon": "3421", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 340, "date_accord_redev": "12/02/2025", "vol": {"plai": 55, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 1600, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 55, "fonds_propres": 884500, "bilan": {"charge_fonciere": {"Terrain": 1750000, "Frais d'acquisition": 23500}, "batiment": {"Travaux de construction": 2480000, "Aléas": 124000}, "honoraires": {"Architecte": 149000, "Bureau d'étude": 38000, "Conduite d'opération": 22000}, "frais_divers": {"Actualisation / Révision": 28000}, "frais_financiers": {"Frais financiers": 180000}}}, {"id": "T2", "code_full": "A2406-FOYER", "type_structure": "Foyer Jeunes Travailleurs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 2200000, "n_siap": "2024SI08100013", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "FJT 2024", "beneficiaire_agrement": "Apprentis & alternants", "plai_adapte": 3, "detail_logements": "Dont 18 PLAI T1 prime · 6 PLUS T1 · 3 PLAI adaptés", "n_leon": "3422", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 320, "vol": {"plai": 21, "plus": 6, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 580, "plus": 165, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 27, "fonds_propres": 934500, "bilan": {"charge_fonciere": {"Terrain": 780000, "Frais d'acquisition": 10500}, "batiment": {"Travaux de construction": 1100000, "Aléas": 55000}, "honoraires": {"Architecte": 68000, "Bureau d'étude": 17500, "Conduite d'opération": 10500}, "frais_divers": {"Actualisation / Révision": 13000}, "frais_financiers": {"Frais financiers": 80000}}}, {"id": "T3", "code_full": "A2406-ETUD", "type_structure": "Résidence Étudiante", "gestionnaire": "ARPEJ", "annee_prog": "2024", "budget_ttc": 1720000, "n_siap": "2024SI08100014", "statut_agrement": "Obtenu", "date_depot_agr": "08/09/2024", "date_dfa": "12/02/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "PLS étudiant", "beneficiaire_agrement": "Étudiants", "plai_adapte": 0, "detail_logements": "Dont 22 PLS T1 · pas de PLAI", "n_leon": "3423", "date_ref": "08/04/2025", "vol": {"plai": 0, "plus": 0, "pls": 22, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 0, "plus": 0, "pls": 615, "pli": 0, "libre": 0, "autre": 0}, "logements": 22, "fonds_propres": 249800, "bilan": {"charge_fonciere": {"Terrain": 590000, "Frais d'acquisition": 8000}, "batiment": {"Travaux de construction": 870000, "Aléas": 43500}, "honoraires": {"Architecte": 52500, "Bureau d'étude": 14500, "Conduite d'opération": 8800}, "frais_divers": {"Actualisation / Révision": 10500}, "frais_financiers": {"Frais financiers": 62000}}}], "prets": [{"tranche": "RSJA", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1860000, "statut": "À demander", "taux": "TLA -0,20%", "duree_emprunt": 40, "revision": "Double"}, {"tranche": "RSJA", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 1380000, "statut": "À demander", "taux": "TLA -0,20%", "duree_emprunt": 50, "revision": "Double"}, {"tranche": "RSJA", "ligne": "ALS", "financeur": "Action Logement", "montant_sim": 450000, "statut": "À demander", "non_garanti": true}, {"tranche": "FOYER", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1120000, "statut": "À demander"}, {"tranche": "ETUD", "ligne": "PLS bâti", "financeur": "Crédit Agricole", "montant_sim": 1410000, "statut": "À demander"}], "subventions": [{"tranche": "RSJA", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 220000, "statut": "À déposer"}, {"tranche": "FOYER", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 80000, "statut": "À déposer"}], "garanties": [{"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "À demander"}, {"tranche": "RSJA", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "À demander"}, {"tranche": "FOYER", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "À demander"}], "prefinancements": [], "reservataires": [{"tranche": "RSJA", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 10, "pct_reserve": 18, "etape": "En négociation"}], "phases_history": []}}, {"name": "Validation CA", "date_fige": "12/06/2025", "snapshot": {"_uid": "op-demo-001", "code": "A2406", "sheet": "A2406-Albi-Foyer", "display_name": "DÉMO · Albi Foyer Jeunes Actifs", "name": "DÉMO · Albi Foyer Jeunes Actifs", "commune": "Albi", "departement": "Tarn (81)", "region": "Occitanie", "adresse": "12 avenue Maréchal Foch, 81000 Albi", "zone_abc": "B2", "zone_123": "2", "qpv": "Non", "anru": "Non", "maitrise_fonciere": "Pleine propriété", "vefa_mod": "VEFA", "type_travaux": "Neuf", "developpeur": "Maxime CHANCA", "resp_op": "Olivier LE ROUX", "charge_fin": "Bastien MERCIER", "promoteur": "Nexity", "statut": "Travaux", "phase_actuelle": "Validation CA", "badge_bg": "#faece7", "badge_text": "#993c1d", "badge_dot": "#d85a30", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406", "code_postal": "81000", "latitude": 43.9298, "longitude": 2.1481, "label_certif": "RE2020", "mode_constructif": "Mixte béton / bois", "mode_chauffage": "Pompe à chaleur (PAC) aérothermique", "nb_batiments": 2, "tags": ["Programme Albi 2024", "APART'AGES"], "comites": [{"id": "com-demo-001", "type": "CA", "date": "15/03/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/CA-15032026.pdf", "doc_name": "PV CA 15-03-2026 - Approbation Albi A2406.pdf", "doc_size": 285600, "doc_data_url": null, "notes": ""}, {"id": "com-demo-002", "type": "C2I", "date": "08/02/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/C2I-08022026.pdf", "doc_name": "PV C2I 08-02-2026 - Validation montage Albi.pdf", "doc_size": 198400, "doc_data_url": null, "notes": ""}, {"id": "com-demo-003", "type": "Revue", "date": "20/05/2026", "lien_sharepoint": "", "doc_name": "Revue OP Albi A2406 - mai 2026.pdf", "doc_size": 410000, "doc_data_url": null, "notes": "Revue trimestrielle avec Aliette"}, {"id": "com-demo-004", "type": "CA", "date": "15/07/2026", "lien_sharepoint": "", "doc_name": null, "doc_size": null, "doc_data_url": null, "notes": "Validation budget complémentaire", "statut": "planifie", "lieu": "AXENTIA Toulouse", "planning_id": "plan-demo-001"}], "date_promesse": "12/03/2024", "date_acte_auth": "28/06/2024", "date_depot_pc": "15/09/2024", "date_obt_pc": "10/02/2025", "date_os": "22/06/2025", "date_livraison": "01/09/2026", "date_conv_loc": "15/07/2026", "date_conv_apl": "15/07/2026", "date_ca_axentia": "18/02/2025", "notes_libres": "Opération de démonstration · 3 tranches mixtes (RSJA + Foyer PMR + résidence étudiante). Suivi rigoureux des appels de fonds promoteur.", "fmt_total_budget": "—", "fmt_total_prets": "—", "fmt_total_subv": "—", "fmt_total_fonds_propres": "—", "fmt_total_surface": "—", "total_surface": null, "tranches": [{"id": "T1", "code_full": "A2406-RSJA", "type_structure": "Résidence Sociale Jeunes Actifs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 5100000, "n_siap": "2024SI08100012", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "Foyer 2024", "beneficiaire_agrement": "Jeunes Actifs <30 ans", "plai_adapte": 8, "detail_logements": "Dont 38 PLAI T1 prime · 12 PLAI T1 standard · 8 PLAI adaptés (mobilité réduite)", "n_leon": "3421", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 340, "date_accord_redev": "12/02/2025", "vol": {"plai": 58, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 1640, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 58, "fonds_propres": 819700, "bilan": {"charge_fonciere": {"Terrain": 1820000, "Frais d'acquisition": 24400, "VRD": 32000, "Droits et taxes": 17800}, "batiment": {"Travaux de construction": 2600000, "Aléas": 130000}, "honoraires": {"Architecte": 155000, "Bureau d'étude": 41500, "OPC / SPS / CT": 27000, "Conduite d'opération": 25500}, "frais_divers": {"Actualisation / Révision": 30500}, "frais_financiers": {"Frais financiers": 188000}}}, {"id": "T2", "code_full": "A2406-FOYER", "type_structure": "Foyer Jeunes Travailleurs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 2320000, "n_siap": "2024SI08100013", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "FJT 2024", "beneficiaire_agrement": "Apprentis & alternants", "plai_adapte": 3, "detail_logements": "Dont 18 PLAI T1 prime · 6 PLUS T1 · 3 PLAI adaptés", "n_leon": "3422", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 320, "vol": {"plai": 21, "plus": 6, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 580, "plus": 165, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 27, "fonds_propres": 461800, "bilan": {"charge_fonciere": {"Terrain": 815000, "Frais d'acquisition": 11000}, "batiment": {"Travaux de construction": 1170000, "Aléas": 58500}, "honoraires": {"Architecte": 71500, "Bureau d'étude": 18800, "Conduite d'opération": 11500}, "frais_divers": {"Actualisation / Révision": 14000}, "frais_financiers": {"Frais financiers": 85500}}}, {"id": "T3", "code_full": "A2406-ETUD", "type_structure": "Résidence Étudiante", "gestionnaire": "ARPEJ", "annee_prog": "2024", "budget_ttc": 1790000, "n_siap": "2024SI08100014", "statut_agrement": "Obtenu", "date_depot_agr": "08/09/2024", "date_dfa": "12/02/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "PLS étudiant", "beneficiaire_agrement": "Étudiants", "plai_adapte": 0, "detail_logements": "Dont 22 PLS T1 · pas de PLAI", "n_leon": "3423", "date_ref": "08/04/2025", "vol": {"plai": 0, "plus": 0, "pls": 22, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 0, "plus": 0, "pls": 615, "pli": 0, "libre": 0, "autre": 0}, "logements": 22, "fonds_propres": 191500, "bilan": {"charge_fonciere": {"Terrain": 615000, "Frais d'acquisition": 8300}, "batiment": {"Travaux de construction": 910000, "Aléas": 45500}, "honoraires": {"Architecte": 55500, "Bureau d'étude": 15200, "Conduite d'opération": 9500}, "frais_divers": {"Actualisation / Révision": 11000}, "frais_financiers": {"Frais financiers": 66500}}}], "prets": [{"tranche": "RSJA", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1950000, "montant_lo": 1980000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre", "taux": "TLA -0,20%", "duree_emprunt": 40, "revision": "Double"}, {"tranche": "RSJA", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 1430000, "montant_lo": 1450000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre", "taux": "TLA -0,20%", "duree_emprunt": 50, "revision": "Double"}, {"tranche": "RSJA", "ligne": "ALS", "financeur": "Action Logement", "montant_sim": 460000, "date_demande": "10/02/2025", "statut": "Demandé", "non_garanti": true}, {"tranche": "FOYER", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1160000, "montant_lo": 1180000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre"}, {"tranche": "FOYER", "ligne": "PLUS bâti", "financeur": "CDC", "montant_sim": 530000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "statut": "Demandé"}, {"tranche": "ETUD", "ligne": "PLS bâti", "financeur": "Crédit Agricole", "montant_sim": 1450000, "montant_lo": 1480000, "date_demande": "05/02/2025", "date_comite_banque": "20/03/2025", "date_lo": "10/04/2025", "statut": "Lettre d'offre"}], "subventions": [{"tranche": "RSJA", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 232000, "montant_notifie": 232000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée"}, {"tranche": "RSJA", "financeur": "Région Occitanie", "financement": "Aide foyer jeunes actifs", "montant_demande": 150000, "date_demande": "01/03/2025", "statut": "Déposée"}, {"tranche": "FOYER", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 84000, "montant_notifie": 84000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée"}, {"tranche": "ETUD", "financeur": "Conseil départemental 81", "financement": "Aide résidence étudiante", "montant_demande": 65000, "date_demande": "20/03/2025", "statut": "Déposée"}], "garanties": [{"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 50, "statut": "Dossier transmis", "date_demande": "20/01/2025"}, {"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Département", "quotite": 50, "statut": "Dossier transmis", "date_demande": "20/01/2025"}, {"tranche": "RSJA", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "Dossier transmis", "date_demande": "20/01/2025"}, {"tranche": "FOYER", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "Accord de principe reçu", "date_demande": "20/01/2025"}, {"tranche": "ETUD", "pret_lie": "PLS bâti", "garant": "CEGC", "quotite": 100, "statut": "Accord de principe reçu", "caution_relais": false}], "prefinancements": [], "reservataires": [{"tranche": "RSJA", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 11, "pct_reserve": 19, "etape": "En négociation"}, {"tranche": "RSJA", "reservataire": "Préfecture 81", "financement": "Contingent préfectoral", "nb_logements": 17, "pct_reserve": 30, "etape": "Validé"}, {"tranche": "ETUD", "reservataire": "Université Champollion", "financement": "Convention résidence", "nb_logements": 22, "pct_reserve": 100, "etape": "Validé"}], "phases_history": []}}]}];
+let DATA = [{"_uid": "op-demo-001", "code": "A2406", "sheet": "A2406-Albi-Foyer", "display_name": "DÉMO · Albi Foyer Jeunes Actifs", "name": "DÉMO · Albi Foyer Jeunes Actifs", "commune": "Albi", "departement": "Tarn (81)", "region": "Occitanie", "adresse": "12 avenue Maréchal Foch, 81000 Albi", "zone_abc": "B2", "zone_123": "2", "qpv": "Non", "anru": "Non", "maitrise_fonciere": "Pleine propriété", "vefa_mod": "VEFA", "type_travaux": "Neuf", "developpeur": "Maxime CHANCA", "resp_op": "Olivier LE ROUX", "charge_fin": "Bastien MERCIER", "promoteur": "Nexity", "statut": "Travaux", "phase_actuelle": "Travaux", "badge_bg": "#faece7", "badge_text": "#993c1d", "badge_dot": "#d85a30", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406", "code_postal": "81000", "latitude": 43.9298, "longitude": 2.1481, "label_certif": "RE2020", "mode_constructif": "Mixte béton / bois", "mode_chauffage": "Pompe à chaleur (PAC) aérothermique", "nb_batiments": 2, "tags": ["Programme Albi 2024", "APART'AGES"], "comites": [{"id": "com-demo-001", "type": "CA", "date": "15/03/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/CA-15032026.pdf", "doc_name": "PV CA 15-03-2026 - Approbation Albi A2406.pdf", "doc_size": 285600, "doc_data_url": null, "notes": ""}, {"id": "com-demo-002", "type": "C2I", "date": "08/02/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/C2I-08022026.pdf", "doc_name": "PV C2I 08-02-2026 - Validation montage Albi.pdf", "doc_size": 198400, "doc_data_url": null, "notes": ""}, {"id": "com-demo-003", "type": "Revue", "date": "20/05/2026", "lien_sharepoint": "", "doc_name": "Revue OP Albi A2406 - mai 2026.pdf", "doc_size": 410000, "doc_data_url": null, "notes": "Revue trimestrielle avec Aliette"}, {"id": "com-demo-004", "type": "CA", "date": "15/07/2026", "lien_sharepoint": "", "doc_name": null, "doc_size": null, "doc_data_url": null, "notes": "Validation budget complémentaire", "statut": "planifie", "lieu": "AXENTIA Toulouse", "planning_id": "plan-demo-001"}], "date_promesse": "12/03/2024", "date_acte_auth": "28/06/2024", "date_depot_pc": "15/09/2024", "date_obt_pc": "10/02/2025", "date_os": "22/06/2025", "date_livraison": "01/09/2026", "date_conv_loc": "15/07/2026", "date_conv_apl": "15/07/2026", "date_ca_axentia": "18/02/2025", "notes_libres": "Opération de démonstration · 3 tranches mixtes (RSJA + Foyer PMR + résidence étudiante). Suivi rigoureux des appels de fonds promoteur.", "fmt_total_budget": "-", "fmt_total_prets": "-", "fmt_total_subv": "-", "fmt_total_fonds_propres": "-", "fmt_total_surface": "-", "total_surface": null, "tranches": [{"id": "T1", "code_full": "A2406-RSJA", "type_structure": "Résidence Sociale Jeunes Actifs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 5180000, "n_siap": "2024SI08100012", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "Foyer 2024", "beneficiaire_agrement": "Jeunes Actifs <30 ans", "plai_adapte": 8, "detail_logements": "Dont 38 PLAI T1 prime · 12 PLAI T1 standard · 8 PLAI adaptés (mobilité réduite)", "n_leon": "3421", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 340, "date_accord_redev": "12/02/2025", "vol": {"plai": 58, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 1650, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 58, "fonds_propres": 622800, "bilan": {"charge_fonciere": {"Terrain": 1850000, "Frais d'acquisition": 24800, "VRD": 35000, "Droits et taxes": 18500}, "batiment": {"Travaux de construction": 2640000, "Aléas": 132000}, "honoraires": {"Architecte": 158000, "Bureau d'étude": 42000, "OPC / SPS / CT": 28500, "Conduite d'opération": 26200}, "frais_divers": {"Actualisation / Révision": 32000}, "frais_financiers": {"Frais financiers": 192800}}}, {"id": "T2", "code_full": "A2406-FOYER", "type_structure": "Foyer Jeunes Travailleurs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 2350000, "n_siap": "2024SI08100013", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "FJT 2024", "beneficiaire_agrement": "Apprentis & alternants", "plai_adapte": 3, "detail_logements": "Dont 18 PLAI T1 prime · 6 PLUS T1 · 3 PLAI adaptés", "n_leon": "3422", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 320, "vol": {"plai": 21, "plus": 6, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 580, "plus": 165, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 27, "fonds_propres": 47000, "bilan": {"charge_fonciere": {"Terrain": 820000, "Frais d'acquisition": 11200}, "batiment": {"Travaux de construction": 1402000, "Aléas": 59000}, "honoraires": {"Architecte": 72500, "Bureau d'étude": 19000, "Conduite d'opération": 12000}, "frais_divers": {"Actualisation / Révision": 14500}, "frais_financiers": {"Frais financiers": 87800}}}, {"id": "T3", "code_full": "A2406-ETUD", "type_structure": "Résidence Étudiante", "gestionnaire": "ARPEJ", "annee_prog": "2024", "budget_ttc": 1820000, "n_siap": "2024SI08100014", "statut_agrement": "Obtenu", "date_depot_agr": "08/09/2024", "date_dfa": "12/02/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "PLS étudiant", "beneficiaire_agrement": "Étudiants", "plai_adapte": 0, "detail_logements": "Dont 22 PLS T1 · pas de PLAI", "n_leon": "3423", "date_ref": "08/04/2025", "vol": {"plai": 0, "plus": 0, "pls": 22, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 0, "plus": 0, "pls": 615, "pli": 0, "libre": 0, "autre": 0}, "logements": 22, "fonds_propres": 38000, "bilan": {"charge_fonciere": {"Terrain": 620000, "Frais d'acquisition": 8400}, "batiment": {"Travaux de construction": 1103200, "Aléas": 46000}, "honoraires": {"Architecte": 56000, "Bureau d'étude": 15500, "Conduite d'opération": 9800}, "frais_divers": {"Actualisation / Révision": 11200}, "frais_financiers": {"Frais financiers": 67900}}}], "prets": [{"tranche": "RSJA", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1980000, "montant_lo": 1980000, "montant_contrat": 2050000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178432-PLAI", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 40, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "non_garanti": false, "pieces_attendues": [], "source": "Contrat", "lien_sp_lo": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-bati-LO.pdf", "lien_sp_contrat": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-bati-contrat.pdf"}, {"tranche": "RSJA", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 1450000, "montant_lo": 1450000, "montant_contrat": 1480000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178432-PLAIF", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 50, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "non_garanti": false, "source": "Contrat", "lien_sp_lo": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-foncier-LO.pdf", "lien_sp_contrat": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Prets/PLAI-foncier-contrat.pdf"}, {"tranche": "RSJA", "ligne": "ALS", "financeur": "Action Logement", "montant_sim": 470000, "montant_contrat": 470000, "date_demande": "10/02/2025", "date_contrat": "18/04/2025", "n_contrat": "1208743-ALS", "statut": "Contrat signé", "taux": "0,5%", "duree_emprunt": 35, "duree_prefi": 0, "revision": "Simple", "non_garanti": true, "source": "Contrat"}, {"tranche": "RSJA", "ligne": "PHARE", "financeur": "CDC", "montant_sim": 80000, "montant_contrat": 80000, "date_demande": "10/02/2025", "date_contrat": "22/05/2025", "n_contrat": "U178432-PHARE", "statut": "Contrat signé", "taux": "TLA -0,75%", "duree_emprunt": 25, "revision": "Simple", "non_garanti": false, "source": "Contrat"}, {"tranche": "FOYER", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1180000, "montant_lo": 1180000, "montant_contrat": 1180000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178433-PLAI", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 40, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "source": "Contrat"}, {"tranche": "FOYER", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 580000, "montant_lo": 580000, "montant_contrat": 580000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "date_contrat": "22/05/2025", "n_contrat": "U178433-PLAIF", "statut": "Contrat signé", "taux": "TLA -0,20%", "duree_emprunt": 50, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "source": "Contrat"}, {"tranche": "FOYER", "ligne": "PLUS bâti", "financeur": "CDC", "montant_sim": 540000, "montant_lo": 540000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre", "taux": "TLA +0,60%", "duree_emprunt": 40, "duree_prefi": 24, "revision": "Double", "contact": "Benoît TEXONNIERE", "pieces_attendues": ["Acte authentique de propriété", "Convention APL"], "source": "Lettre d'offre"}, {"tranche": "ETUD", "ligne": "PLS bâti", "financeur": "Crédit Agricole", "montant_sim": 1480000, "montant_lo": 1480000, "montant_contrat": 1480000, "date_demande": "05/02/2025", "date_comite_banque": "20/03/2025", "date_lo": "10/04/2025", "date_contrat": "28/05/2025", "n_contrat": "CA-08-2025-541", "statut": "Contrat signé", "taux": "Livret A +1,11%", "duree_emprunt": 35, "duree_prefi": 24, "revision": "Simple", "contact": "Hélène DUPRÉ", "source": "Contrat"}, {"tranche": "ETUD", "ligne": "PLS foncier", "financeur": "Crédit Agricole", "montant_sim": 320000, "montant_lo": 320000, "montant_contrat": 320000, "date_demande": "05/02/2025", "date_comite_banque": "20/03/2025", "date_lo": "10/04/2025", "date_contrat": "28/05/2025", "n_contrat": "CA-08-2025-542", "statut": "Contrat signé", "taux": "Livret A +1,11%", "duree_emprunt": 50, "duree_prefi": 24, "revision": "Simple", "contact": "Hélène DUPRÉ", "source": "Contrat"}], "subventions": [{"tranche": "RSJA", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 232000, "montant_notifie": 232000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée", "contact": "DDT Tarn", "n_arrete": "2025-PLAI-081-012", "lien_sp_notif": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Subv/Etat-PLAI-notif.pdf"}, {"tranche": "RSJA", "financeur": "Région Occitanie", "financement": "Aide foyer jeunes actifs", "montant_demande": 145000, "montant_notifie": 130000, "date_demande": "01/03/2025", "date_notification": "12/04/2025", "date_conv": "05/05/2025", "statut": "Convention signée", "contact": "DRJSCS"}, {"tranche": "RSJA", "financeur": "Commune Albi", "financement": "Subvention équilibre", "montant_demande": 80000, "montant_notifie": 80000, "date_demande": "15/03/2025", "date_notification": "10/05/2025", "statut": "Notifiée"}, {"tranche": "RSJA", "financeur": "CD81", "financement": "Aide logement jeunes", "montant_demande": 35000, "montant_notifie": 35000, "date_demande": "01/03/2025", "date_notification": "20/04/2025", "statut": "Notifiée"}, {"tranche": "FOYER", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 84000, "montant_notifie": 84000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée"}, {"tranche": "FOYER", "financeur": "Région Occitanie", "financement": "FJT 2024", "montant_demande": 45000, "montant_notifie": 42000, "date_demande": "01/03/2025", "date_notification": "12/04/2025", "date_conv": "05/05/2025", "statut": "Convention signée"}, {"tranche": "FOYER", "financeur": "Action Logement", "financement": "Subvention 1% logement", "montant_demande": 25000, "date_demande": "15/03/2025", "statut": "En instruction"}, {"tranche": "ETUD", "financeur": "CD81", "financement": "Aide résidence étudiante", "montant_demande": 65000, "montant_notifie": 60000, "date_demande": "20/03/2025", "date_notification": "28/05/2025", "statut": "Notifiée"}, {"tranche": "ETUD", "financeur": "Université Champollion", "financement": "Participation maître ouvrage", "montant_demande": 40000, "montant_notifie": 40000, "date_demande": "01/03/2025", "date_conv": "20/04/2025", "statut": "Convention signée"}], "garanties": [{"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 50, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "10/04/2025", "contact": "Mairie Albi - DGS", "lien_sp_accord": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Garanties/Commune-AP.pdf", "lien_sp_delib": "https://axentia.sharepoint.com/sites/operations/Albi-2406/Garanties/Commune-delib.pdf"}, {"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Département", "quotite": 50, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "20/03/2025", "date_conv": "15/04/2025", "contact": "CD81 - DGA Finances"}, {"tranche": "RSJA", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "10/04/2025"}, {"tranche": "RSJA", "pret_lie": "PHARE", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "10/04/2025"}, {"tranche": "FOYER", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "08/05/2025"}, {"tranche": "FOYER", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "Convention signée", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_conv": "08/05/2025"}, {"tranche": "FOYER", "pret_lie": "PLUS bâti", "garant": "Commune", "quotite": 100, "statut": "Délibération exécutoire", "date_demande": "20/01/2025", "date_delib": "15/03/2025", "date_ap": "10/02/2025"}, {"tranche": "ETUD", "pret_lie": "PLS bâti", "garant": "CEGC", "quotite": 100, "statut": "Convention signée", "caution_relais": false, "date_conv": "28/05/2025", "contact": "CEGC Toulouse", "commission": 1.8}, {"tranche": "ETUD", "pret_lie": "PLS foncier", "garant": "CEGC", "quotite": 100, "statut": "Convention signée", "caution_relais": false, "date_conv": "28/05/2025", "commission": 1.8}], "prefinancements": [{"tranche": "RSJA", "banque": "CDC", "pret_lie": "PLAI bâti", "montant_couvert": 2050000, "montant_tire": 1230000, "pct_tire": 60, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours", "taux": "TLA +0,15%"}, {"tranche": "RSJA", "banque": "CDC", "pret_lie": "PLAI foncier", "montant_couvert": 1480000, "montant_tire": 890000, "pct_tire": 60, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours"}, {"tranche": "FOYER", "banque": "CDC", "pret_lie": "PLAI bâti", "montant_couvert": 1180000, "montant_tire": 590000, "pct_tire": 50, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours"}, {"tranche": "FOYER", "banque": "CDC", "pret_lie": "PLAI foncier", "montant_couvert": 580000, "montant_tire": 290000, "pct_tire": 50, "date_debut": "22/05/2025", "date_fin": "22/05/2027", "statut": "En cours"}, {"tranche": "ETUD", "banque": "Crédit Agricole", "pret_lie": "PLS bâti", "montant_couvert": 1480000, "montant_tire": 800000, "pct_tire": 54, "date_debut": "28/05/2025", "date_fin": "28/05/2027", "statut": "En cours"}, {"tranche": "ETUD", "banque": "Crédit Agricole", "pret_lie": "PLS foncier", "montant_couvert": 320000, "montant_tire": 170000, "pct_tire": 53, "date_debut": "28/05/2025", "date_fin": "28/05/2027", "statut": "En cours"}], "reservataires": [{"tranche": "RSJA", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 12, "pct_reserve": 21, "etape": "Conventionné", "date_conv": "15/04/2025"}, {"tranche": "RSJA", "reservataire": "Préfecture 81", "financement": "Contingent préfectoral", "nb_logements": 17, "pct_reserve": 30, "etape": "Conventionné", "date_conv": "20/04/2025"}, {"tranche": "RSJA", "reservataire": "Commune Albi", "financement": "Contingent communal", "nb_logements": 6, "pct_reserve": 10, "etape": "Conventionné", "date_conv": "10/04/2025"}, {"tranche": "FOYER", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 8, "pct_reserve": 30, "etape": "Conventionné", "date_conv": "15/04/2025"}, {"tranche": "FOYER", "reservataire": "Préfecture 81", "financement": "Contingent préfectoral", "nb_logements": 5, "pct_reserve": 19, "etape": "Conventionné", "date_conv": "20/04/2025"}, {"tranche": "ETUD", "reservataire": "Université Champollion", "financement": "Convention résidence", "nb_logements": 22, "pct_reserve": 100, "etape": "Conventionné", "date_conv": "10/05/2025"}], "phases_history": [{"name": "Montage", "date_fige": "18/03/2025", "snapshot": {"_uid": "op-demo-001", "code": "A2406", "sheet": "A2406-Albi-Foyer", "display_name": "DÉMO · Albi Foyer Jeunes Actifs", "name": "DÉMO · Albi Foyer Jeunes Actifs", "commune": "Albi", "departement": "Tarn (81)", "region": "Occitanie", "adresse": "12 avenue Maréchal Foch, 81000 Albi", "zone_abc": "B2", "zone_123": "2", "qpv": "Non", "anru": "Non", "maitrise_fonciere": "Pleine propriété", "vefa_mod": "VEFA", "type_travaux": "Neuf", "developpeur": "Maxime CHANCA", "resp_op": "Olivier LE ROUX", "charge_fin": "Bastien MERCIER", "promoteur": "Nexity", "statut": "Travaux", "phase_actuelle": "Montage", "badge_bg": "#faece7", "badge_text": "#993c1d", "badge_dot": "#d85a30", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406", "code_postal": "81000", "latitude": 43.9298, "longitude": 2.1481, "label_certif": "RE2020", "mode_constructif": "Mixte béton / bois", "mode_chauffage": "Pompe à chaleur (PAC) aérothermique", "nb_batiments": 2, "tags": ["Programme Albi 2024", "APART'AGES"], "comites": [{"id": "com-demo-001", "type": "CA", "date": "15/03/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/CA-15032026.pdf", "doc_name": "PV CA 15-03-2026 - Approbation Albi A2406.pdf", "doc_size": 285600, "doc_data_url": null, "notes": ""}, {"id": "com-demo-002", "type": "C2I", "date": "08/02/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/C2I-08022026.pdf", "doc_name": "PV C2I 08-02-2026 - Validation montage Albi.pdf", "doc_size": 198400, "doc_data_url": null, "notes": ""}, {"id": "com-demo-003", "type": "Revue", "date": "20/05/2026", "lien_sharepoint": "", "doc_name": "Revue OP Albi A2406 - mai 2026.pdf", "doc_size": 410000, "doc_data_url": null, "notes": "Revue trimestrielle avec Aliette"}, {"id": "com-demo-004", "type": "CA", "date": "15/07/2026", "lien_sharepoint": "", "doc_name": null, "doc_size": null, "doc_data_url": null, "notes": "Validation budget complémentaire", "statut": "planifie", "lieu": "AXENTIA Toulouse", "planning_id": "plan-demo-001"}], "date_promesse": "12/03/2024", "date_acte_auth": "28/06/2024", "date_depot_pc": "15/09/2024", "date_obt_pc": "10/02/2025", "date_os": "22/06/2025", "date_livraison": "01/09/2026", "date_conv_loc": "15/07/2026", "date_conv_apl": "15/07/2026", "date_ca_axentia": "18/02/2025", "notes_libres": "Opération de démonstration · 3 tranches mixtes (RSJA + Foyer PMR + résidence étudiante). Suivi rigoureux des appels de fonds promoteur.", "fmt_total_budget": "-", "fmt_total_prets": "-", "fmt_total_subv": "-", "fmt_total_fonds_propres": "-", "fmt_total_surface": "-", "total_surface": null, "tranches": [{"id": "T1", "code_full": "A2406-RSJA", "type_structure": "Résidence Sociale Jeunes Actifs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 4850000, "n_siap": "2024SI08100012", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "Foyer 2024", "beneficiaire_agrement": "Jeunes Actifs <30 ans", "plai_adapte": 6, "detail_logements": "Dont 38 PLAI T1 prime · 12 PLAI T1 standard · 8 PLAI adaptés (mobilité réduite)", "n_leon": "3421", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 340, "date_accord_redev": "12/02/2025", "vol": {"plai": 55, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 1600, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 55, "fonds_propres": 884500, "bilan": {"charge_fonciere": {"Terrain": 1750000, "Frais d'acquisition": 23500}, "batiment": {"Travaux de construction": 2480000, "Aléas": 124000}, "honoraires": {"Architecte": 149000, "Bureau d'étude": 38000, "Conduite d'opération": 22000}, "frais_divers": {"Actualisation / Révision": 28000}, "frais_financiers": {"Frais financiers": 180000}}}, {"id": "T2", "code_full": "A2406-FOYER", "type_structure": "Foyer Jeunes Travailleurs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 2200000, "n_siap": "2024SI08100013", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "FJT 2024", "beneficiaire_agrement": "Apprentis & alternants", "plai_adapte": 3, "detail_logements": "Dont 18 PLAI T1 prime · 6 PLUS T1 · 3 PLAI adaptés", "n_leon": "3422", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 320, "vol": {"plai": 21, "plus": 6, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 580, "plus": 165, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 27, "fonds_propres": 934500, "bilan": {"charge_fonciere": {"Terrain": 780000, "Frais d'acquisition": 10500}, "batiment": {"Travaux de construction": 1100000, "Aléas": 55000}, "honoraires": {"Architecte": 68000, "Bureau d'étude": 17500, "Conduite d'opération": 10500}, "frais_divers": {"Actualisation / Révision": 13000}, "frais_financiers": {"Frais financiers": 80000}}}, {"id": "T3", "code_full": "A2406-ETUD", "type_structure": "Résidence Étudiante", "gestionnaire": "ARPEJ", "annee_prog": "2024", "budget_ttc": 1720000, "n_siap": "2024SI08100014", "statut_agrement": "Obtenu", "date_depot_agr": "08/09/2024", "date_dfa": "12/02/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "PLS étudiant", "beneficiaire_agrement": "Étudiants", "plai_adapte": 0, "detail_logements": "Dont 22 PLS T1 · pas de PLAI", "n_leon": "3423", "date_ref": "08/04/2025", "vol": {"plai": 0, "plus": 0, "pls": 22, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 0, "plus": 0, "pls": 615, "pli": 0, "libre": 0, "autre": 0}, "logements": 22, "fonds_propres": 249800, "bilan": {"charge_fonciere": {"Terrain": 590000, "Frais d'acquisition": 8000}, "batiment": {"Travaux de construction": 870000, "Aléas": 43500}, "honoraires": {"Architecte": 52500, "Bureau d'étude": 14500, "Conduite d'opération": 8800}, "frais_divers": {"Actualisation / Révision": 10500}, "frais_financiers": {"Frais financiers": 62000}}}], "prets": [{"tranche": "RSJA", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1860000, "statut": "À demander", "taux": "TLA -0,20%", "duree_emprunt": 40, "revision": "Double"}, {"tranche": "RSJA", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 1380000, "statut": "À demander", "taux": "TLA -0,20%", "duree_emprunt": 50, "revision": "Double"}, {"tranche": "RSJA", "ligne": "ALS", "financeur": "Action Logement", "montant_sim": 450000, "statut": "À demander", "non_garanti": true}, {"tranche": "FOYER", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1120000, "statut": "À demander"}, {"tranche": "ETUD", "ligne": "PLS bâti", "financeur": "Crédit Agricole", "montant_sim": 1410000, "statut": "À demander"}], "subventions": [{"tranche": "RSJA", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 220000, "statut": "À déposer"}, {"tranche": "FOYER", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 80000, "statut": "À déposer"}], "garanties": [{"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "À demander"}, {"tranche": "RSJA", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "À demander"}, {"tranche": "FOYER", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "À demander"}], "prefinancements": [], "reservataires": [{"tranche": "RSJA", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 10, "pct_reserve": 18, "etape": "En négociation"}], "phases_history": []}}, {"name": "Validation CA", "date_fige": "12/06/2025", "snapshot": {"_uid": "op-demo-001", "code": "A2406", "sheet": "A2406-Albi-Foyer", "display_name": "DÉMO · Albi Foyer Jeunes Actifs", "name": "DÉMO · Albi Foyer Jeunes Actifs", "commune": "Albi", "departement": "Tarn (81)", "region": "Occitanie", "adresse": "12 avenue Maréchal Foch, 81000 Albi", "zone_abc": "B2", "zone_123": "2", "qpv": "Non", "anru": "Non", "maitrise_fonciere": "Pleine propriété", "vefa_mod": "VEFA", "type_travaux": "Neuf", "developpeur": "Maxime CHANCA", "resp_op": "Olivier LE ROUX", "charge_fin": "Bastien MERCIER", "promoteur": "Nexity", "statut": "Travaux", "phase_actuelle": "Validation CA", "badge_bg": "#faece7", "badge_text": "#993c1d", "badge_dot": "#d85a30", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406", "code_postal": "81000", "latitude": 43.9298, "longitude": 2.1481, "label_certif": "RE2020", "mode_constructif": "Mixte béton / bois", "mode_chauffage": "Pompe à chaleur (PAC) aérothermique", "nb_batiments": 2, "tags": ["Programme Albi 2024", "APART'AGES"], "comites": [{"id": "com-demo-001", "type": "CA", "date": "15/03/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/CA-15032026.pdf", "doc_name": "PV CA 15-03-2026 - Approbation Albi A2406.pdf", "doc_size": 285600, "doc_data_url": null, "notes": ""}, {"id": "com-demo-002", "type": "C2I", "date": "08/02/2026", "lien_sharepoint": "https://axentia.sharepoint.com/sites/operations/Albi-2406/C2I-08022026.pdf", "doc_name": "PV C2I 08-02-2026 - Validation montage Albi.pdf", "doc_size": 198400, "doc_data_url": null, "notes": ""}, {"id": "com-demo-003", "type": "Revue", "date": "20/05/2026", "lien_sharepoint": "", "doc_name": "Revue OP Albi A2406 - mai 2026.pdf", "doc_size": 410000, "doc_data_url": null, "notes": "Revue trimestrielle avec Aliette"}, {"id": "com-demo-004", "type": "CA", "date": "15/07/2026", "lien_sharepoint": "", "doc_name": null, "doc_size": null, "doc_data_url": null, "notes": "Validation budget complémentaire", "statut": "planifie", "lieu": "AXENTIA Toulouse", "planning_id": "plan-demo-001"}], "date_promesse": "12/03/2024", "date_acte_auth": "28/06/2024", "date_depot_pc": "15/09/2024", "date_obt_pc": "10/02/2025", "date_os": "22/06/2025", "date_livraison": "01/09/2026", "date_conv_loc": "15/07/2026", "date_conv_apl": "15/07/2026", "date_ca_axentia": "18/02/2025", "notes_libres": "Opération de démonstration · 3 tranches mixtes (RSJA + Foyer PMR + résidence étudiante). Suivi rigoureux des appels de fonds promoteur.", "fmt_total_budget": "-", "fmt_total_prets": "-", "fmt_total_subv": "-", "fmt_total_fonds_propres": "-", "fmt_total_surface": "-", "total_surface": null, "tranches": [{"id": "T1", "code_full": "A2406-RSJA", "type_structure": "Résidence Sociale Jeunes Actifs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 5100000, "n_siap": "2024SI08100012", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "Foyer 2024", "beneficiaire_agrement": "Jeunes Actifs <30 ans", "plai_adapte": 8, "detail_logements": "Dont 38 PLAI T1 prime · 12 PLAI T1 standard · 8 PLAI adaptés (mobilité réduite)", "n_leon": "3421", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 340, "date_accord_redev": "12/02/2025", "vol": {"plai": 58, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 1640, "plus": 0, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 58, "fonds_propres": 819700, "bilan": {"charge_fonciere": {"Terrain": 1820000, "Frais d'acquisition": 24400, "VRD": 32000, "Droits et taxes": 17800}, "batiment": {"Travaux de construction": 2600000, "Aléas": 130000}, "honoraires": {"Architecte": 155000, "Bureau d'étude": 41500, "OPC / SPS / CT": 27000, "Conduite d'opération": 25500}, "frais_divers": {"Actualisation / Révision": 30500}, "frais_financiers": {"Frais financiers": 188000}}}, {"id": "T2", "code_full": "A2406-FOYER", "type_structure": "Foyer Jeunes Travailleurs", "gestionnaire": "APART'AGES", "annee_prog": "2024", "budget_ttc": 2320000, "n_siap": "2024SI08100013", "statut_agrement": "DFA signée", "date_depot_agr": "08/09/2024", "date_dfa": "30/01/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "FJT 2024", "beneficiaire_agrement": "Apprentis & alternants", "plai_adapte": 3, "detail_logements": "Dont 18 PLAI T1 prime · 6 PLUS T1 · 3 PLAI adaptés", "n_leon": "3422", "date_ref": "08/04/2025", "type_redevance": "Forfaitaire", "montant_redevance": 320, "vol": {"plai": 21, "plus": 6, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 580, "plus": 165, "pls": 0, "pli": 0, "libre": 0, "autre": 0}, "logements": 27, "fonds_propres": 461800, "bilan": {"charge_fonciere": {"Terrain": 815000, "Frais d'acquisition": 11000}, "batiment": {"Travaux de construction": 1170000, "Aléas": 58500}, "honoraires": {"Architecte": 71500, "Bureau d'étude": 18800, "Conduite d'opération": 11500}, "frais_divers": {"Actualisation / Révision": 14000}, "frais_financiers": {"Frais financiers": 85500}}}, {"id": "T3", "code_full": "A2406-ETUD", "type_structure": "Résidence Étudiante", "gestionnaire": "ARPEJ", "annee_prog": "2024", "budget_ttc": 1790000, "n_siap": "2024SI08100014", "statut_agrement": "Obtenu", "date_depot_agr": "08/09/2024", "date_dfa": "12/02/2025", "famille_agrement": "Logement-foyer", "uls_rhvs": "ULS", "categorie_agrement": "PLS étudiant", "beneficiaire_agrement": "Étudiants", "plai_adapte": 0, "detail_logements": "Dont 22 PLS T1 · pas de PLAI", "n_leon": "3423", "date_ref": "08/04/2025", "vol": {"plai": 0, "plus": 0, "pls": 22, "pli": 0, "libre": 0, "autre": 0}, "surfaces": {"plai": 0, "plus": 0, "pls": 615, "pli": 0, "libre": 0, "autre": 0}, "logements": 22, "fonds_propres": 191500, "bilan": {"charge_fonciere": {"Terrain": 615000, "Frais d'acquisition": 8300}, "batiment": {"Travaux de construction": 910000, "Aléas": 45500}, "honoraires": {"Architecte": 55500, "Bureau d'étude": 15200, "Conduite d'opération": 9500}, "frais_divers": {"Actualisation / Révision": 11000}, "frais_financiers": {"Frais financiers": 66500}}}], "prets": [{"tranche": "RSJA", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1950000, "montant_lo": 1980000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre", "taux": "TLA -0,20%", "duree_emprunt": 40, "revision": "Double"}, {"tranche": "RSJA", "ligne": "PLAI foncier", "financeur": "CDC", "montant_sim": 1430000, "montant_lo": 1450000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre", "taux": "TLA -0,20%", "duree_emprunt": 50, "revision": "Double"}, {"tranche": "RSJA", "ligne": "ALS", "financeur": "Action Logement", "montant_sim": 460000, "date_demande": "10/02/2025", "statut": "Demandé", "non_garanti": true}, {"tranche": "FOYER", "ligne": "PLAI bâti", "financeur": "CDC", "montant_sim": 1160000, "montant_lo": 1180000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "date_lo": "08/04/2025", "statut": "Lettre d'offre"}, {"tranche": "FOYER", "ligne": "PLUS bâti", "financeur": "CDC", "montant_sim": 530000, "date_demande": "20/01/2025", "date_comite_banque": "12/03/2025", "statut": "Demandé"}, {"tranche": "ETUD", "ligne": "PLS bâti", "financeur": "Crédit Agricole", "montant_sim": 1450000, "montant_lo": 1480000, "date_demande": "05/02/2025", "date_comite_banque": "20/03/2025", "date_lo": "10/04/2025", "statut": "Lettre d'offre"}], "subventions": [{"tranche": "RSJA", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 232000, "montant_notifie": 232000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée"}, {"tranche": "RSJA", "financeur": "Région Occitanie", "financement": "Aide foyer jeunes actifs", "montant_demande": 150000, "date_demande": "01/03/2025", "statut": "Déposée"}, {"tranche": "FOYER", "financeur": "État", "financement": "Subvention PLAI", "montant_demande": 84000, "montant_notifie": 84000, "date_demande": "15/02/2025", "date_notification": "18/03/2025", "statut": "Notifiée"}, {"tranche": "ETUD", "financeur": "Conseil départemental 81", "financement": "Aide résidence étudiante", "montant_demande": 65000, "date_demande": "20/03/2025", "statut": "Déposée"}], "garanties": [{"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 50, "statut": "Dossier transmis", "date_demande": "20/01/2025"}, {"tranche": "RSJA", "pret_lie": "PLAI bâti", "garant": "Département", "quotite": 50, "statut": "Dossier transmis", "date_demande": "20/01/2025"}, {"tranche": "RSJA", "pret_lie": "PLAI foncier", "garant": "Commune", "quotite": 100, "statut": "Dossier transmis", "date_demande": "20/01/2025"}, {"tranche": "FOYER", "pret_lie": "PLAI bâti", "garant": "Commune", "quotite": 100, "statut": "Accord de principe reçu", "date_demande": "20/01/2025"}, {"tranche": "ETUD", "pret_lie": "PLS bâti", "garant": "CEGC", "quotite": 100, "statut": "Accord de principe reçu", "caution_relais": false}], "prefinancements": [], "reservataires": [{"tranche": "RSJA", "reservataire": "Action Logement", "financement": "Contingent 1%", "nb_logements": 11, "pct_reserve": 19, "etape": "En négociation"}, {"tranche": "RSJA", "reservataire": "Préfecture 81", "financement": "Contingent préfectoral", "nb_logements": 17, "pct_reserve": 30, "etape": "Validé"}, {"tranche": "ETUD", "reservataire": "Université Champollion", "financement": "Convention résidence", "nb_logements": 22, "pct_reserve": 100, "etape": "Validé"}], "phases_history": []}}]}];
 // On garde les ops en dur comme fallback ; loadFromSupabase() les remplacera si l'API répond.
 
 // ============== REFERENTIELS (centralized lookup lists) ==============
-// Structure des clés uniquement — les items sont hydratés depuis Supabase au démarrage.
+// Structure des clés uniquement - les items sont hydratés depuis Supabase au démarrage.
 // Si Supabase n'est pas disponible, les listes resteront vides.
 const REFERENTIELS = {
   // Financial
@@ -232,7 +232,7 @@ function computeAlerts(op) {
     return 'info';
   };
 
-  // === Rule 1: Lettre d'offre CDC — validité 4 mois ===
+  // === Rule 1: Lettre d'offre CDC - validité 4 mois ===
   // Skip si op livrée : si LO sans contrat sur op livrée, c'est qu'on est passé directement à autre chose
   if (!isDelivered) {
     (op.prets || []).forEach(p => {
@@ -246,7 +246,7 @@ function computeAlerts(op) {
             alerts.push({
               level, days, deadline,
               section: 'prets',
-              msg: `Lettre d'offre ${p.ligne || ''} ${p.financeur || ''} : validité ${days < 0 ? `dépassée depuis ${-days}j (depuis le ${fmt(deadline)})` : `expire dans ${days}j (le ${fmt(deadline)})`} — contrat non signé`
+              msg: `Lettre d'offre ${p.ligne || ''} ${p.financeur || ''} : validité ${days < 0 ? `dépassée depuis ${-days}j (depuis le ${fmt(deadline)})` : `expire dans ${days}j (le ${fmt(deadline)})`} - contrat non signé`
             });
           }
         }
@@ -254,7 +254,7 @@ function computeAlerts(op) {
     });
   }
 
-  // === Rule 2: Garantie — accord de principe (validité ≈ 6 mois) ===
+  // === Rule 2: Garantie - accord de principe (validité ≈ 6 mois) ===
   // Skip si op livrée : la garantie aurait du être signée bien avant
   if (!isDelivered) {
     (op.garanties || []).forEach(g => {
@@ -268,7 +268,7 @@ function computeAlerts(op) {
             alerts.push({
               level, days, deadline,
               section: 'garanties',
-              msg: `Garantie ${g.garant || ''} : accord de principe ${days < 0 ? `caduc depuis ${-days}j` : `expire dans ${days}j (le ${fmt(deadline)})`} — pas de délib/convention`
+              msg: `Garantie ${g.garant || ''} : accord de principe ${days < 0 ? `caduc depuis ${-days}j` : `expire dans ${days}j (le ${fmt(deadline)})`} - pas de délib/convention`
             });
           }
         }
@@ -276,7 +276,7 @@ function computeAlerts(op) {
     });
   }
 
-  // === Rule 3: PC obtenu mais pas d'OS — validité du PC (2 ans) ===
+  // === Rule 3: PC obtenu mais pas d'OS - validité du PC (2 ans) ===
   // Skip si op livrée : OS forcément passé
   if (!isDelivered && op.date_obt_pc && !op.date_os) {
     const d = parseDateStr(op.date_obt_pc);
@@ -288,7 +288,7 @@ function computeAlerts(op) {
         alerts.push({
           level, days, deadline,
           section: 'op',
-          msg: `Permis de construire : ${days < 0 ? `périmé depuis ${-days}j (le ${fmt(deadline)})` : `validité expire dans ${days}j (le ${fmt(deadline)})`} — pas d'OS lancé`
+          msg: `Permis de construire : ${days < 0 ? `périmé depuis ${-days}j (le ${fmt(deadline)})` : `validité expire dans ${days}j (le ${fmt(deadline)})`} - pas d'OS lancé`
         });
       }
     }
@@ -312,7 +312,7 @@ function computeAlerts(op) {
     }
   }
 
-  // === Rule 5: Tranche — agrément non obtenu et année prog en cours ou passée ===
+  // === Rule 5: Tranche - agrément non obtenu et année prog en cours ou passée ===
   // Skip si op livrée : agrément forcément acquis pour livrer
   if (!isDelivered) {
     (op.tranches || []).forEach(t => {
@@ -330,7 +330,7 @@ function computeAlerts(op) {
               alerts.push({
                 level, days, deadline,
                 section: 'tranche',
-                msg: `Tranche ${trCode} : agrément ${progYear} en "${t.statut_agrement}" — ${days < 0 ? `année prog terminée depuis ${-days}j` : `fin d'année prog dans ${days}j`}`
+                msg: `Tranche ${trCode} : agrément ${progYear} en "${t.statut_agrement}" - ${days < 0 ? `année prog terminée depuis ${-days}j` : `fin d'année prog dans ${days}j`}`
               });
             }
           }
@@ -378,7 +378,7 @@ function computeAlerts(op) {
     }
   }
 
-  // === Rule 8 (NEW) : GPA — vérifier date de fin GPA approche (10 ans après livraison) ===
+  // === Rule 8 (NEW) : GPA - vérifier date de fin GPA approche (10 ans après livraison) ===
   if (isGpa && op.date_livraison) {
     const d = parseDateStr(op.date_livraison);
     if (d) {
@@ -409,7 +409,7 @@ function computeAlerts(op) {
         alerts.push({
           level, days, deadline,
           section: 'prets',
-          msg: `Conditions préalables non levées — ${p.ligne || ''} ${p.financeur || ''} : ${pieces.length} pièce${pieces.length > 1 ? 's' : ''} attendue${pieces.length > 1 ? 's' : ''} (${apercu})`
+          msg: `Conditions préalables non levées - ${p.ligne || ''} ${p.financeur || ''} : ${pieces.length} pièce${pieces.length > 1 ? 's' : ''} attendue${pieces.length > 1 ? 's' : ''} (${apercu})`
         });
       }
     });
@@ -619,7 +619,7 @@ Les données actuelles seront archivées et timestampées. La nouvelle phase com
 
   // Advance
   op.phase_actuelle = nextPhase;
-  // Phase is now an op-level concept only — no propagation to tranches
+  // Phase is now an op-level concept only - no propagation to tranches
 
   // Persist to Supabase if op comes from Supabase
   if (op._uid && op._uid.startsWith('op-supabase-')) {
@@ -727,7 +727,7 @@ function diffWrap(displayHtml, currentVal, refVal) {
 function diffWrapText(displayHtml, currentVal, refVal) {
   if (compareWithIdx == null || refVal == null) return displayHtml;
   if (String(currentVal || '') === String(refVal || '')) return displayHtml;
-  return `<span class="diff-changed" title="Avant : ${escapeHtml(String(refVal) || '—')}">${displayHtml}<span class="diff-mark">≠</span></span>`;
+  return `<span class="diff-changed" title="Avant : ${escapeHtml(String(refVal) || '-')}">${displayHtml}<span class="diff-mark">≠</span></span>`;
 }
 function totalBudgetFromSnap(op) {
   if (compareWithIdx == null) return null;
@@ -985,7 +985,7 @@ function showOpHistory() {
     <div class="history-modal">
       <div class="history-modal-head">
         <i class="ti ti-history"></i>
-        <span>Historique des modifications — ${escapeHtml(op.display_name || op.code || '?')}</span>
+        <span>Historique des modifications - ${escapeHtml(op.display_name || op.code || '?')}</span>
         <button class="history-modal-close" type="button">×</button>
       </div>
       <div class="history-modal-body">
@@ -1007,7 +1007,7 @@ function showOpHistory() {
               <tbody>
                 ${entries.map(e => `<tr>
                   <td>${escapeHtml(formatDate(e.date))}</td>
-                  <td>${escapeHtml(e.user || '—')}</td>
+                  <td>${escapeHtml(e.user || '-')}</td>
                   <td><strong>${escapeHtml(e.field || '?')}</strong>${e.scope ? ` <span style="color:var(--text-tertiary);font-size:11px;">(${escapeHtml(e.scope)})</span>` : ''}</td>
                   <td>${formatVal(e.old)}</td>
                   <td>${formatVal(e.new)}</td>
@@ -1078,7 +1078,7 @@ Cette action est irréversible.`)) return;
 }
 
 // Render trash view (admin panel)
-// ============== AAP (Appels à projets) — registre central ==============
+// ============== AAP (Appels à projets) - registre central ==============
 function aapHeaders() {
   return { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
 }
@@ -1125,7 +1125,7 @@ function aapConcernedRows(aapId) {
 function openAapTagManager(aapId) {
   document.querySelectorAll('.bilan-tranches-modal-backdrop').forEach(p => p.remove());
   const aap = AAPS.find(a => String(a._supabase_id) === String(aapId));
-  const title = aap ? (aap.tag ? aap.tag + ' — ' : '') + (aap.intitule || 'AAP') : 'AAP';
+  const title = aap ? (aap.tag ? aap.tag + ' - ' : '') + (aap.intitule || 'AAP') : 'AAP';
   const opsHtml = (DATA || []).map(op => {
     const checked = op.aap_id != null && String(op.aap_id) === String(aapId);
     const otherTag = (op.aap_id != null && String(op.aap_id) !== String(aapId)) ? aapLabelById(op.aap_id) : '';
@@ -1148,7 +1148,7 @@ function openAapTagManager(aapId) {
   backdrop.className = 'bilan-tranches-modal-backdrop';
   backdrop.innerHTML = `
     <div class="bilan-tranches-modal" style="max-width:600px;">
-      <div class="bilan-tranches-modal-head"><span>Opérations taguées — ${escapeHtml(title)}</span><button class="bilan-tranches-modal-close" type="button">×</button></div>
+      <div class="bilan-tranches-modal-head"><span>Opérations taguées - ${escapeHtml(title)}</span><button class="bilan-tranches-modal-close" type="button">×</button></div>
       <div class="bilan-tranches-modal-body">
         <p class="helper">Cochez les opérations concernées par cet AAP. Vous pouvez préciser une tranche, sinon le tag porte sur toute l'opération.</p>
         <input type="text" class="card-input" id="aaptagSearch" placeholder="Filtrer une opération…" style="margin-bottom:10px;width:100%;">
@@ -1396,7 +1396,7 @@ function renderCtrlAapEcheances() {
     return { a, lim, days, nbOps };
   }).sort((x, y) => { if (x.lim && y.lim) return x.lim - y.lim; if (x.lim) return -1; if (y.lim) return 1; return 0; });
   const chip = (days) => {
-    if (days === null) return '<span class="ctrl-chip ctrl-chip-muted">—</span>';
+    if (days === null) return '<span class="ctrl-chip ctrl-chip-muted">-</span>';
     if (days < 0) return `<span class="ctrl-chip ctrl-chip-over">Échu (J+${-days})</span>`;
     if (days <= 30) return `<span class="ctrl-chip ctrl-chip-soon">J-${days}</span>`;
     return `<span class="ctrl-chip ctrl-chip-ok">J-${days}</span>`;
@@ -1405,7 +1405,7 @@ function renderCtrlAapEcheances() {
     <tr>
       <td style="font-weight:600;color:var(--text-primary);">${escapeHtml(r.a.intitule || 'Sans intitulé')}</td>
       <td>${escapeHtml(r.a.organisme || '')}</td>
-      <td>${escapeHtml(r.a.date_limite || '—')}</td>
+      <td>${escapeHtml(r.a.date_limite || '-')}</td>
       <td>${chip(r.days)}</td>
       <td>${r.a.statut ? statusBadge(r.a.statut) : ''}</td>
       <td style="text-align:right;">${r.nbOps}</td>
@@ -1421,7 +1421,7 @@ function renderCtrlAapEcheances() {
 }
 
 function ctrlChip(days) {
-  if (days === null) return '<span class="ctrl-chip ctrl-chip-muted">—</span>';
+  if (days === null) return '<span class="ctrl-chip ctrl-chip-muted">-</span>';
   if (days < 0) return `<span class="ctrl-chip ctrl-chip-over">Échu (J+${-days})</span>`;
   if (days <= 30) return `<span class="ctrl-chip ctrl-chip-soon">J-${days}</span>`;
   return `<span class="ctrl-chip ctrl-chip-ok">J-${days}</span>`;
@@ -1649,10 +1649,10 @@ function renderCtrlFinancements() {
 
   const visible = model.filter(m => fm2Filter === 'all' || m.items.some(i => (fm2Filter === 'over' ? (i.lvl === 'over' || i.lvl === 'muted') : i.lvl === fm2Filter)));
 
-  const dotTip = i => `${i.type} ${i.lib} — ${i.statut || '—'}${i.mtTxt ? ' · ' + i.mtTxt : ''}`;
+  const dotTip = i => `${i.type} ${i.lib} - ${i.statut || '-'}${i.mtTxt ? ' · ' + i.mtTxt : ''}`;
   const cellFor = (m, kind, label) => {
     const arr = m.items.filter(i => i.kind === kind);
-    if (!arr.length) return `<span class="fm2-cell"><span class="fm2-cell-label">${label}</span><span class="fm2-cell-empty">—</span></span>`;
+    if (!arr.length) return `<span class="fm2-cell"><span class="fm2-cell-label">${label}</span><span class="fm2-cell-empty">-</span></span>`;
     const dots = arr.map(i => `<span class="fm2-dot ${i.lvl === 'muted' ? 'muted' : i.lvl}" title="${escapeHtml(dotTip(i))}"></span>`).join('');
     let mt = '';
     if (kind === 'pret') { const t = arr.reduce((s, i) => s + i.mtNum, 0); mt = t ? fmtMontant(t) : ''; }
@@ -1735,7 +1735,7 @@ function chargePlanData(roleField) {
   const rows = [];
   let minY = Infinity, maxY = -Infinity;
   ops.forEach(op => {
-    const person = ((op[roleField] || '').trim()) || '— Non attribué';
+    const person = ((op[roleField] || '').trim()) || '- Non attribué';
     const sY = chargeStartYear(op);
     if (sY == null) return;
     const eY = chargeEndYear(op, sY) || sY;
@@ -1940,11 +1940,11 @@ function renderTrash() {
         </thead>
         <tbody>
           ${deleted.map(op => `<tr>
-            <td><strong>${escapeHtml(op.code || op.sheet || '—')}</strong></td>
+            <td><strong>${escapeHtml(op.code || op.sheet || '-')}</strong></td>
             <td>${escapeHtml(op.display_name || '')}</td>
             <td>${escapeHtml(op.phase_actuelle || 'Montage')}</td>
             <td>${escapeHtml(formatDate(op.deleted_at))}</td>
-            <td>${escapeHtml(op.deleted_by || '—')}</td>
+            <td>${escapeHtml(op.deleted_by || '-')}</td>
             <td class="trash-actions">
               <button class="btn-small btn-restore" onclick="restoreOp('${escapeHtml(op._uid)}')"><i class="ti ti-restore"></i>Restaurer</button>
               <button class="btn-small btn-perm-delete" onclick="permanentDeleteOp('${escapeHtml(op._uid)}')"><i class="ti ti-trash"></i>Supprimer définitivement</button>
@@ -2105,7 +2105,7 @@ async function createOp() {
   if (searchInput) searchInput.value = '';
   renderAll();
   if (newOp._supabase_id) saveOpToSupabase(newOp); // persiste les valeurs par défaut
-  showToast(`Opération « ${trimmed} » créée — pensez à lui attribuer un code analytique`, 'plus');
+  showToast(`Opération « ${trimmed} » créée - pensez à lui attribuer un code analytique`, 'plus');
 }
 
 function deleteOp() {
@@ -2128,7 +2128,7 @@ function createTranche() {
   showToast('Tranche créée', 'plus');
 }
 
-// ============== BILAN PR/PF — APERÇU & PDF ==============
+// ============== BILAN PR/PF - APERÇU & PDF ==============
 // Aide : trouve dans un objet bilan (clé=nom poste, valeur=montant) les postes contenant un mot-clé
 function _bilanMatchSum(section, keywords) {
   if (!section || typeof section !== 'object') return { total: 0, keys: [] };
@@ -2171,11 +2171,11 @@ function _bilanSumPrets(prets, kws, excludeKws = []) {
   return t;
 }
 function _bilanFmt(v) {
-  if (!v || isNaN(v)) return '—';
+  if (!v || isNaN(v)) return '-';
   return Math.round(v).toLocaleString('fr-FR') + ' €';
 }
 function _bilanFmtPct(v, total) {
-  if (!total || total === 0) return '—';
+  if (!total || total === 0) return '-';
   const p = (v / total) * 100;
   return p.toFixed(1).replace('.', ',') + ' %';
 }
@@ -2250,9 +2250,9 @@ function _bilanRenderPage(op, tranchesSelected) {
   const depMatch = (op.departement || '').match(/\((\d+)\)/);
   const depCode = depMatch ? depMatch[1] : '';
   const programme = `${(op.commune || '').toUpperCase()}${depCode ? ' (' + depCode + ')' : ''}`;
-  const typeProduit = d.types.join(' / ') || '—';
-  const gestionnaireStr = d.gestionnaires.join(' / ') || '—';
-  const refsStr = d.refs.join(' / ') || '—';
+  const typeProduit = d.types.join(' / ') || '-';
+  const gestionnaireStr = d.gestionnaires.join(' / ') || '-';
+  const refsStr = d.refs.join(' / ') || '-';
 
   const trancheLabels = tranchesSelected.map(t => {
     const tc = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
@@ -2298,7 +2298,7 @@ function _bilanRenderPage(op, tranchesSelected) {
 
     <div class="bilan-section-header"><span>IDENTIFICATION DE L'OPÉRATION</span></div>
     <div class="bilan-id-grid">
-      <div class="bik">Programme</div><div class="biv">${escapeHtml(programme || '—')}</div>
+      <div class="bik">Programme</div><div class="biv">${escapeHtml(programme || '-')}</div>
       <div class="bik">Gestionnaire</div><div class="biv">${escapeHtml(gestionnaireStr)}</div>
       <div class="bik">Type de produit</div><div class="biv">${escapeHtml(typeProduit)}</div>
       <div class="bik">Référence</div><div class="biv">${escapeHtml(refsStr)}</div>
@@ -2311,19 +2311,19 @@ function _bilanRenderPage(op, tranchesSelected) {
     </table>
 
     ${bandeau('PLAN DE FINANCEMENT PRÉVISIONNEL')}
-    <div class="bilan-subsection-header">I — DÉPENSES</div>
+    <div class="bilan-subsection-header">I - DÉPENSES</div>
     <table class="bilan-table">
       ${depRows}
       <tr class="bilan-total-navy"><td>TOTAL DÉPENSES</td><td class="bilan-montant">${_bilanFmt(d.totalDep)}</td><td class="bilan-pct">100,0 %</td></tr>
     </table>
-    <div class="bilan-subsection-header">II — RECETTES</div>
+    <div class="bilan-subsection-header">II - RECETTES</div>
     <table class="bilan-table">
       ${recRows}
       <tr class="bilan-total-navy"><td>TOTAL FINANCEMENT</td><td class="bilan-montant">${_bilanFmt(d.totalRec)}</td><td class="bilan-pct">100,0 %</td></tr>
     </table>
 
-    <div class="bilan-equilibre ${equilibreOk ? 'bilan-equilibre-ok' : 'bilan-equilibre-ko'}">ÉQUILIBRE&nbsp;&nbsp;—&nbsp;&nbsp;Écart (Recettes − Dépenses) : ${escapeHtml(equilibreVal)}</div>
-    <div class="bilan-footer">Document confidentiel — Bilan prévisionnel d'opération · AXENTIA</div>
+    <div class="bilan-equilibre ${equilibreOk ? 'bilan-equilibre-ok' : 'bilan-equilibre-ko'}">ÉQUILIBRE&nbsp;&nbsp;-&nbsp;&nbsp;Écart (Recettes − Dépenses) : ${escapeHtml(equilibreVal)}</div>
+    <div class="bilan-footer">Document confidentiel - Bilan prévisionnel d'opération · AXENTIA</div>
   `;
 }
 
@@ -2353,7 +2353,7 @@ function _bilanOpenTranchesModal(op, defaultIdx, onConfirm) {
         <p class="helper">Cochez une ou plusieurs tranches. Le bilan consolide les postes (somme) sur les tranches sélectionnées.</p>
         ${tranches.map((t, i) => {
           const tc = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
-          const label = `${tc} — ${escapeHtml(t.type_structure || '?')}${t.financement ? ' (' + escapeHtml(t.financement) + ')' : ''}`;
+          const label = `${tc} - ${escapeHtml(t.type_structure || '?')}${t.financement ? ' (' + escapeHtml(t.financement) + ')' : ''}`;
           const meta = `${trancheLogements(t) || '?'} logements · ${t.gestionnaire || 'sans gestionnaire'}`;
           return `
             <label class="bilan-tranche-check">
@@ -2440,9 +2440,9 @@ function _bilanBuildDocDef(op, tranchesSelected) {
   const depMatch = (op.departement || '').match(/\((\d+)\)/);
   const depCode = depMatch ? depMatch[1] : '';
   const programme = `${(op.commune || '').toUpperCase()}${depCode ? ' (' + depCode + ')' : ''}`;
-  const typeProduit = d.types.join(' / ') || '—';
-  const gestionnaireStr = d.gestionnaires.join(' / ') || '—';
-  const refsStr = d.refs.join(' / ') || '—';
+  const typeProduit = d.types.join(' / ') || '-';
+  const gestionnaireStr = d.gestionnaires.join(' / ') || '-';
+  const refsStr = d.refs.join(' / ') || '-';
   const sousTitre = d.types.join(', ') || "Bilan prévisionnel d'opération";
   const trancheLabels = tranchesSelected.map(t => { const tc = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id; return `${tc}${t.financement ? ' (' + t.financement + ')' : ''}`; });
 
@@ -2497,10 +2497,10 @@ function _bilanBuildDocDef(op, tranchesSelected) {
   };
 
   const pfBody = [];
-  pfBody.push(subHeader('I — DÉPENSES'));
+  pfBody.push(subHeader('I - DÉPENSES'));
   d.depenses.forEach(l => pfBody.push(line(l.label, l.montant, d.totalDep)));
   pfBody.push(navyTotal('TOTAL DÉPENSES', d.totalDep));
-  pfBody.push(subHeader('II — RECETTES'));
+  pfBody.push(subHeader('II - RECETTES'));
   d.recettes.forEach(l => pfBody.push(line(l.label, l.montant, d.totalRec)));
   pfBody.push(navyTotal('TOTAL FINANCEMENT', d.totalRec));
 
@@ -2522,7 +2522,7 @@ function _bilanBuildDocDef(op, tranchesSelected) {
   ]] }, layout: 'noBorders', margin: [0, 7, 0, 0] };
   const idGrid = {
     table: { widths: ['auto', '*', 'auto', '*'], body: [
-      [ { text: 'Programme', bold: true, fillColor: GREY }, { text: programme || '—' }, { text: 'Gestionnaire', bold: true, fillColor: GREY }, { text: gestionnaireStr } ],
+      [ { text: 'Programme', bold: true, fillColor: GREY }, { text: programme || '-' }, { text: 'Gestionnaire', bold: true, fillColor: GREY }, { text: gestionnaireStr } ],
       [ { text: 'Type de produit', bold: true, fillColor: GREY }, { text: typeProduit }, { text: 'Référence', bold: true, fillColor: GREY }, { text: refsStr } ],
     ] },
     layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => '#dfe2e7', vLineColor: () => '#dfe2e7', paddingTop: () => 1.8, paddingBottom: () => 1.8, paddingLeft: () => 5, paddingRight: () => 5 },
@@ -2536,8 +2536,8 @@ function _bilanBuildDocDef(op, tranchesSelected) {
   content.push(goldRow);
   content.push(bandeau('PLAN DE FINANCEMENT PRÉVISIONNEL'));
   content.push({ table: { widths: W, body: pfBody }, layout: innerLayout });
-  content.push({ text: `ÉQUILIBRE   —   Écart (Recettes − Dépenses) : ${equilibreVal}`, bold: true, color: equilibreOk ? '#1f7a3d' : '#c0392b', margin: [0, 7, 0, 0] });
-  content.push({ text: "Document confidentiel — Bilan prévisionnel d'opération · AXENTIA", fontSize: 7, color: '#999', margin: [0, 7, 0, 0] });
+  content.push({ text: `ÉQUILIBRE   -   Écart (Recettes − Dépenses) : ${equilibreVal}`, bold: true, color: equilibreOk ? '#1f7a3d' : '#c0392b', margin: [0, 7, 0, 0] });
+  content.push({ text: "Document confidentiel - Bilan prévisionnel d'opération · AXENTIA", fontSize: 7, color: '#999', margin: [0, 7, 0, 0] });
 
   return {
     pageSize: 'A4', pageMargins: [36, 26, 36, 22],
@@ -2594,8 +2594,8 @@ function escapeHtml(s) {
   if (s == null) return '';
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
-function dash(v) { return (v === null || v === undefined || v === '') ? '<span class="kv-value-empty">—</span>' : escapeHtml(v); }
-function dashNum(v) { return (v === null || v === undefined || v === 0) ? '<span class="muted">—</span>' : v; }
+function dash(v) { return (v === null || v === undefined || v === '') ? '<span class="kv-value-empty">-</span>' : escapeHtml(v); }
+function dashNum(v) { return (v === null || v === undefined || v === 0) ? '<span class="muted">-</span>' : v; }
 
 // Returns the reference (snapshot) value for a given field & scope, or null if not in compare mode
 function getFieldRef(field, scope) {
@@ -2609,7 +2609,7 @@ function getFieldRef(field, scope) {
 // Field formatter: which fields are monetary, which are dates, etc.
 const MONETARY_FIELDS = new Set(['budget_ttc','pret_bati','pret_foncier','subv_total','fonds_propres','montant_redevance','montant_sim','montant_lo','montant_contrat','montant_demande','montant_notifie','montant_couvert','montant_tire']);
 function formatRefValue(field, val) {
-  if (val == null || val === '') return '—';
+  if (val == null || val === '') return '-';
   if (MONETARY_FIELDS.has(field)) return fmtMontant(val);
   return String(val);
 }
@@ -2650,7 +2650,7 @@ function editableKV(label, value, field, type='text', scope='op-field') {
   return `<div class="kv-row"><span class="kv-key">${label}</span><span class="kv-value">${displayed}</span></div>`;
 }
 
-// Bascule visuelle prévu/réel côté client (lue à l'enregistrement) — édition uniquement
+// Bascule visuelle prévu/réel côté client (lue à l'enregistrement) - édition uniquement
 function flipJalonPill(el) {
   const isReel = el.classList.toggle('reel');
   el.classList.toggle('prev', !isReel);
@@ -2701,9 +2701,9 @@ function editableNotes(value, field, scope, placeholder) {
   const isDifferent = refValue != null && String(refValue || '') !== String(value || '');
   if (!value) {
     if (isDifferent) {
-      return `<div class="notes-block notes-block-empty diff-changed" title="Avant : ${escapeHtml(String(refValue))}">—<span class="diff-mark">≠</span></div>`;
+      return `<div class="notes-block notes-block-empty diff-changed" title="Avant : ${escapeHtml(String(refValue))}">-<span class="diff-mark">≠</span></div>`;
     }
-    return '<div class="notes-block notes-block-empty">—</div>';
+    return '<div class="notes-block notes-block-empty">-</div>';
   }
   if (isDifferent) {
     return `<div class="notes-block diff-changed" title="Avant : ${escapeHtml(String(refValue))}">${escapeHtml(value)}<span class="diff-mark">≠</span></div>`;
@@ -2738,8 +2738,8 @@ function editableVolCell(key, value, t) {
     }
   }
   const isDifferent = refValue != null && Number(refValue) !== Number(value || 0);
-  const displayedVal = value || '—';
-  const surfaceLine = surface ? `<div class="vol-cell-surface">${fmtSurface(surface)}</div>` : (value ? '<div class="vol-cell-surface vol-cell-surface-empty">— m²</div>' : '');
+  const displayedVal = value || '-';
+  const surfaceLine = surface ? `<div class="vol-cell-surface">${fmtSurface(surface)}</div>` : (value ? '<div class="vol-cell-surface vol-cell-surface-empty">- m²</div>' : '');
   if (isDifferent) {
     return `<div class="vol-cell${value ? '' : ' vol-cell-empty'}"><div class="vol-cell-label">${label}</div><div class="vol-cell-value diff-changed" title="Avant : ${refValue}">${displayedVal}<span class="diff-mark">${Number(value || 0) > Number(refValue) ? '↑' : '↓'}</span></div>${surfaceLine}</div>`;
   }
@@ -2748,30 +2748,30 @@ function editableVolCell(key, value, t) {
 
 // JS formatters (mirror Python ones, used at render time)
 function fmtMontant(v) {
-  if (v === null || v === undefined || v === 0 || v === '') return '—';
+  if (v === null || v === undefined || v === 0 || v === '') return '-';
   const n = Number(v);
-  if (isNaN(n)) return '—';
+  if (isNaN(n)) return '-';
   const k = Math.round(n / 1000);
   return k.toLocaleString('fr-FR').replace(/ /g, ' ').replace(/,/g, ' ') + ' k€';
 }
 function fmtEuros(v) {
-  if (v === null || v === undefined || v === '') return '—';
+  if (v === null || v === undefined || v === '') return '-';
   const n = Number(v);
-  if (isNaN(n)) return '—';
+  if (isNaN(n)) return '-';
   const rounded = Math.round(n);
   return rounded.toLocaleString('fr-FR').replace(/ /g, ' ').replace(/,/g, ' ') + ' €';
 }
 function fmtSurface(v) {
-  if (v === null || v === undefined || v === 0) return '—';
+  if (v === null || v === undefined || v === 0) return '-';
   const n = Number(v);
-  if (isNaN(n)) return '—';
+  if (isNaN(n)) return '-';
   return Math.round(n).toLocaleString('fr-FR').replace(/,/g, ' ') + ' m²';
 }
 
 // On-the-fly totals (recompute when tranches change)
 // Règle : champ stocké directement sur la tranche (saisie utilisateur).
 // Au niveau op, on somme ce qui est saisi sur les tranches. Si AUCUNE tranche
-// n'a la valeur saisie (toutes null/undefined), on renvoie null (= "—" à l'affichage).
+// n'a la valeur saisie (toutes null/undefined), on renvoie null (= "-" à l'affichage).
 function sumTrancheField(op, field) {
   if (!op?.tranches?.length) return null;
   let total = 0;
@@ -2850,7 +2850,7 @@ function bestPretAmount(p) {
 function bestSubvAmount(s) {
   return Number(s.montant_notifie ?? s.montant_notif) || Number(s.montant_demande) || 0;
 }
-// Variantes qui renvoient null si aucun montant (pour affichage "—")
+// Variantes qui renvoient null si aucun montant (pour affichage "-")
 function bestPretAmountOrNull(p) {
   const c = Number(p.montant_contrat);
   if (!isNaN(c) && c !== 0) return c;
@@ -2926,7 +2926,7 @@ const STATUS_MAP = {
 };
 function getStatusClass(statut) { return STATUS_MAP[statut] || 'neutral'; }
 function statusBadge(text) {
-  if (!text) return '<span class="muted">—</span>';
+  if (!text) return '<span class="muted">-</span>';
   return `<span class="badge-statut status-bg-${getStatusClass(text)}">${escapeHtml(text)}</span>`;
 }
 
@@ -2939,7 +2939,7 @@ function tranchesOptions(op, currentValue) {
   return codes.map(c => `<option value="${escapeHtml(c)}"${c === currentValue ? ' selected' : ''}>${escapeHtml(c)}</option>`).join('');
 }
 
-// Inline Tabler SVG icons (no CDN dependency — works offline + behind firewalls)
+// Inline Tabler SVG icons (no CDN dependency - works offline + behind firewalls)
 const TABLER_SVG = {
   'chevron-right': '<path d="M9 6l6 6l-6 6"/>',
   'fold-all': '<path d="M12 3v6"/><path d="M9 6l3 3l3 -3"/><path d="M12 21v-6"/><path d="M9 18l3 -3l3 3"/><path d="M4 12h16"/>',
@@ -3135,7 +3135,7 @@ function saveOpEdits() {
   // Bloque la sauvegarde si des champs sont marqués invalides
   const invalidEls = document.querySelectorAll('.editable-input.field-invalid');
   if (invalidEls.length > 0) {
-    showToast(`${invalidEls.length} champ${invalidEls.length > 1 ? 's' : ''} invalide${invalidEls.length > 1 ? 's' : ''} — corrigez avant d'enregistrer`, 'alert-triangle');
+    showToast(`${invalidEls.length} champ${invalidEls.length > 1 ? 's' : ''} invalide${invalidEls.length > 1 ? 's' : ''} - corrigez avant d'enregistrer`, 'alert-triangle');
     // Scroll vers le premier champ invalide
     invalidEls[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
     invalidEls[0].focus();
@@ -3173,7 +3173,7 @@ function saveOpEdits() {
     const field = el.dataset.editOpField;
     op[field] = el.value || null;
   });
-  // Jalons prévu/réel (calendrier travaux) — lus depuis les pastilles
+  // Jalons prévu/réel (calendrier travaux) - lus depuis les pastilles
   if (!op.jalons_reel) op.jalons_reel = {};
   document.querySelectorAll('[data-jalon-reel]').forEach(el => {
     const f = el.dataset.jalonReel;
@@ -3316,7 +3316,7 @@ function saveOpEdits() {
         const oit = oldMap.get(k);
         const lbl = cfg.name(nit) || cfg.label;
         if (!oit) {
-          logModification(op._uid, `${cfg.label} ${lbl} — ajout`, coll, '', 'nouvel élément');
+          logModification(op._uid, `${cfg.label} ${lbl} - ajout`, coll, '', 'nouvel élément');
         } else {
           cfg.fields.forEach(f => {
             if (f === 'pct_tire') return; // champ dérivé
@@ -3329,7 +3329,7 @@ function saveOpEdits() {
       oldMap.forEach((oit, k) => {
         if (!newMap.has(k)) {
           const lbl = cfg.name(oit) || cfg.label;
-          logModification(op._uid, `${cfg.label} ${lbl} — suppression`, coll, 'élément supprimé', '');
+          logModification(op._uid, `${cfg.label} ${lbl} - suppression`, coll, 'élément supprimé', '');
         }
       });
     });
@@ -3350,7 +3350,7 @@ function saveOpEdits() {
   if (op._uid && op._uid.startsWith('op-supabase-')) {
     saveOpToSupabase(op, _beforeSnap); // diff : ne PATCH que ce qui a changé
   } else {
-    showToast('Modifications enregistrées (mémoire locale — mockup)');
+    showToast('Modifications enregistrées (mémoire locale - mockup)');
   }
 }
 
@@ -3506,7 +3506,7 @@ function opsTrancheBandeauHtml(op, displayedOp) {
         onclick="selectTranche(${i}); openOpsDomain('tranche')">
         <span class="ops-tpill-dot ${dot}"></span>
         <span class="ops-tpill-top">${escapeHtml(suffix)}</span>
-        <span class="ops-tpill-meta">${trancheLogements(t) || '—'} logts · ${fmtMontant(trancheBudgetTTC(t))}</span>
+        <span class="ops-tpill-meta">${trancheLogements(t) || '-'} logts · ${fmtMontant(trancheBudgetTTC(t))}</span>
       </button>`;
   }).join('');
   return `<div class="ops-tbar">
@@ -3514,7 +3514,7 @@ function opsTrancheBandeauHtml(op, displayedOp) {
     <button type="button" class="ops-tpill op active" data-tranche-pill="op" onclick="closeOpsDrawer()">
       <span class="ops-tpill-top"><i class="ti ti-layout-dashboard"></i>Vue opération</span></button>
     <span class="ops-tbar-div"></span>
-    ${pills || '<span class="ops-tbar-empty">Aucune tranche — passez en édition pour en créer</span>'}
+    ${pills || '<span class="ops-tbar-empty">Aucune tranche - passez en édition pour en créer</span>'}
   </div>`;
 }
 
@@ -3533,7 +3533,7 @@ function renderOpHomeDashboard(op, displayedOp) {
     </section>`;
   const coms = op.comites || [];
   const comLines = coms.slice(0, 4).map(c =>
-    `<div class="oph-line"><span class="l">${esc(c.type || 'Comité')}</span><span class="d">${esc(c.date || '—')}</span></div>`
+    `<div class="oph-line"><span class="l">${esc(c.type || 'Comité')}</span><span class="d">${esc(c.date || '-')}</span></div>`
   ).join('') || '<div class="oph-tsub">Aucun comité.</div>';
   const alertBadge = nCrit ? `<span class="oph-pill crit">${nCrit} critique${nCrit > 1 ? 's' : ''}</span>`
     : (nWarn ? `<span class="oph-pill warn">${nWarn} à surveiller</span>` : '<span class="oph-pill good">À jour</span>');
@@ -3550,7 +3550,7 @@ function renderOpHomeDashboard(op, displayedOp) {
   const couvert = budget > 0 ? Math.round((tPrets + tSubv + fp) / budget * 100) : 0;
   const finBrick = `<section class="oph-card oph-c12">
     <div class="oph-head"><span class="oph-ic"><i class="ti ti-coin"></i></span>
-      <span class="oph-title">Financements — vue cumulée</span>
+      <span class="oph-title">Financements - vue cumulée</span>
       <span class="oph-pill ${couvert >= 100 ? 'good' : (couvert >= 80 ? 'warn' : 'neutral')}" style="margin-left:auto">${couvert} % couvert</span></div>
     <div class="oph-body">
       <div class="oph-figrow" style="grid-template-columns:repeat(4,minmax(0,1fr))">
@@ -3561,18 +3561,18 @@ function renderOpHomeDashboard(op, displayedOp) {
       </div>
     </div>
   </section>`;
-  const commune = esc([op.code_postal, op.commune].filter(Boolean).join(' ') || '—');
+  const commune = esc([op.code_postal, op.commune].filter(Boolean).join(' ') || '-');
   return `<div class="oph-grid">
     ${card('oph-c12', 'alert-triangle', 'Alertes &amp; échéances', alertBadge, 'syn', alertBody)}
     ${finBrick}
     ${card('oph-c6', 'folder', 'Dossier', '', 'dos', `<dl class="oph-kv">
-      <dt>Adresse</dt><dd>${esc(op.adresse || '—')}</dd>
+      <dt>Adresse</dt><dd>${esc(op.adresse || '-')}</dd>
       <dt>Commune</dt><dd>${commune}</dd>
-      <dt>Montage</dt><dd>${esc([op.vefa_mod, op.promoteur].filter(Boolean).join(' · ') || '—')}</dd>
-      <dt>Date OS</dt><dd>${esc(op.date_os || '—')}</dd>
-      <dt>Livraison prévue</dt><dd>${esc(op.date_livraison || '—')}</dd></dl>`)}
+      <dt>Montage</dt><dd>${esc([op.vefa_mod, op.promoteur].filter(Boolean).join(' · ') || '-')}</dd>
+      <dt>Date OS</dt><dd>${esc(op.date_os || '-')}</dd>
+      <dt>Livraison prévue</dt><dd>${esc(op.date_livraison || '-')}</dd></dl>`)}
     ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', `<div class="oph-figrow">
-      <div class="oph-fig"><span class="oph-fl">Logements</span><span class="oph-fv">${totalLgts(displayedOp) || '—'}</span></div>
+      <div class="oph-fig"><span class="oph-fl">Logements</span><span class="oph-fv">${totalLgts(displayedOp) || '-'}</span></div>
       <div class="oph-fig"><span class="oph-fl">Subventions</span><span class="oph-fv">${fmtMontant(tSubv)}</span></div>
       <div class="oph-fig"><span class="oph-fl">Emprunts</span><span class="oph-fv">${fmtMontant(tPrets)}</span></div>
       <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)}</span></div></div>`)}
@@ -3660,7 +3660,7 @@ function openOpsDomain(id) {
     const t = (op && op.tranches) ? op.tranches[selectedTrancheIdx] : null;
     const suffix = t && t.code_full ? t.code_full.split('-').slice(1).join('-') : '';
     const tname = t ? (t.type_structure || suffix || 'Tranche') : 'Tranche';
-    title = (id === 'tranche-fin') ? (tname + ' — Financements') : tname;
+    title = (id === 'tranche-fin') ? (tname + ' - Financements') : tname;
     bandeau = String(selectedTrancheIdx);
   } else {
     const def = OPS_DOMAINS.find(d => d[0] === id);
@@ -3728,10 +3728,10 @@ function renderOpDetail() {
     const surf = sumSurfaceKey(displayedOp, k);
     const surfLine = surf > 0
       ? `<div class="vol-cell-surface">${fmtSurface(surf)}</div>`
-      : (n > 0 ? `<div class="vol-cell-surface vol-cell-surface-empty">— m²</div>` : '');
+      : (n > 0 ? `<div class="vol-cell-surface vol-cell-surface-empty">- m²</div>` : '');
     return `<div class="vol-cell${n ? '' : ' vol-cell-empty'}">
       <div class="vol-cell-label">${k.toUpperCase()}</div>
-      <div class="vol-cell-value">${n || '—'}</div>
+      <div class="vol-cell-value">${n || '-'}</div>
       ${surfLine}
     </div>`;
   }).join('');
@@ -3758,7 +3758,7 @@ function renderOpDetail() {
     ? `<div class="compare-row">
         <label class="compare-label">Comparer avec :</label>
         <select class="compare-select" onchange="toggleCompareWith(this.value)">
-          <option value="">— Aucune comparaison —</option>
+          <option value="">- Aucune comparaison -</option>
           ${op.phases_history.map((h, i) => `<option value="${i}"${compareWithIdx === i ? ' selected' : ''}>${escapeHtml(h.name)} · ${escapeHtml(h.date_fige)}</option>`).join('')}
         </select>
         ${compareWithIdx != null ? `<span class="compare-active-tag" title="Écarts vs ${escapeHtml(op.phases_history[compareWithIdx]?.name || '?')} surlignés">⚡ Écarts surlignés</span>` : ''}
@@ -3778,7 +3778,7 @@ function renderOpDetail() {
     let state, stepperAction = '', stepperActionArg = '';
     if (isBeingViewed) {
       state = 'viewing';
-      // No click — already on it
+      // No click - already on it
     } else if (isCurrentPhase) {
       state = 'current';
       // When viewing a snapshot, allow click to return to current phase
@@ -3883,7 +3883,7 @@ function renderOpDetail() {
       </div>
       <div class="ops-hd-mid">${compareSelector}${phaseStepperHtml}</div>
       <div class="ops-hd-actions">
-        ${!effectiveEditMode ? `<button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-fold-all"></i></button>` : ''}
+        ${effectiveEditMode ? `<button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-fold-all"></i></button>` : ''}
         ${!effectiveEditMode ? `<button class="icon-btn" onclick="showOpHistory()" title="Historique des modifications"><i class="ti ti-history"></i></button>` : ''}
         ${op.lien_sharepoint && !effectiveEditMode ? `<a href="${escapeHtml(op.lien_sharepoint)}" target="_blank" class="icon-btn sharepoint-btn" title="Ouvrir dans SharePoint">
           <svg width="14" height="14" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -3903,7 +3903,7 @@ function renderOpDetail() {
     ${!effectiveEditMode ? `<div class="op-home" data-grp="home">${renderOpHomeDashboard(op, displayedOp)}</div>` : ''}
 
     <div class="metric-row" data-grp="syn" style="--cols: 4;">
-      <div class="metric-card"><div class="metric-label">Logements</div><div class="metric-value" id="op-total-lgts-live">${diffWrap(String(totalLgts(displayedOp) || '—'), totalLgts(displayedOp), compareWithIdx != null ? totalLgtsFromSnap(op) : null)}</div></div>
+      <div class="metric-card"><div class="metric-label">Logements</div><div class="metric-value" id="op-total-lgts-live">${diffWrap(String(totalLgts(displayedOp) || '-'), totalLgts(displayedOp), compareWithIdx != null ? totalLgtsFromSnap(op) : null)}</div></div>
       <div class="metric-card"><div class="metric-label">Surface utile</div><div class="metric-value">${fmtSurface(opTotalSurface(displayedOp))}</div></div>
       <div class="metric-card"><div class="metric-label">Prix de revient TTC</div><div class="metric-value">${diffWrap(fmtMontant(totalBudget(displayedOp)), totalBudget(displayedOp), compareWithIdx != null ? totalBudgetFromSnap(op) : null)}</div></div>
       <div class="metric-card"><div class="metric-label">Tranches</div><div class="metric-value">${displayedOp.tranches.length}</div></div>
@@ -3934,7 +3934,7 @@ function renderOpDetail() {
             <div class="geo-panel-status">
               <i class="ti ti-${(op.latitude != null && op.longitude != null) ? 'check' : 'alert-triangle'}"></i>
               ${(op.latitude != null && op.longitude != null)
-                ? `<span>Géolocalisée : <strong>${Number(op.latitude).toFixed(4)}, ${Number(op.longitude).toFixed(4)}</strong>${op.adresse_geocoded ? ` <span class="geo-panel-label">— ${escapeHtml(op.adresse_geocoded)}</span>` : ''}</span>`
+                ? `<span>Géolocalisée : <strong>${Number(op.latitude).toFixed(4)}, ${Number(op.longitude).toFixed(4)}</strong>${op.adresse_geocoded ? ` <span class="geo-panel-label">- ${escapeHtml(op.adresse_geocoded)}</span>` : ''}</span>`
                 : `<span>Pas de géolocalisation. Utilisez la BAN pour la calculer.</span>`}
             </div>
             ${editMode ? `
@@ -4059,7 +4059,7 @@ function renderTrancheDetail() {
                   <span>${escapeHtml(trCode || t.id)}</span>
                 </div>
                 <div class="tranche-pill-title">${escapeHtml(displayName)}</div>
-                <div class="tranche-pill-stats">${trancheLogements(t) || '—'} logts · ${fmtMontant(trancheBudgetTTC(t))}</div>
+                <div class="tranche-pill-stats">${trancheLogements(t) || '-'} logts · ${fmtMontant(trancheBudgetTTC(t))}</div>
               </div>
             `;
           }).join('')
@@ -4092,7 +4092,7 @@ function renderTrancheDetail() {
       if (editMode) {
         return `<div class="vol-cell vol-cell-edit"><div class="vol-cell-label">${label}</div><div class="vol-cell-edit-row"><input type="number" min="0" class="editable-input vol-cell-input" data-edit-tranche-volagree="${k}" value="${v || ''}" placeholder="lgts" title="Logements agréés"><span class="vol-cell-edit-unit">lgts</span></div></div>`;
       }
-      return `<div class="vol-cell${v ? '' : ' vol-cell-empty'}"><div class="vol-cell-label">${label}</div><div class="vol-cell-value">${v || '—'}</div></div>`;
+      return `<div class="vol-cell${v ? '' : ' vol-cell-empty'}"><div class="vol-cell-label">${label}</div><div class="vol-cell-value">${v || '-'}</div></div>`;
     }).join('');
 
     // Filter sub-entities for this tranche; attach original indices for save/delete
@@ -4134,7 +4134,7 @@ function renderTrancheDetail() {
       <div class="metric-row" style="--cols: 3;">
         <div class="metric-card">
           <div class="metric-label">Logements ${editMode ? '<span class="auto-tag">auto · somme volumétrie</span>' : ''}</div>
-          <div class="metric-value" id="tranche-logements-live">${diffWrap(String(liveLogements || '—'), liveLogements, compareWithIdx != null ? trancheLogementsFromSnap(op, selectedTrancheIdx) : null)}</div>
+          <div class="metric-value" id="tranche-logements-live">${diffWrap(String(liveLogements || '-'), liveLogements, compareWithIdx != null ? trancheLogementsFromSnap(op, selectedTrancheIdx) : null)}</div>
         </div>
         <div class="metric-card"><div class="metric-label">Prix de revient TTC ${editMode ? '<span class="auto-tag">auto · somme bilan</span>' : ''}</div>
           <div class="metric-value">${fmtMontant(trancheBudgetTTC(t))}</div>
@@ -4142,7 +4142,7 @@ function renderTrancheDetail() {
         <div class="metric-card"><div class="metric-label">Année prog.</div>
           ${editMode
             ? `<input type="text" class="editable-input" style="text-align:left;font-size:18px;font-weight:600;padding:2px 6px;width:100%;min-width:0;" data-edit-tranche-field="annee_prog" value="${t.annee_prog || ''}">`
-            : `<div class="metric-value">${t.annee_prog || '—'}</div>`}
+            : `<div class="metric-value">${t.annee_prog || '-'}</div>`}
         </div>
       </div>
 
@@ -4219,7 +4219,7 @@ function renderTrancheDetail() {
       let sum = 0;
       c.querySelectorAll('[data-edit-tranche-vol]').forEach(x => sum += Number(x.value) || 0);
       const disp = document.getElementById('tranche-logements-live');
-      if (disp) disp.textContent = sum || '—';
+      if (disp) disp.textContent = sum || '-';
       // Also update op-level total logements
       let opSum = 0;
       op.tranches.forEach((tr, idx) => {
@@ -4227,7 +4227,7 @@ function renderTrancheDetail() {
         else opSum += trancheLogements(tr);
       });
       const opDisp = document.getElementById('op-total-lgts-live');
-      if (opDisp) opDisp.textContent = opSum || '—';
+      if (opDisp) opDisp.textContent = opSum || '-';
     };
     c.querySelectorAll('[data-edit-tranche-vol]').forEach(el => el.addEventListener('input', updateLive));
 
@@ -4402,7 +4402,7 @@ function renderBilanSection(t, op, trCode) {
           }
           return `<div class="bilan-line${v === 0 ? ' bilan-line-empty' : ''}">
             <span class="bilan-line-label">${escapeHtml(line)}</span>
-            <span class="bilan-line-value">${v ? fmtMontant(v) : '—'}</span>
+            <span class="bilan-line-value">${v ? fmtMontant(v) : '-'}</span>
           </div>`;
         }).join('')}
         <div class="bilan-line bilan-line-subtotal">
@@ -4595,7 +4595,7 @@ function importLeonPlaceholder() {
   alert(msg);
 }
 
-// Consolidated bilan at op-level (cumul of all tranches) — same layout as tranche bilan
+// Consolidated bilan at op-level (cumul of all tranches) - same layout as tranche bilan
 function renderBilanOpSection(op) {
   const totalGlobal = opBilanTotal(op);
   const trancheCount = (op.tranches || []).length;
@@ -4612,7 +4612,7 @@ function renderBilanOpSection(op) {
           const v = opBilanLineTotal(op, sec.key, line);
           return `<div class="bilan-line${v === 0 ? ' bilan-line-empty' : ''}">
             <span class="bilan-line-label">${escapeHtml(line)}</span>
-            <span class="bilan-line-value">${v ? fmtMontant(v) : '—'}</span>
+            <span class="bilan-line-value">${v ? fmtMontant(v) : '-'}</span>
           </div>`;
         }).join('')}
         <div class="bilan-line bilan-line-subtotal">
@@ -5030,7 +5030,7 @@ function renderSubvSection(items, op) {
   const deleted = entitiesDeleted(op, 'subventions', items).filter(d => d.tranche === (op.tranches[selectedTrancheIdx]?.code_full?.split('-').slice(1).join('-') || op.tranches[selectedTrancheIdx]?.id));
   const deletedHtml = deleted.length > 0
     ? deleted.map(d => `<div class="entity-card diff-entity-deleted">
-        <div class="entity-card-head"><div><div class="entity-card-title">${escapeHtml(d.financeur || '—')}${d.financement ? ` · ${escapeHtml(d.financement)}` : ''}</div></div></div>
+        <div class="entity-card-head"><div><div class="entity-card-title">${escapeHtml(d.financeur || '-')}${d.financement ? ` · ${escapeHtml(d.financement)}` : ''}</div></div></div>
         <div class="entity-card-stats">
           <div class="entity-card-stat"><span class="stat-label">Demandé</span><span class="stat-val">${fmtMontant(d.montant_demande)}</span></div>
           <div class="entity-card-stat"><span class="stat-label">Notifié</span><span class="stat-val">${fmtMontant(d.montant_notifie)}</span></div>
@@ -5057,7 +5057,7 @@ function renderSubvCard(i) {
   ];
   const jalonsHtml = jalons.map(j => {
     if (!j.date && !j.montant) {
-      return `<div class="jalon jalon-empty"><div class="jalon-label">${j.label}</div><div class="jalon-date">—</div></div>`;
+      return `<div class="jalon jalon-empty"><div class="jalon-label">${j.label}</div><div class="jalon-date">-</div></div>`;
     }
     const spBtn = j.sp_link
       ? `<a class="jalon-sp-link" href="${escapeHtml(j.sp_link)}" target="_blank" rel="noopener" title="${escapeHtml(j.sp_label || 'Ouvrir document')}" onclick="event.stopPropagation();"><i class="ti ti-file-text"></i></a>`
@@ -5065,7 +5065,7 @@ function renderSubvCard(i) {
     return `
       <div class="jalon">
         <div class="jalon-label">${j.label}${spBtn}</div>
-        <div class="jalon-date">${escapeHtml(j.date || '—')}</div>
+        <div class="jalon-date">${escapeHtml(j.date || '-')}</div>
         ${j.montant ? `<div class="jalon-montant">${fmtMontant(j.montant)}</div>` : ''}
       </div>
     `;
@@ -5075,7 +5075,7 @@ function renderSubvCard(i) {
     <div class="entity-card${diffEntityClass('subventions', i)}" data-section="subventions" data-row-idx="${i._originalIdx}">
       <div class="entity-card-head">
         <div>
-          <div class="entity-card-title">${escapeHtml(i.financeur || '—')}${i.financement ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.financement)}</span>` : ''}</div>
+          <div class="entity-card-title">${escapeHtml(i.financeur || '-')}${i.financement ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.financement)}</span>` : ''}</div>
           ${i.type ? `<div class="entity-card-sub">${escapeHtml(i.type)}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${i.aap_id ? `<span class="badge-secondary"><i class="ti ti-bookmark"></i> ${escapeHtml(aapLabelById(i.aap_id))}</span>` : ''}${statusBadge(i.statut)}</div>
@@ -5114,7 +5114,7 @@ function renderSubvCardEdit(i, op) {
         <div class="card-edit-field"><label>Date notification</label><input class="card-input" data-field="date_notification" value="${escapeHtml(i.date_notification || '')}" placeholder="JJ/MM/AAAA"></div>
         <div class="card-edit-field"><label>Contact</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
         <div class="card-edit-field"><label>Droits réservataires (financeur)</label><input type="number" min="0" class="card-input" data-field="nb_droits_reserves" value="${i.nb_droits_reserves || ''}"></div>
-        <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">— Aucun —</option>${aapSelectOptions(i.aap_id)}</select></div>
+        <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">- Aucun -</option>${aapSelectOptions(i.aap_id)}</select></div>
         <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
         ${sharepointEditFields([
           { field: 'lien_sp_notif', label: "Lien notification (SharePoint)", currentValue: i.lien_sp_notif || i.lien_sharepoint },
@@ -5173,12 +5173,12 @@ function renderPretCard(i) {
   ];
   const jalonsHtml = jalons.map(j => {
     if (!j.date && !j.montant) {
-      return `<div class="jalon jalon-empty"><div class="jalon-label">${j.label}</div><div class="jalon-date">—</div></div>`;
+      return `<div class="jalon jalon-empty"><div class="jalon-label">${j.label}</div><div class="jalon-date">-</div></div>`;
     }
     const dateClass = j.previsional ? 'jalon-date previsional' : 'jalon-date';
     const dateContent = j.previsional
       ? `<i class="ti ti-clock" style="font-size:11px;"></i>${escapeHtml(j.date)} <span class="prev-tag">prév.</span>`
-      : escapeHtml(j.date || '—');
+      : escapeHtml(j.date || '-');
     const spBtn = j.sp_link
       ? `<a class="jalon-sp-link" href="${escapeHtml(j.sp_link)}" target="_blank" rel="noopener" title="${escapeHtml(j.sp_label || 'Ouvrir document')}" onclick="event.stopPropagation();"><i class="ti ti-file-text"></i></a>`
       : '';
@@ -5209,7 +5209,7 @@ function renderPretCard(i) {
     <div class="entity-card${diffEntityClass('prets', i)}" data-section="prets" data-row-idx="${i._originalIdx}">
       <div class="entity-card-head">
         <div>
-          <div class="entity-card-title">${escapeHtml(i.ligne || '—')}${i.financeur ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.financeur)}</span>` : ''}</div>
+          <div class="entity-card-title">${escapeHtml(i.ligne || '-')}${i.financeur ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.financeur)}</span>` : ''}</div>
           <div class="entity-card-sub">Simulation : ${fmtMontant(i.montant_sim)}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${i.aap_id ? `<span class="badge-secondary"><i class="ti ti-bookmark"></i> ${escapeHtml(aapLabelById(i.aap_id))}</span>` : ''}${statusBadge(i.statut)}</div>
@@ -5240,7 +5240,7 @@ function renderPretCardEdit(i, op) {
         </div>
       </div>
 
-      <!-- Group 1 — Identité -->
+      <!-- Group 1 - Identité -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Identité</div>
         <div class="card-edit-grid">
@@ -5272,7 +5272,7 @@ function renderPretCardEdit(i, op) {
         </div>
       </div>
 
-      <!-- Group 2 — Montants -->
+      <!-- Group 2 - Montants -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Montants</div>
         <div class="card-edit-grid">
@@ -5282,7 +5282,7 @@ function renderPretCardEdit(i, op) {
         </div>
       </div>
 
-      <!-- Group 3 — Conditions financières (Taux nomenclature + durée + révision) -->
+      <!-- Group 3 - Conditions financières (Taux nomenclature + durée + révision) -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Conditions financières</div>
         <div class="card-edit-grid">
@@ -5309,7 +5309,7 @@ function renderPretCardEdit(i, op) {
         </div>
       </div>
 
-      <!-- Group 3b — Préfinancement -->
+      <!-- Group 3b - Préfinancement -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Préfinancement</div>
         <div class="card-edit-grid">
@@ -5318,7 +5318,7 @@ function renderPretCardEdit(i, op) {
         </div>
       </div>
 
-      <!-- Group 4 — Workflow (dates + n° contrat) -->
+      <!-- Group 4 - Workflow (dates + n° contrat) -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Workflow & dates</div>
         <div class="card-edit-grid">
@@ -5329,12 +5329,12 @@ function renderPretCardEdit(i, op) {
           <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
           <div class="card-edit-field"><label>N° dossier</label><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}"></div>
           <div class="card-edit-field"><label>Caducité LO</label><input class="card-input" data-field="date_caducite_lo" value="${escapeHtml(i.date_caducite_lo || '')}" placeholder="JJ/MM/AAAA"></div>
-          <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">— Aucun —</option>${aapSelectOptions(i.aap_id)}</select></div>
+          <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">- Aucun -</option>${aapSelectOptions(i.aap_id)}</select></div>
           <div class="card-edit-field"><label>Contact banque</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
         </div>
       </div>
 
-      <!-- Group 5 — Pièces attendues + garantie + commentaires -->
+      <!-- Group 5 - Pièces attendues + garantie + commentaires -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Émission du contrat</div>
         <div class="card-edit-grid">
@@ -5485,12 +5485,12 @@ function renderGarantiesSection(garanties, op) {
 function renderGarLoanCard(pret, gars, op) {
   const amount = bestPretAmountOrNull(pret);
 
-  // Case 1: prêt non garanti — render different layout
+  // Case 1: prêt non garanti - render different layout
   if (pret.non_garanti) {
     return `
       <div class="gar-loan-card gar-loan-card-non-garanti">
         <div class="gar-loan-head">
-          <div class="gar-loan-title">${escapeHtml(pret.ligne || '—')}${pret.financeur ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(pret.financeur)}</span>` : ''}</div>
+          <div class="gar-loan-title">${escapeHtml(pret.ligne || '-')}${pret.financeur ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(pret.financeur)}</span>` : ''}</div>
           <div class="gar-loan-amount">${fmtMontant(amount)}</div>
         </div>
         <div class="gar-non-garanti-msg">
@@ -5516,7 +5516,7 @@ function renderGarLoanCard(pret, gars, op) {
   const otherQuotite = otherGars.reduce((s, g) => s + parseQuotite(g.quotite), 0);
   const relaisQuotite = relaisGars.reduce((s, g) => s + parseQuotite(g.quotite), 0);
 
-  // Real (non-relais) quotité — used to determine if "true" coverage exists
+  // Real (non-relais) quotité - used to determine if "true" coverage exists
   const realQuotite = acteeQuotite + prevQuotite + otherQuotite;
   // Total displayed in the bar (with relais if no real coverage)
   const displayedQuotite = realQuotite > 0 ? realQuotite : (realQuotite + relaisQuotite);
@@ -5552,7 +5552,7 @@ function renderGarLoanCard(pret, gars, op) {
     statusText = `⚠ Surcouverture : ${realQuotite.toFixed(0)}% (somme des quotités > 100%)`;
     statusClass = 'over';
   } else {
-    // Partial real coverage — describe components
+    // Partial real coverage - describe components
     const parts = [];
     if (acteeQuotite > 0) parts.push(`${acteeQuotite.toFixed(0)}% acté`);
     if (prevQuotite > 0) parts.push(`${prevQuotite.toFixed(0)}% prévisionnel`);
@@ -5569,7 +5569,7 @@ function renderGarLoanCard(pret, gars, op) {
     const color = garantColor(g.garant);
     const label = pct >= 12 ? `${Math.round(pct)}%` : '';
     let cls = 'gar-segment';
-    let title = `${g.garant || '—'} : ${pct}% — ${g.statut || 'statut inconnu'}`;
+    let title = `${g.garant || '-'} : ${pct}% - ${g.statut || 'statut inconnu'}`;
     if (kind === 'relais') {
       cls += ' gar-segment-relais';
       title += ' (caution RELAIS)';
@@ -5611,7 +5611,7 @@ function renderGarLoanCard(pret, gars, op) {
   return `
     <div class="gar-loan-card">
       <div class="gar-loan-head">
-        <div class="gar-loan-title">${escapeHtml(pret.ligne || '—')}${pret.financeur ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(pret.financeur)}</span>` : ''}</div>
+        <div class="gar-loan-title">${escapeHtml(pret.ligne || '-')}${pret.financeur ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(pret.financeur)}</span>` : ''}</div>
         <div class="gar-loan-amount">${fmtMontant(amount)}</div>
       </div>
       <div class="gar-coverage-bar">
@@ -5636,8 +5636,8 @@ function renderGarRowCompact(g) {
       <span class="gar-color-dot" style="background: ${color};"></span>
       <div class="gar-row-content">
         <div class="gar-row-line1">
-          <span class="gar-row-name">${escapeHtml(g.garant || '—')}</span>
-          <span class="gar-row-pct">${pct ? pct + '%' : '—'}</span>
+          <span class="gar-row-name">${escapeHtml(g.garant || '-')}</span>
+          <span class="gar-row-pct">${pct ? pct + '%' : '-'}</span>
           ${g.caution_relais ? '<span class="relais-tag">🛡 RELAIS</span>' : ''}
           ${spIcons}
           ${statusBadge(g.statut)}
@@ -5657,12 +5657,12 @@ function renderGarRowCompact(g) {
 // ============== END GARANTIES ==============
 
 function renderGarantieCard(i) {
-  const pct = i.quotite ? (Number(i.quotite) <= 1 ? Math.round(Number(i.quotite)*100) : Math.round(Number(i.quotite))) + ' %' : '—';
+  const pct = i.quotite ? (Number(i.quotite) <= 1 ? Math.round(Number(i.quotite)*100) : Math.round(Number(i.quotite))) + ' %' : '-';
   return `
     <div class="entity-card" data-section="garanties" data-row-idx="${i._originalIdx}">
       <div class="entity-card-head">
         <div>
-          <div class="entity-card-title">${escapeHtml(i.garant || '—')}</div>
+          <div class="entity-card-title">${escapeHtml(i.garant || '-')}</div>
           ${i.pret_lie ? `<div class="entity-card-sub">Prêt lié : ${escapeHtml(i.pret_lie)}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;">${sharepointIcons([
@@ -5672,9 +5672,9 @@ function renderGarantieCard(i) {
       </div>
       <div class="entity-card-stats">
         <div class="entity-card-stat"><span class="stat-label">Quotité</span><span class="stat-val">${pct}</span></div>
-        <div class="entity-card-stat"><span class="stat-label">Date demande</span><span class="stat-val muted">${i.date_demande || '—'}</span></div>
-        <div class="entity-card-stat"><span class="stat-label">Date AP</span><span class="stat-val muted">${i.date_ap || '—'}</span></div>
-        <div class="entity-card-stat"><span class="stat-label">Date convention</span><span class="stat-val muted">${i.date_conv || '—'}</span></div>
+        <div class="entity-card-stat"><span class="stat-label">Date demande</span><span class="stat-val muted">${i.date_demande || '-'}</span></div>
+        <div class="entity-card-stat"><span class="stat-label">Date AP</span><span class="stat-val muted">${i.date_ap || '-'}</span></div>
+        <div class="entity-card-stat"><span class="stat-label">Date convention</span><span class="stat-val muted">${i.date_conv || '-'}</span></div>
       </div>
       ${i.contact ? `<div class="entity-card-meta"><span><i class="ti ti-user"></i>${escapeHtml(i.contact)}</span></div>` : ''}
       ${i.commentaires ? `<div class="entity-card-notes">${escapeHtml(i.commentaires)}</div>` : ''}
@@ -5687,7 +5687,7 @@ function renderGarantieCardEdit(i, op) {
   const t = op.tranches[selectedTrancheIdx];
   const trCode = t ? (t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id) : null;
   const tranchePrets = (op.prets || []).filter(p => p.tranche === trCode);
-  const pretOpts = ['<option value="">— Sans prêt rattaché —</option>']
+  const pretOpts = ['<option value="">- Sans prêt rattaché -</option>']
     .concat(tranchePrets.map(p => {
       const lbl = `${p.ligne || '?'} · ${p.financeur || '?'} (${fmtMontant(bestPretAmount(p))})`;
       return `<option value="${escapeHtml(p.ligne || '')}"${i.pret_lie === p.ligne ? ' selected' : ''}>${escapeHtml(lbl)}</option>`;
@@ -5705,7 +5705,7 @@ function renderGarantieCardEdit(i, op) {
         </div>
       </div>
 
-      <!-- Group 1 — Identité -->
+      <!-- Group 1 - Identité -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Identité</div>
         <div class="card-edit-grid">
@@ -5727,7 +5727,7 @@ function renderGarantieCardEdit(i, op) {
         </div>
       </div>
 
-      <!-- Group 2 — Workflow & dates -->
+      <!-- Group 2 - Workflow & dates -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Workflow & dates</div>
         <div class="card-edit-grid">
@@ -5739,7 +5739,7 @@ function renderGarantieCardEdit(i, op) {
         </div>
       </div>
 
-      <!-- Group 3 — Spécifique garantie privée (CEGC / cautionnement bancaire) -->
+      <!-- Group 3 - Spécifique garantie privée (CEGC / cautionnement bancaire) -->
       <div class="card-edit-subgroup" data-private-guarantee-wrap${isPrivateGuarantee ? '' : ' style="display:none;"'}>
         <div class="card-edit-subgroup-title">Cautionnement (CEGC / Caution bancaire)</div>
         <div class="card-edit-grid">
@@ -5754,7 +5754,7 @@ function renderGarantieCardEdit(i, op) {
         </div>
       </div>
 
-      <!-- Group 4 — Contact & commentaires -->
+      <!-- Group 4 - Contact & commentaires -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Contact & notes</div>
         <div class="card-edit-grid">
@@ -5803,12 +5803,12 @@ function renderPrefinCard(i) {
   const computedPct = (Number(i.montant_couvert) || 0) > 0
     ? (Number(i.montant_tire) || 0) / Number(i.montant_couvert) * 100
     : 0;
-  const pct = computedPct > 0 ? computedPct.toFixed(1) + ' %' : '—';
+  const pct = computedPct > 0 ? computedPct.toFixed(1) + ' %' : '-';
   return `
     <div class="entity-card${diffEntityClass('prefinancements', i)}" data-section="prefinancements" data-row-idx="${i._originalIdx}">
       <div class="entity-card-head">
         <div>
-          <div class="entity-card-title">${escapeHtml(i.banque || '—')}</div>
+          <div class="entity-card-title">${escapeHtml(i.banque || '-')}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">${sharepointIcon(i.lien_sharepoint)}${statusBadge(i.statut)}</div>
       </div>
@@ -5840,7 +5840,7 @@ function renderPrefinCardEdit(i, op) {
         <div class="card-edit-field"><label>Montant tiré (€)</label><input type="number" min="0" class="card-input" data-field="montant_tire" value="${i.montant_tire || ''}"></div>
         <div class="card-edit-field">
           <label>% tiré <span class="auto-tag">auto</span></label>
-          <div class="card-auto-value">${i.montant_couvert > 0 ? ((Number(i.montant_tire) || 0) / Number(i.montant_couvert) * 100).toFixed(1) + ' %' : '—'}</div>
+          <div class="card-auto-value">${i.montant_couvert > 0 ? ((Number(i.montant_tire) || 0) / Number(i.montant_couvert) * 100).toFixed(1) + ' %' : '-'}</div>
         </div>
         <div class="card-edit-field"><label>Date début</label><input class="card-input" data-field="date_debut" value="${escapeHtml(i.date_debut || '')}" placeholder="JJ/MM/AAAA"></div>
         <div class="card-edit-field"><label>Date fin</label><input class="card-input" data-field="date_fin" value="${escapeHtml(i.date_fin || '')}" placeholder="JJ/MM/AAAA"></div>
@@ -5967,18 +5967,18 @@ function renderReservataireCard(i) {
     if (t) trLgts = trancheLogements(t);
   }
   const computedPct = trLgts > 0 ? (Number(i.nb_logements) || 0) / trLgts * 100 : 0;
-  const pct = computedPct > 0 ? computedPct.toFixed(1).replace('.', ',') + ' %' : '—';
+  const pct = computedPct > 0 ? computedPct.toFixed(1).replace('.', ',') + ' %' : '-';
   return `
     <div class="entity-card${diffEntityClass('reservataires', i)}" data-section="reservataires" data-row-idx="${i._originalIdx}">
       <div class="entity-card-head">
         <div>
-          <div class="entity-card-title">${escapeHtml(i.reservataire || '—')}</div>
+          <div class="entity-card-title">${escapeHtml(i.reservataire || '-')}</div>
           ${i.financement ? `<div class="entity-card-sub">${escapeHtml(i.financement)}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;">${sharepointIcon(i.lien_sharepoint)}${statusBadge(i.etape)}</div>
       </div>
       <div class="entity-card-stats">
-        <div class="entity-card-stat"><span class="stat-label">Nb logements</span><span class="stat-val">${i.nb_logements || '—'}</span></div>
+        <div class="entity-card-stat"><span class="stat-label">Nb logements</span><span class="stat-val">${i.nb_logements || '-'}</span></div>
         <div class="entity-card-stat"><span class="stat-label">% réservé</span><span class="stat-val">${pct}</span></div>
       </div>
       ${i.commentaires ? `<div class="entity-card-notes">${escapeHtml(i.commentaires)}</div>` : ''}
@@ -6021,7 +6021,7 @@ function renderReservataireCardEdit(i, op) {
               return tCode === i.tranche;
             });
             if (t) trLgts = trancheLogements(t);
-            return trLgts > 0 ? ((Number(i.nb_logements) || 0) / trLgts * 100).toFixed(1).replace('.', ',') + ' %' : '—';
+            return trLgts > 0 ? ((Number(i.nb_logements) || 0) / trLgts * 100).toFixed(1).replace('.', ',') + ' %' : '-';
           })()}</div>
         </div>
         <div class="card-edit-field"><label>Étape</label>
@@ -6089,7 +6089,7 @@ function renderPretsTable(items) {
               <td class="num">${dashNum(fmtMontant(i.montant_sim))}</td>
               <td class="num">${dashNum(fmtMontant(i.montant_contrat))}</td>
               <td class="muted">${dash(i.taux)}</td>
-              <td class="num muted">${i.duree_emprunt ? i.duree_emprunt + ' ans' : '—'}</td>
+              <td class="num muted">${i.duree_emprunt ? i.duree_emprunt + ' ans' : '-'}</td>
               <td><span class="status-text-${i.sc}">${dash(i.statut)}</span></td>
               <td>${commentIcon(i.commentaires)}</td>
             </tr>
@@ -6165,7 +6165,7 @@ function renderReservatairesTable(items) {
             <tr>
               <td>${dash(i.reservataire)}</td>
               <td class="muted">${dash(i.financement)}</td>
-              <td class="num">${i.nb_logements || '—'}</td>
+              <td class="num">${i.nb_logements || '-'}</td>
               <td class="num">${i.fmt_pct_reserve}</td>
               <td><span class="status-text-${i.sc}">${dash(i.etape)}</span></td>
               <td>${commentIcon(i.commentaires)}</td>
@@ -6270,7 +6270,7 @@ function refreshDashboardKpis() {
       </div>
       <div class="kpi-card">
         <div class="kpi-label"><i class="ti ti-home"></i>Logements totaux</div>
-        <div class="kpi-value">${totalLgts || '—'}</div>
+        <div class="kpi-value">${totalLgts || '-'}</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label"><i class="ti ti-cash"></i>Budget consolidé</div>
@@ -6518,7 +6518,7 @@ async function geocodeOpAddress(uid) {
   showToast(`Recherche via la BAN : « ${query} »…`, 'map-pin');
   const result = await geocodeBAN(query);
   if (!result) {
-    showToast('Adresse non trouvée — vérifiez la saisie', 'alert-triangle');
+    showToast('Adresse non trouvée - vérifiez la saisie', 'alert-triangle');
     return;
   }
   // Save geocoding result onto op (independent of form save)
@@ -6552,7 +6552,7 @@ async function geocodeOpAddress(uid) {
   if (panel) {
     panel.innerHTML = `
       <i class="ti ti-check"></i>
-      <span>Géolocalisée : <strong>${result.lat.toFixed(4)}, ${result.lon.toFixed(4)}</strong> <span class="geo-panel-label">— ${escapeHtml(result.label)}</span></span>
+      <span>Géolocalisée : <strong>${result.lat.toFixed(4)}, ${result.lon.toFixed(4)}</strong> <span class="geo-panel-label">- ${escapeHtml(result.label)}</span></span>
     `;
     replaceTablerIcons(panel);
   }
@@ -6570,7 +6570,7 @@ async function geocodeOpAddress(uid) {
 let mapInstance = null;
 let opLocationMapInstance = null;
 
-// Tile layer configurations — Plan (OSM) and Satellite (Esri)
+// Tile layer configurations - Plan (OSM) and Satellite (Esri)
 const TILE_LAYERS = {
   plan: {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -6737,7 +6737,7 @@ function findComite(uid) {
 }
 
 function formatComDate(dateStr) {
-  return dateStr || '—';
+  return dateStr || '-';
 }
 
 // Render the Comités section in op detail
@@ -6953,7 +6953,7 @@ function openPlanComiteModal(existingPlanningId) {
           <div class="wf-modal-field">
             <label>Type de comité</label>
             <select id="planFormType">
-              ${getRef('types_comite').map(t => `<option value="${escapeHtml(t)}"${existing && existing.type === t ? ' selected' : ''}>${escapeHtml(t)} — ${escapeHtml(comiteTypeConfig(t).full)}</option>`).join('')}
+              ${getRef('types_comite').map(t => `<option value="${escapeHtml(t)}"${existing && existing.type === t ? ' selected' : ''}>${escapeHtml(t)} - ${escapeHtml(comiteTypeConfig(t).full)}</option>`).join('')}
             </select>
           </div>
           <div class="wf-modal-field">
@@ -7034,7 +7034,7 @@ function openPlanComiteModal(existingPlanningId) {
 
     const planningId = existing ? existing.planning_id : ('plan-' + Date.now());
 
-    // If editing: remove old planned entries (only if they have no PV — protect realized ones)
+    // If editing: remove old planned entries (only if they have no PV - protect realized ones)
     if (existing) {
       DATA.forEach(op => {
         if (!Array.isArray(op.comites)) return;
@@ -7196,7 +7196,7 @@ function renderComitesTab() {
         <div class="wf-dropzone wf-dropzone-com" id="comDropzone">
           <i class="ti ti-cloud"></i>
           <div class="wf-dropzone-title">Glissez un PV ou document de comité ici</div>
-          <div class="wf-dropzone-sub">ou <button class="wf-dropzone-browse" id="comBrowseBtn" type="button">parcourir vos fichiers</button> — vous l'associerez à une opération</div>
+          <div class="wf-dropzone-sub">ou <button class="wf-dropzone-browse" id="comBrowseBtn" type="button">parcourir vos fichiers</button> - vous l'associerez à une opération</div>
           <input type="file" id="comFileInput" accept="application/pdf,.pdf" style="display:none;" />
         </div>
         <button class="com-plan-btn" id="comPlanBtn" type="button">
@@ -7233,7 +7233,7 @@ function renderComitesTab() {
   replaceTablerIcons(container);
 }
 
-// Render only the dynamic part (counts + list) — preserves the search input focus
+// Render only the dynamic part (counts + list) - preserves the search input focus
 function renderComitesList() {
   const listContainer = document.getElementById('comListContainer');
   if (!listContainer) return;
@@ -7447,7 +7447,7 @@ function initComitesTabEvents() {
   if (planBtn) {
     planBtn.addEventListener('click', () => openPlanComiteModal(null));
   }
-  // Search — keeps focus because we only re-render the list
+  // Search - keeps focus because we only re-render the list
   const search = document.getElementById('comSearchInput');
   if (search) {
     search.addEventListener('input', (e) => { comSearch = e.target.value; renderComitesList(); });
@@ -7549,7 +7549,7 @@ function openComiteCreationModal(docName, docSize, dataUrl) {
         <div class="wf-modal-field">
           <label>Type de comité</label>
           <select id="comFormType">
-            ${getRef('types_comite').map(t => `<option value="${escapeHtml(t)}">${escapeHtml(comiteTypeConfig(t).label)} — ${escapeHtml(comiteTypeConfig(t).full)}</option>`).join('')}
+            ${getRef('types_comite').map(t => `<option value="${escapeHtml(t)}">${escapeHtml(comiteTypeConfig(t).label)} - ${escapeHtml(comiteTypeConfig(t).full)}</option>`).join('')}
           </select>
         </div>
 
@@ -7561,7 +7561,7 @@ function openComiteCreationModal(docName, docSize, dataUrl) {
         <div class="wf-modal-field">
           <label>Opération liée</label>
           <select id="comFormOp">
-            <option value="">— Sélectionner une opération —</option>
+            <option value="">- Sélectionner une opération -</option>
             ${opOptions}
           </select>
         </div>
@@ -7972,7 +7972,7 @@ function renderFinances() {
       <div class="finances-kpi finances-kpi-primary">
         <div class="finances-kpi-label">Budget total portefeuille</div>
         <div class="finances-kpi-num">${fmtEuros(totalBudget)}</div>
-        <div class="finances-kpi-sub">${ops.length} opérations · ${totalLgts || '—'} logements</div>
+        <div class="finances-kpi-sub">${ops.length} opérations · ${totalLgts || '-'} logements</div>
       </div>
       <div class="finances-kpi finances-kpi-info">
         <div class="finances-kpi-label">Encours prêts contractés</div>
@@ -8019,7 +8019,7 @@ function renderFinances() {
         `}
       </div>
 
-      <!-- ===== 2. CONCENTRATION DES RISQUES — Financeurs ===== -->
+      <!-- ===== 2. CONCENTRATION DES RISQUES - Financeurs ===== -->
       <div class="finances-panel">
         <h3 class="finances-panel-title"><i class="ti ti-building-bank"></i>Concentration financeurs</h3>
         ${topFinanceurs.length === 0 ? '<div class="finances-empty">Aucun prêt enregistré.</div>' : `
@@ -8047,14 +8047,14 @@ function renderFinances() {
         `}
       </div>
 
-      <!-- ===== 3. CONCENTRATION DES RISQUES — Garants ===== -->
+      <!-- ===== 3. CONCENTRATION DES RISQUES - Garants ===== -->
       <div class="finances-panel">
         <h3 class="finances-panel-title"><i class="ti ti-shield-check"></i>Concentration garants</h3>
         ${topGarants.length === 0 ? '<div class="finances-empty">Aucune garantie enregistrée.</div>' : `
         <div class="finances-mini-kpis">
           <div class="finances-mini-kpi"><div class="finances-mini-kpi-num">${(concentTop1Garant * 100).toFixed(0)}%</div><div class="finances-mini-kpi-label">Top 1 garant</div></div>
           <div class="finances-mini-kpi"><div class="finances-mini-kpi-num">${topGarants.length}</div><div class="finances-mini-kpi-label">Garants distincts</div></div>
-          <div class="finances-mini-kpi"><div class="finances-mini-kpi-num">${delaiMoyenGarantie !== null ? delaiMoyenGarantie + ' j' : '—'}</div><div class="finances-mini-kpi-label">Délai demande → signature</div></div>
+          <div class="finances-mini-kpi"><div class="finances-mini-kpi-num">${delaiMoyenGarantie !== null ? delaiMoyenGarantie + ' j' : '-'}</div><div class="finances-mini-kpi-label">Délai demande → signature</div></div>
         </div>
         <div class="finances-bars">
           ${topGarants.slice(0, 6).map(([name, val]) => {
@@ -8079,7 +8079,7 @@ function renderFinances() {
         <div class="finances-kpi-grid">
           <div class="finances-indicator">
             <div class="finances-indicator-label">Prix de revient moyen / logement</div>
-            <div class="finances-indicator-num">${prixMoyenLogt > 0 ? Math.round(prixMoyenLogt / 1000).toLocaleString('fr-FR').replace(/,/g, ' ') + ' k€' : '—'}</div>
+            <div class="finances-indicator-num">${prixMoyenLogt > 0 ? Math.round(prixMoyenLogt / 1000).toLocaleString('fr-FR').replace(/,/g, ' ') + ' k€' : '-'}</div>
             <div class="finances-indicator-sub">Sur ${totalLgts || 0} logements</div>
           </div>
           <div class="finances-indicator">
@@ -8411,8 +8411,8 @@ function renderTresorerie() {
       </div>
       <div class="treso-kpi">
         <div class="treso-kpi-label">Pic encaissement</div>
-        <div class="treso-kpi-num">${picEncaissement ? fmtEuros(picEncaissement.flux_entrant) : '—'}</div>
-        <div class="treso-kpi-detail">${picEncaissement && picEncaissement.flux_entrant > 0 ? picEncaissement.label : '—'}</div>
+        <div class="treso-kpi-num">${picEncaissement ? fmtEuros(picEncaissement.flux_entrant) : '-'}</div>
+        <div class="treso-kpi-detail">${picEncaissement && picEncaissement.flux_entrant > 0 ? picEncaissement.label : '-'}</div>
       </div>
       <div class="treso-kpi">
         <div class="treso-kpi-label">Préfinancements actifs</div>
@@ -8505,7 +8505,7 @@ Net : ${m.flux_net >= 0 ? '+' : ''}${fmtEuros(m.flux_net)}`;
                 <div class="treso-event-icon" style="color:var(--purple-accent);"><i class="ti ti-clock-bolt"></i></div>
                 <div class="treso-event-body">
                   <div class="treso-event-label">${escapeHtml(p.banque || '?')}</div>
-                  <div class="treso-event-meta">${escapeHtml(p.op_code)} · ${pctTire.toFixed(0)}% tiré · fin ${escapeHtml(fmtDateFR(p.date_fin) || '—')}</div>
+                  <div class="treso-event-meta">${escapeHtml(p.op_code)} · ${pctTire.toFixed(0)}% tiré · fin ${escapeHtml(fmtDateFR(p.date_fin) || '-')}</div>
                 </div>
                 <div class="treso-event-amount">${fmtEuros(p.montant_tire)} / ${fmtEuros(p.montant_couvert)}</div>
               </div>
@@ -8993,7 +8993,7 @@ function computeTasks(op) {
   (op.prefinancements || []).forEach(pf => {
     if (pf.date_fin && pf.statut !== 'Soldé') {
       const d = parseDateStr(pf.date_fin);
-      if (d) add('Préfinancement', `Mobiliser le prêt définitif — préfi ${pf.banque || ''}${pf.pret_lie ? ' ' + pf.pret_lie : ''}`, d, { detail: `préfinancement se termine le ${fmt(d)}` });
+      if (d) add('Préfinancement', `Mobiliser le prêt définitif - préfi ${pf.banque || ''}${pf.pret_lie ? ' ' + pf.pret_lie : ''}`, d, { detail: `préfinancement se termine le ${fmt(d)}` });
     }
   });
 
@@ -9012,7 +9012,7 @@ function computeTasks(op) {
     }
   });
 
-  // AAP — échéance de candidature de l'appel à projets tagué sur l'opération
+  // AAP - échéance de candidature de l'appel à projets tagué sur l'opération
   if (op.aap_id != null && op.aap_id !== '' && !isDelivered && typeof AAPS !== 'undefined') {
     const aap = AAPS.find(a => String(a._supabase_id) === String(op.aap_id));
     if (aap && (aap.statut || '') !== 'Clôturé') {
@@ -9119,7 +9119,7 @@ function renderSuivi() {
     ${kpiHtml}
     ${chips}
     ${tasks.length === 0
-      ? '<div class="suivi-empty-state"><i class="ti ti-circle-check"></i>Aucune tâche en cours — tout est à jour pour cette personne.</div>'
+      ? '<div class="suivi-empty-state"><i class="ti ti-circle-check"></i>Aucune tâche en cours - tout est à jour pour cette personne.</div>'
       : `<div class="suivi-tasks">${groupsHtml}</div>`}
   `;
 
@@ -9188,7 +9188,7 @@ function initOpLocationMap(op) {
 
 function renderMap() {
   if (!window.L) {
-    // Leaflet not yet loaded — retry shortly
+    // Leaflet not yet loaded - retry shortly
     setTimeout(renderMap, 200);
     return;
   }
@@ -9314,7 +9314,7 @@ function renderMap() {
     const popupHtml = `
       <div class="map-popup map-popup-rich">
         <div class="map-popup-header">
-          <div class="map-popup-code">${escapeHtml(op.code || op.sheet || '—')}</div>
+          <div class="map-popup-code">${escapeHtml(op.code || op.sheet || '-')}</div>
           <div class="map-popup-name">${escapeHtml(op.display_name || '')}</div>
           ${op.adresse ? `<div class="map-popup-addr"><i class="ti ti-map-pin"></i> ${escapeHtml(op.adresse)}</div>` : ''}
           <div class="map-popup-meta">
@@ -9546,7 +9546,7 @@ function renderGantt() {
       if (!d) return '';
       if (d < min) return '';
       const left = dateToPx(d, min);
-      const title = `${label} — ${op.display_name} — ${fmtDateStr(d)}`;
+      const title = `${label} - ${op.display_name} - ${fmtDateStr(d)}`;
       return `<div class="gantt-dot" style="left: ${left}px; background: ${color};" data-op="${op._uid}" data-field="${key}" data-label="${escapeHtml(label)}" data-color="${color}" title="${escapeHtml(title)}"></div>`;
     }).join('');
 
@@ -9562,7 +9562,7 @@ function renderGantt() {
       <tr>
         <td class="gantt-side" data-op-row="${op._uid}">
           <div class="gantt-side-line1">
-            <span class="op-code-cell">${escapeHtml(op.code || op.sheet || '—')}</span>
+            <span class="op-code-cell">${escapeHtml(op.code || op.sheet || '-')}</span>
             ${phaseBadge}
           </div>
           <div class="gantt-side-line2">
@@ -9805,7 +9805,7 @@ const TAB_FILTERS = {
 // Extract sortable value from a cell
 function synthSortValue(col, d) {
   let raw = col.sortValue ? col.sortValue(d) : col.get(d);
-  if (raw == null || raw === '—' || raw === '') return null;
+  if (raw == null || raw === '-' || raw === '') return null;
   // If raw is HTML (raw: true), strip tags for fallback
   if (col.raw) raw = String(raw).replace(/<[^>]+>/g, '').trim();
   const s = String(raw);
@@ -9824,7 +9824,7 @@ function synthSortValue(col, d) {
   return s.toLowerCase();
 }
 
-// Per-op aggregation — computed fresh each render to reflect edits
+// Per-op aggregation - computed fresh each render to reflect edits
 function synthData(op, pretsFilter) {
   const tranches = op.tranches || [];
   const subv = op.subventions || [];
@@ -9853,7 +9853,7 @@ function synthData(op, pretsFilter) {
   const pretsLOObt = prets.filter(x => x.statut === "Lettre d'offre" || (x.montant_lo && !x.montant_contrat)).length;
   const pretsSignes = prets.filter(x => x.statut === 'Contrat signé' || x.montant_contrat).length;
   // Banques distinctes pour cette op (alphabétique)
-  const pretsBanques = [...new Set(prets.map(x => x.financeur).filter(Boolean))].sort().join(' · ') || '—';
+  const pretsBanques = [...new Set(prets.map(x => x.financeur).filter(Boolean))].sort().join(' · ') || '-';
 
   // Garanties
   const garADem = gar.filter(x => !x.statut || x.statut === 'À demander').length;
@@ -9893,11 +9893,11 @@ function synthData(op, pretsFilter) {
   const resNego = res.filter(x => ['À demander','En négociation'].includes(x.etape)).length;
 
   // Agrément (take from first tranche with data)
-  const yearProg = tranches.find(t => t.annee_prog)?.annee_prog || '—';
-  const nSiap = tranches.find(t => t.n_siap)?.n_siap || '—';
-  const agrStatut = tranches.find(t => t.statut_agrement)?.statut_agrement || '—';
-  const typeEtab = tranches[0]?.type_structure || '—';
-  const gestionnaire = tranches.find(t => t.gestionnaire)?.gestionnaire || '—';
+  const yearProg = tranches.find(t => t.annee_prog)?.annee_prog || '-';
+  const nSiap = tranches.find(t => t.n_siap)?.n_siap || '-';
+  const agrStatut = tranches.find(t => t.statut_agrement)?.statut_agrement || '-';
+  const typeEtab = tranches[0]?.type_structure || '-';
+  const gestionnaire = tranches.find(t => t.gestionnaire)?.gestionnaire || '-';
 
   return {
     op,
@@ -9934,8 +9934,8 @@ function synthData(op, pretsFilter) {
 
 function synthTrCode(t) { return t.code_full ? t.code_full.split('-').slice(1).join('-') : (t.id || ''); }
 function synthPerTranche(tranches, getVal) {
-  const parts = tranches.map(t => ({ code: synthTrCode(t), val: getVal(t) })).filter(p => p.val != null && p.val !== '' && p.val !== '—');
-  if (parts.length === 0) return '—';
+  const parts = tranches.map(t => ({ code: synthTrCode(t), val: getVal(t) })).filter(p => p.val != null && p.val !== '' && p.val !== '-');
+  if (parts.length === 0) return '-';
   const distinct = [...new Set(parts.map(p => String(p.val)))];
   if (distinct.length === 1) return distinct[0];
   return parts.map(p => `${p.val} (${p.code})`).join(' · ');
@@ -9946,16 +9946,16 @@ function synthVolBreakdown(t) {
 }
 function synthAgrLgts(tranches) {
   const parts = tranches.map(t => ({ code: synthTrCode(t), bd: synthVolBreakdown(t) })).filter(p => p.bd);
-  if (parts.length === 0) return '—';
+  if (parts.length === 0) return '-';
   if (parts.length === 1) return parts[0].bd;
   return parts.map(p => `${p.code}: ${p.bd}`).join(' · ');
 }
 
-const TXT = (v) => (v == null || v === '' ? '—' : String(v));
-const NUM = (v) => (v == null || v === '' || v === 0 ? '—' : String(v));
-const PCT = (v) => v > 0 ? (v * 100).toFixed(0).replace('.', ',') + ' %' : '—';
+const TXT = (v) => (v == null || v === '' ? '-' : String(v));
+const NUM = (v) => (v == null || v === '' || v === 0 ? '-' : String(v));
+const PCT = (v) => v > 0 ? (v * 100).toFixed(0).replace('.', ',') + ' %' : '-';
 
-// Tab configuration — each tab defines its columns
+// Tab configuration - each tab defines its columns
 const SYNTH_TABS = [
   { id: 'identite', label: 'Identité & Loc.', icon: 'map-pin',
     cols: [
@@ -9994,7 +9994,7 @@ const SYNTH_TABS = [
   { id: 'volumetrie', label: 'Volumétrie', icon: 'home',
     cols: [
       { label: 'Logements', get: d => NUM(d.totalLgts), align: 'num' },
-      { label: 'Surface', get: d => d.totalSurface ? fmtSurface(d.totalSurface) : '—', align: 'num' },
+      { label: 'Surface', get: d => d.totalSurface ? fmtSurface(d.totalSurface) : '-', align: 'num' },
       { label: 'PLAI', get: d => NUM(d.vol.plai), align: 'num' },
       { label: 'PLUS', get: d => NUM(d.vol.plus), align: 'num' },
       { label: 'PLS', get: d => NUM(d.vol.pls), align: 'num' },
@@ -10021,7 +10021,7 @@ const SYNTH_TABS = [
       { label: 'Fonds propres', get: d => fmtMontant(d.totalFP), align: 'num' },
       { label: 'Équilibre', get: d => {
           const e = d.equilibre;
-          if (e == null) return '—';
+          if (e == null) return '-';
           if (Math.abs(e) < 1) return '<span style="color: var(--success-text); font-weight: 600;">✓ équilibré</span>';
           return `<span style="color: var(--warning-accent);">${fmtMontant(e)}</span>`;
         }, raw: true, align: 'num' },
@@ -10033,7 +10033,7 @@ const SYNTH_TABS = [
       { label: 'Total demandé', get: d => fmtMontant(d.subvDem), align: 'num' },
       { label: 'Total notifié', get: d => fmtMontant(d.subvNotif), align: 'num' },
       { label: 'Nb notifiées', get: d => NUM(d.subvNbNotif), align: 'num' },
-      { label: 'Taux notif.', get: d => d.subvNb ? Math.round(d.subvNbNotif / d.subvNb * 100) + ' %' : '—', align: 'num' },
+      { label: 'Taux notif.', get: d => d.subvNb ? Math.round(d.subvNbNotif / d.subvNb * 100) + ' %' : '-', align: 'num' },
     ]
   },
   { id: 'prets', label: 'Prêts', icon: 'coin',
@@ -10206,7 +10206,7 @@ function renderSynthTable() {
   const stickyCodeWidth = 90;
   const stickyNameLeft = stickyCodeWidth;
 
-  // Sortable column headers — clickable with sort arrow
+  // Sortable column headers - clickable with sort arrow
   const colHeads = tab.cols.map((col, idx) => {
     const isSorted = sortActive && synthSort.colIdx === idx;
     let arrow = '';
@@ -10234,12 +10234,12 @@ function renderSynthTable() {
     const d = synthData(op, pretBankFilter);
     return `
       <tr class="clickable" data-op="${op._uid}">
-        <td class="sticky-left code-cell">${escapeHtml(op.code || op.sheet || '—')}</td>
+        <td class="sticky-left code-cell">${escapeHtml(op.code || op.sheet || '-')}</td>
         <td class="sticky-left-2" style="left: ${stickyNameLeft}px;">${escapeHtml(op.display_name)}</td>
         ${tab.cols.map(col => {
           const v = col.get(d);
           const klass = col.align === 'num' ? 'num' : '';
-          const muted = (v === '—' || v === '') ? ' muted' : '';
+          const muted = (v === '-' || v === '') ? ' muted' : '';
           return `<td class="${klass}${muted}">${col.raw ? v : escapeHtml(String(v))}</td>`;
         }).join('')}
       </tr>
@@ -10284,7 +10284,7 @@ function renderSynthContextFilters() {
   const filters = TAB_FILTERS[synthActiveTab] || [];
   let html = filters.map(f => {
     const opts = f.source();
-    const optsHtml = ['<option value="">— ' + escapeHtml(f.label) + ' —</option>']
+    const optsHtml = ['<option value="">- ' + escapeHtml(f.label) + ' -</option>']
       .concat(opts.map(o => `<option value="${escapeHtml(o)}"${synthFilters[f.id] === o ? ' selected' : ''}>${escapeHtml(o)}</option>`))
       .join('');
     return `<select class="synth-filter-select synth-filter-contextual" data-filter="${f.id}">${optsHtml}</select>`;
@@ -10482,7 +10482,7 @@ function renderReferentiels() {
       </div>
     `;
   }).join('');
-  // Wire events — persistance vers Supabase
+  // Wire events - persistance vers Supabase
   grid.querySelectorAll('.ref-item-input').forEach(input => {
     input.addEventListener('change', async (e) => {
       const k = e.target.dataset.refKey;
@@ -10978,7 +10978,7 @@ function showTagLinkedPopover(anchorEl, tagValue) {
           ${linked.map(o => {
             const phaseConf = PHASE_COLORS[o.phase_actuelle || 'Montage'] || PHASE_COLORS['Montage'];
             return `<li data-linked-op-uid="${escapeHtml(o._uid)}">
-              <span class="tag-linked-code">${escapeHtml(o.code || o.sheet || '—')}</span>
+              <span class="tag-linked-code">${escapeHtml(o.code || o.sheet || '-')}</span>
               <span class="tag-linked-name">${escapeHtml(o.display_name || '')}</span>
               <span class="tag-linked-phase" style="background:${phaseConf.bg};color:${phaseConf.text};">${escapeHtml(o.phase_actuelle || 'Montage')}</span>
             </li>`;
@@ -11411,7 +11411,7 @@ async function loadFromSupabase(opts) {
   } catch (err) {
     console.error('Erreur Supabase :', err);
     if (typeof showToast === 'function') {
-      showToast('Supabase indisponible — données démo affichées', 'alert-triangle');
+      showToast('Supabase indisponible - données démo affichées', 'alert-triangle');
     }
     // Cacher aussi le splash en cas d'erreur (sinon il reste éternellement)
     clearTimeout(splashTimeout);
@@ -11793,14 +11793,14 @@ async function _saveOpToSupabaseImpl(op, beforeSnap) {
     'Prefer': 'return=representation',
   };
   try {
-    // 1. Sauvegarder les champs de l'op — sauté si aucun champ d'op n'a bougé
+    // 1. Sauvegarder les champs de l'op - sauté si aucun champ d'op n'a bougé
     const opPayload = buildOpPayload(op);
     const opChanged = !beforeSnap || JSON.stringify(buildOpPayload(beforeSnap)) !== JSON.stringify(opPayload);
     if (opChanged) {
       const opResponse = await fetch(`${SUPABASE_URL}/rest/v1/operations?id=eq.${supabaseId}`, {
         method: 'PATCH', headers, body: JSON.stringify(opPayload),
       });
-      if (!opResponse.ok) throw new Error('Op: ' + opResponse.status + ' — ' + await opResponse.text());
+      if (!opResponse.ok) throw new Error('Op: ' + opResponse.status + ' - ' + await opResponse.text());
     }
 
     // 2. Synchroniser tranches / prêts / garanties / subventions / réservataires / comités / tags
@@ -11852,8 +11852,8 @@ async function syncEntitiesToSupabase(op, operationId, beforeSnap) {
         const body = await res.json();
         detail = body.message || body.hint || body.details || JSON.stringify(body);
       } catch { /* corps non-JSON : on garde statusText */ }
-      const msg = `${action} — échec ${res.status} : ${detail}`;
-      showToast('Erreur Supabase — ' + msg, 'alert-triangle');
+      const msg = `${action} - échec ${res.status} : ${detail}`;
+      showToast('Erreur Supabase - ' + msg, 'alert-triangle');
       throw new Error(msg);
     }
     return res;
@@ -11874,7 +11874,7 @@ async function syncEntitiesToSupabase(op, operationId, beforeSnap) {
   for (const t of (op.tranches || [])) {
     const trPayload = buildTranchePayload(t, operationId);
     if (t._supabase_id) {
-      // UPDATE — sauté si la tranche est identique à sa version d'avant édition
+      // UPDATE - sauté si la tranche est identique à sa version d'avant édition
       if (!unchanged(snapTranches.get(t._supabase_id), trPayload, (s) => buildTranchePayload(s, operationId))) {
         await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/tranches?id=eq.${t._supabase_id}`, {
           method: 'PATCH', headers, body: JSON.stringify(trPayload),
@@ -12425,7 +12425,7 @@ function addLogoutButton(){
   rbtn.addEventListener('click', () => refreshData(false));
   nav.appendChild(rbtn);
 
-  // Chip utilisateur (display name) — tout à droite, menu déconnexion au survol
+  // Chip utilisateur (display name) - tout à droite, menu déconnexion au survol
   let uname = (s && (s.name || s.email)) || 'Utilisateur';
   uname = uname.split(/([ ._\-]+)/).map(w => (w && /[a-zA-ZÀ-ÿ]/.test(w.charAt(0))) ? w.charAt(0).toUpperCase() + w.slice(1) : w).join('');
   const initials = uname.split(/[ ._@-]+/).filter(Boolean).slice(0,2).map(x => x[0].toUpperCase()).join('') || 'U';
@@ -12461,7 +12461,9 @@ function updateSyncStamp(){
 
 async function refreshData(silent){
   // Ne jamais écraser une saisie en cours
-  if (silent && (editMode || _pendingWrites > 0 || (Date.now() - _lastWriteAt < 8000) || (typeof hasUnsavedChanges === 'function' && hasUnsavedChanges()))) return;
+  // Ne pas rafraîchir en arrière-plan pendant une saisie NI tant qu'un tiroir de
+  // détail est ouvert (sinon le re-render le ferait clignoter / se fermer).
+  if (silent && (editMode || _pendingWrites > 0 || _opsDrawerDomain != null || (Date.now() - _lastWriteAt < 8000) || (typeof hasUnsavedChanges === 'function' && hasUnsavedChanges()))) return;
   const selCode = (typeof storageGet === 'function') ? storageGet('selectedOp') : null;
   const view = (typeof storageGet === 'function') ? storageGet('activeView') : null;
   const rbtn = document.getElementById('sessRefreshBtn');
@@ -12498,7 +12500,7 @@ async function refreshPresence(){
     if (pill) {
       pill.style.display = active.length ? 'inline-flex' : 'none';
       const c = pill.querySelector('.sess-count'); if (c) c.textContent = active.length;
-      pill.title = active.length + ' session(s) active(s) · ' + (emails.join(', ') || '—');
+      pill.title = active.length + ' session(s) active(s) · ' + (emails.join(', ') || '-');
     }
   } catch(e){}
 }
