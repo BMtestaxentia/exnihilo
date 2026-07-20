@@ -3538,9 +3538,10 @@ function renderOpHomeDashboard(op, displayedOp) {
   const alertBadge = nCrit ? `<span class="oph-pill crit">${nCrit} critique${nCrit > 1 ? 's' : ''}</span>`
     : (nWarn ? `<span class="oph-pill warn">${nWarn} à surveiller</span>` : '<span class="oph-pill good">À jour</span>');
   const alertBody = alerts.length
-    ? `<div class="oph-figrow"><div class="oph-fig"><span class="oph-fl">Critiques / expirés</span><span class="oph-fv">${nCrit}</span></div>
-       <div class="oph-fig"><span class="oph-fl">À surveiller</span><span class="oph-fv">${nWarn}</span></div></div>
-       <div class="oph-tsub">Ouvre la Synthèse pour le détail.</div>`
+    ? alerts.slice(0, 6).map(a => `<div class="oph-aline oph-a-${a.level}">
+        <span class="oph-adays">${a.days < 0 ? (-a.days) + 'j' : a.days + 'j'}</span>
+        <span class="oph-amsg">${esc(a.msg)}</span></div>`).join('')
+      + (alerts.length > 6 ? `<div class="oph-tsub">+ ${alerts.length - 6} autre(s) échéance(s)</div>` : '')
     : '<div class="oph-tsub">Aucune alerte active sur cette opération.</div>';
   const fp = (displayedOp.tranches || []).reduce((s, t) => s + (Number(t.fonds_propres) || 0), 0);
   // Vue cumulée des financements (niveau opération, version simplifiée).
@@ -3847,7 +3848,7 @@ function renderOpDetail() {
   const editToolbar = effectiveEditMode ? `
     <div class="edit-toolbar">
       <i class="ti ti-pencil"></i>
-      <span>Mode édition · les modifications sont locales (mockup)</span>
+      <span>Mode édition · les modifications sont enregistrées dans la base au clic sur « Enregistrer »</span>
       <div class="btn-bar">
         <button class="btn-edit danger" onclick="deleteOp()"><i class="ti ti-trash"></i>Supprimer</button>
         <button class="btn-edit" onclick="cancelOpEdits()"><i class="ti ti-x"></i>Annuler</button>
@@ -4210,12 +4211,12 @@ function renderTrancheDetail() {
         ${editableSelect('Grille', t.conv_loc_grille, 'conv_loc_grille', getRef('grilles_loyer'), 'tranche-field')}
       </div>
 
-      <div class="op-anchor" id="sec-tr-subv" data-grp="fin">${renderSubvSection(subv, op)}</div>
       <div class="op-anchor" id="sec-tr-prets" data-grp="fin">${renderPretsSection(prets, op)}</div>
       <div class="op-anchor" id="sec-tr-gar" data-grp="fin">${renderGarantiesSection(garanties, op)}</div>
-      <div class="op-anchor" id="sec-tr-avenants" data-grp="fin">${renderAvenantsSection(avenants, op)}</div>
-      <div class="op-anchor" id="sec-tr-prefi" data-grp="fin">${renderPrefinSection(prefin, op)}</div>
+      <div class="op-anchor" id="sec-tr-subv" data-grp="fin">${renderSubvSection(subv, op)}</div>
       <div class="op-anchor" id="sec-tr-res" data-grp="fin">${renderReservatairesSection(reservataires, op)}</div>
+      <div class="op-anchor" id="sec-tr-prefi" data-grp="fin">${renderPrefinSection(prefin, op)}</div>
+      <div class="op-anchor" id="sec-tr-avenants" data-grp="fin">${renderAvenantsSection(avenants, op)}</div>
     `;
   }
 
@@ -5018,6 +5019,7 @@ function addEntityRow(section) {
   const trCode = t ? (t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id) : '';
   op[section].push({ tranche: trCode });
   renderTrancheDetail();
+  replaceTablerIcons(); // sinon les icônes des boutons de la nouvelle ligne ne se rendent pas
 }
 
 function deleteEntityRow(section, originalIdx) {
@@ -5026,6 +5028,7 @@ function deleteEntityRow(section, originalIdx) {
   if (!op || !op[section]) return;
   op[section].splice(originalIdx, 1);
   renderTrancheDetail();
+  replaceTablerIcons();
 }
 
 // ============== SUBVENTIONS ==============

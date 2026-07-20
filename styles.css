@@ -5417,12 +5417,9 @@
 .ops-drawer-body { padding: 16px 20px 44px; overflow-y: auto; flex: 1; }
 .ops-drawer-body { display: flex; flex-wrap: wrap; gap: 14px; align-content: flex-start; }
 .ops-drawer-body > [data-grp] { flex: 1 1 100%; margin: 0; max-width: none; min-width: 0; }
-/* Tranche : sections courtes sur 2 colonnes ; Prix de revient + Plan de financement cote a cote. */
+/* Prix de revient + Plan de financement cote a cote (adjacents dans le DOM). */
 @media (min-width: 900px) {
-  .ops-drawer-body > #sec-tr-id, .ops-drawer-body > #sec-tr-sim, .ops-drawer-body > #sec-tr-loyer,
-  .ops-drawer-body > #sec-tr-convloc, .ops-drawer-body > #sec-tr-bilan, .ops-drawer-body > #sec-tr-pf {
-    flex: 1 1 calc(50% - 7px); min-width: 340px;
-  }
+  .ops-drawer-body > #sec-tr-bilan, .ops-drawer-body > #sec-tr-pf { flex: 1 1 calc(50% - 7px); min-width: 340px; }
 }
 
 /* Onglet Financements mis en avant dans le tiroir d'une tranche */
@@ -5430,7 +5427,7 @@
 
 /* ===== Edition financements : lignes compactes depliables (refonte) ===== */
 .entity-card.editing.fin-erow { padding: 0; overflow: hidden; }
-.fin-emain { display: grid; grid-template-columns: 1.3fr 1.1fr 0.95fr 1.1fr 1.6fr 32px 32px; gap: 8px; align-items: center; padding: 8px 12px; }
+.fin-emain { display: grid; grid-template-columns: minmax(140px, 230px) minmax(120px, 190px) minmax(90px, 130px) minmax(130px, 200px) minmax(150px, 185px) 32px 32px; gap: 8px; align-items: center; padding: 8px 12px; }
 .fin-emain .card-input, .fin-cell { min-width: 0; width: 100%; font-size: 12.5px; padding: 5px 7px; }
 .fin-num { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 940px) { .fin-emain { grid-template-columns: 1fr 1fr auto auto; } .fin-cyc { grid-column: 1 / -1; order: 5; } }
@@ -5452,3 +5449,12 @@
 .fin-cyc .st:first-child .conn { display: none; }
 
 .vol-empty-note { font-size: 12.5px; color: var(--text-tertiary); font-style: italic; padding: 2px 0; }
+
+/* Synthese alertes inline (brique vue operation) */
+.oph-aline { display: flex; align-items: flex-start; gap: 9px; padding: 6px 0; border-top: 1px dashed var(--border-color); font-size: 12.8px; }
+.oph-aline:first-child { border-top: none; }
+.oph-adays { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 11px; padding: 1px 7px; border-radius: 999px; flex: none; background: var(--bg-secondary); color: var(--text-secondary); }
+.oph-a-expired .oph-adays, .oph-a-critical .oph-adays { background: var(--danger-bg); color: var(--danger-text); }
+.oph-a-warning .oph-adays { background: var(--warning-bg); color: var(--warning-text); }
+.oph-a-info .oph-adays { background: var(--info-bg); color: var(--info-text); }
+.oph-amsg { flex: 1; color: var(--text-primary); }
