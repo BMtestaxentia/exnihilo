@@ -3633,13 +3633,15 @@ function openOpsDomain(id) {
   const body = document.getElementById('opsDrawerBody');
   if (body) body.innerHTML = ''; // enlève d'éventuels nœuds orphelins (re-render pendant tiroir ouvert)
   let title = 'Détail', groups = [id], container = document.getElementById('opDetail'), bandeau = 'op';
-  if (id === 'tranche') {
+  const isTranche = (id === 'tranche' || id === 'tranche-fin');
+  if (isTranche) {
     container = document.getElementById('trancheDetail');
-    groups = ['tr', 'fin'];
+    groups = (id === 'tranche-fin') ? ['fin'] : ['tr'];
     const op = findOp(selectedOpCode);
     const t = (op && op.tranches) ? op.tranches[selectedTrancheIdx] : null;
     const suffix = t && t.code_full ? t.code_full.split('-').slice(1).join('-') : '';
-    title = t ? (t.type_structure || suffix || 'Tranche') : 'Tranche';
+    const tname = t ? (t.type_structure || suffix || 'Tranche') : 'Tranche';
+    title = (id === 'tranche-fin') ? (tname + ' — Financements') : tname;
     bandeau = String(selectedTrancheIdx);
   } else {
     const def = OPS_DOMAINS.find(d => d[0] === id);
@@ -3659,8 +3661,10 @@ function openOpsDomain(id) {
   });
   body.scrollTop = 0;
   document.getElementById('opsDrawerTitle').textContent = title;
-  document.getElementById('opsDrawerNav').innerHTML = OPS_DOMAINS.map(([did, label]) =>
-    `<button type="button" class="ops-dn${did === id ? ' active' : ''}" onclick="openOpsDomain('${did}')">${escapeHtml(label)}</button>`).join('');
+  // Sous-navigation : pour une tranche, Détail / Financements dédiés ; sinon les domaines opération.
+  const navItems = isTranche ? [['tranche', 'Détail'], ['tranche-fin', 'Financements']] : OPS_DOMAINS;
+  document.getElementById('opsDrawerNav').innerHTML = navItems.map(([did, label]) =>
+    `<button type="button" class="ops-dn${did === id ? ' active' : ''}${did === 'tranche-fin' ? ' ops-dn-accent' : ''}" onclick="openOpsDomain('${did}')">${escapeHtml(label)}</button>`).join('');
   _setBandeauActive(bandeau);
   _opsDrawerDomain = id;
   positionOpsDrawer();

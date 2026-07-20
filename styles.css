@@ -5416,3 +5416,6 @@
 .ops-dn.active { background: var(--bg-primary); color: var(--info-accent); border-color: var(--border-color); }
 .ops-drawer-body { padding: 16px 20px 44px; overflow-y: auto; flex: 1; }
 .ops-drawer-body > [data-grp] { margin: 0 0 16px; max-width: none; }
+
+/* Onglet Financements mis en avant dans le tiroir d'une tranche */
+.ops-dn.ops-dn-accent:not(.active) { color: var(--info-accent); background: var(--info-bg); border-color: transparent; }
