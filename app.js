@@ -11576,6 +11576,23 @@ async function syncEntitiesToSupabase(op, operationId) {
     'Prefer': 'return=representation',
   };
 
+  // Vérifie la réponse d'un PATCH/DELETE : en cas d'échec, remonte un toast
+  // explicite (avec le message PostgREST) et interrompt la sync via throw,
+  // au lieu d'avaler silencieusement l'erreur.
+  async function checkRes(res, action) {
+    if (!res.ok) {
+      let detail = res.statusText || '';
+      try {
+        const body = await res.json();
+        detail = body.message || body.hint || body.details || JSON.stringify(body);
+      } catch { /* corps non-JSON : on garde statusText */ }
+      const msg = `${action} — échec ${res.status} : ${detail}`;
+      showToast('Erreur Supabase — ' + msg, 'alert-triangle');
+      throw new Error(msg);
+    }
+    return res;
+  }
+
   // === TRANCHES ===
   // 1. Récupérer les tranches actuelles sur Supabase pour cette op
   const trRes = await fetch(`${SUPABASE_URL}/rest/v1/tranches?operation_id=eq.${operationId}&select=id`, {
@@ -11592,9 +11609,9 @@ async function syncEntitiesToSupabase(op, operationId) {
     const trPayload = buildTranchePayload(t, operationId);
     if (t._supabase_id) {
       // UPDATE
-      await fetch(`${SUPABASE_URL}/rest/v1/tranches?id=eq.${t._supabase_id}`, {
+      await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/tranches?id=eq.${t._supabase_id}`, {
         method: 'PATCH', headers, body: JSON.stringify(trPayload),
-      });
+      }), `PATCH tranche ${t.code_full || t.id}`);
       localTrIds.add(t._supabase_id);
       trancheIdMap[t.id] = t._supabase_id;
     } else {
@@ -11617,9 +11634,9 @@ async function syncEntitiesToSupabase(op, operationId) {
   // 3. DELETE les tranches supprimées localement (présentes remote mais pas local)
   for (const remoteId of remoteTrIds) {
     if (!localTrIds.has(remoteId)) {
-      await fetch(`${SUPABASE_URL}/rest/v1/tranches?id=eq.${remoteId}`, {
+      await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/tranches?id=eq.${remoteId}`, {
         method: 'DELETE', headers,
-      });
+      }), `DELETE tranche #${remoteId}`);
     }
   }
 
@@ -11637,9 +11654,9 @@ async function syncEntitiesToSupabase(op, operationId) {
     const trancheSupabaseId = findTrancheSupabaseIdFromSuffix(op, p.tranche);
     const prPayload = buildPretPayload(p, operationId, trancheSupabaseId);
     if (p._supabase_id) {
-      await fetch(`${SUPABASE_URL}/rest/v1/prets?id=eq.${p._supabase_id}`, {
+      await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/prets?id=eq.${p._supabase_id}`, {
         method: 'PATCH', headers, body: JSON.stringify(prPayload),
-      });
+      }), `PATCH prêt ${p.ligne || p._supabase_id}`);
       localPrIds.add(p._supabase_id);
       pretLigneToSupabaseId[p.ligne] = p._supabase_id;
     } else {
@@ -11660,9 +11677,9 @@ async function syncEntitiesToSupabase(op, operationId) {
 
   for (const remoteId of remotePrIds) {
     if (!localPrIds.has(remoteId)) {
-      await fetch(`${SUPABASE_URL}/rest/v1/prets?id=eq.${remoteId}`, {
+      await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/prets?id=eq.${remoteId}`, {
         method: 'DELETE', headers,
-      });
+      }), `DELETE prêt #${remoteId}`);
     }
   }
 
@@ -11679,9 +11696,9 @@ async function syncEntitiesToSupabase(op, operationId) {
     const pretSupabaseId = pretLigneToSupabaseId[g.pret_lie] || null;
     const gaPayload = buildGarantiePayload(g, operationId, trancheSupabaseId, pretSupabaseId);
     if (g._supabase_id) {
-      await fetch(`${SUPABASE_URL}/rest/v1/garanties?id=eq.${g._supabase_id}`, {
+      await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/garanties?id=eq.${g._supabase_id}`, {
         method: 'PATCH', headers, body: JSON.stringify(gaPayload),
-      });
+      }), `PATCH garantie ${g.garant || g._supabase_id}`);
       localGaIds.add(g._supabase_id);
     } else {
       const ins = await fetch(`${SUPABASE_URL}/rest/v1/garanties`, {
@@ -11700,9 +11717,9 @@ async function syncEntitiesToSupabase(op, operationId) {
 
   for (const remoteId of remoteGaIds) {
     if (!localGaIds.has(remoteId)) {
-      await fetch(`${SUPABASE_URL}/rest/v1/garanties?id=eq.${remoteId}`, {
+      await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/garanties?id=eq.${remoteId}`, {
         method: 'DELETE', headers,
-      });
+      }), `DELETE garantie #${remoteId}`);
     }
   }
 
