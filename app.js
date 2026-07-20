@@ -3539,12 +3539,21 @@ function renderOpHomeDashboard(op, displayedOp) {
   ).join('') || '<div class="oph-tsub">Aucun comité.</div>';
   const alertBadge = nCrit ? `<span class="oph-pill crit">${nCrit} critique${nCrit > 1 ? 's' : ''}</span>`
     : (nWarn ? `<span class="oph-pill warn">${nWarn} à surveiller</span>` : '<span class="oph-pill good">À jour</span>');
+  const keyDates = [
+    ['Livraison prévue', op.date_livraison],
+    ['Convention APL', op.date_conv_apl],
+    ['Convention location', op.date_conv_loc],
+    ['Acte authentique', op.date_acte_auth || op.date_acte],
+  ].filter(([, d]) => d);
   const alertBody = alerts.length
     ? alerts.slice(0, 6).map(a => `<div class="oph-aline oph-a-${a.level}">
-        <span class="oph-adays">${a.days < 0 ? (-a.days) + 'j' : a.days + 'j'}</span>
+        <span class="oph-adays">${a.days != null ? (a.days < 0 ? (-a.days) + 'j' : a.days + 'j') : '•'}</span>
         <span class="oph-amsg">${esc(a.msg)}</span></div>`).join('')
       + (alerts.length > 6 ? `<div class="oph-tsub">+ ${alerts.length - 6} autre(s) échéance(s)</div>` : '')
-    : '<div class="oph-tsub">Aucune alerte active sur cette opération.</div>';
+    : (keyDates.length
+        ? `<div class="oph-mini-h">Aucune alerte · prochaines dates clés</div>`
+          + keyDates.map(([l, d]) => `<div class="oph-aline oph-a-info"><span class="oph-adays">${esc(d)}</span><span class="oph-amsg">${l}</span></div>`).join('')
+        : '<div class="oph-tsub">Aucune échéance à signaler.</div>');
   const fp = (displayedOp.tranches || []).reduce((s, t) => s + (Number(t.fonds_propres) || 0), 0);
   // Vue cumulée des financements (niveau opération, version simplifiée).
   const nP = (op.prets || []).length, nG = (op.garanties || []).length, nS = (op.subventions || []).length;
@@ -3570,7 +3579,7 @@ function renderOpHomeDashboard(op, displayedOp) {
     ? `${op.adresse}, ${cpVille}` : (op.adresse || cpVille || '-');
   const equipe = [op.developpeur, op.resp_op, op.charge_fin].filter(Boolean).join(' · ') || '-';
   const hasCoords = op.latitude != null && op.longitude != null;
-  const locBrick = `<section class="oph-card oph-c12">
+  const locBrick = `<section class="oph-card oph-c6">
     <div class="oph-head"><span class="oph-ic"><i class="ti ti-map-pin"></i></span><span class="oph-title">Localisation</span>
       <span class="oph-tsub" style="margin-left:auto;text-align:right">${esc(adrFull)}</span></div>
     <div class="oph-body" style="padding:0">
@@ -3578,21 +3587,21 @@ function renderOpHomeDashboard(op, displayedOp) {
     </div>
   </section>`;
   return `<div class="oph-grid">
-    ${card('oph-c12', 'alert-triangle', 'Alertes &amp; échéances', alertBadge, 'syn', alertBody)}
+    ${card('oph-c12', 'alert-triangle', 'Synthèse &amp; échéances', alertBadge, 'syn', alertBody)}
     ${finBrick}
-    ${locBrick}
     ${card('oph-c6', 'folder', 'Dossier', '', 'dos', `<dl class="oph-kv">
       <dt>Adresse</dt><dd>${esc(adrFull)}</dd>
       <dt>Équipe</dt><dd>${esc(equipe)}</dd>
       <dt>Montage</dt><dd>${esc([op.vefa_mod, op.promoteur].filter(Boolean).join(' · ') || '-')}</dd>
       <dt>Date OS</dt><dd>${esc(op.date_os || '-')}</dd>
       <dt>Livraison prévue</dt><dd>${esc(op.date_livraison || '-')}</dd></dl>`)}
+    ${locBrick}
     ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', `<div class="oph-figrow">
       <div class="oph-fig"><span class="oph-fl">Logements</span><span class="oph-fv">${totalLgts(displayedOp) || '-'}</span></div>
       <div class="oph-fig"><span class="oph-fl">Subventions</span><span class="oph-fv">${fmtMontant(tSubv)}</span></div>
       <div class="oph-fig"><span class="oph-fl">Emprunts</span><span class="oph-fv">${fmtMontant(tPrets)}</span></div>
       <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)}</span></div></div>`)}
-    ${card('oph-c12', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span>`, 'suivi', comLines)}
+    ${card('oph-c6', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span>`, 'suivi', comLines)}
   </div>`;
 }
 

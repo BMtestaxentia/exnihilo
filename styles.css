@@ -5325,13 +5325,14 @@
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-convloc { grid-column: span 6; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-bilan { grid-column: span 6; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-pf { grid-column: span 6; }
-    /* Financements : prêts en majesté, familles liées appariées */
-    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-prets { order: 1; }
-    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-gar { grid-column: span 6; order: 2; }
-    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-prefi { grid-column: span 6; order: 3; }
-    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-subv { grid-column: span 6; order: 4; }
-    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-res { grid-column: span 6; order: 5; }
-    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-avenants { order: 6; }
+    /* Financements : tout en pleine largeur, empilé verticalement dans l'ordre
+       prêts, garanties, subventions, réservataires, préfis, avenants. */
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-prets { grid-column: 1 / -1; order: 1; }
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-gar { grid-column: 1 / -1; order: 2; }
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-subv { grid-column: 1 / -1; order: 3; }
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-res { grid-column: 1 / -1; order: 4; }
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-prefi { grid-column: 1 / -1; order: 5; }
+    .ops-shell[data-tab="fin"] .tranche-detail > #sec-tr-avenants { grid-column: 1 / -1; order: 6; }
     .ops-shell[data-tab="fin"] .tranche-detail > .tranches-selector { order: 0; }
     .ops-shell[data-tab="fin"] .tranche-detail > .metric-row { order: 0; }
     /* Suivi */
