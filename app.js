@@ -3539,12 +3539,14 @@ function renderOpHomeDashboard(op, displayedOp) {
   ).join('') || '<div class="oph-tsub">Aucun comité.</div>';
   const alertBadge = nCrit ? `<span class="oph-pill crit">${nCrit} critique${nCrit > 1 ? 's' : ''}</span>`
     : (nWarn ? `<span class="oph-pill warn">${nWarn} à surveiller</span>` : '<span class="oph-pill good">À jour</span>');
+  const _todayMid = new Date(); _todayMid.setHours(0, 0, 0, 0);
   const keyDates = [
     ['Livraison prévue', op.date_livraison],
     ['Convention APL', op.date_conv_apl],
     ['Convention location', op.date_conv_loc],
     ['Acte authentique', op.date_acte_auth || op.date_acte],
-  ].filter(([, d]) => d);
+  ].filter(([, d]) => { const dt = d ? parseDateStr(d) : null; return dt && dt >= _todayMid; })
+   .sort((a, b) => parseDateStr(a[1]) - parseDateStr(b[1]));
   const alertBody = alerts.length
     ? alerts.slice(0, 6).map(a => `<div class="oph-aline oph-a-${a.level}">
         <span class="oph-adays">${a.days != null ? (a.days < 0 ? (-a.days) + 'j' : a.days + 'j') : '•'}</span>
@@ -3560,15 +3562,22 @@ function renderOpHomeDashboard(op, displayedOp) {
   const tPrets = opTotalPrets(displayedOp), tSubv = opTotalSubv(displayedOp);
   const budget = totalBudget(displayedOp);
   const couvert = budget > 0 ? Math.round((tPrets + tSubv + fp) / budget * 100) : 0;
+  const totFin = tPrets + tSubv + fp;
+  const pctf = x => totFin > 0 ? Math.round(x / totFin * 100) : 0;
   const finBrick = `<section class="oph-card oph-c12">
     <div class="oph-head"><span class="oph-ic"><i class="ti ti-coin"></i></span>
       <span class="oph-title">Financements - vue cumulée</span>
       <span class="oph-pill ${couvert >= 100 ? 'good' : (couvert >= 80 ? 'warn' : 'neutral')}" style="margin-left:auto">${couvert} % couvert</span></div>
     <div class="oph-body">
+      <div class="oph-stack" role="img" aria-label="Répartition du financement">
+        <span style="width:${pctf(tPrets)}%;background:var(--info-accent)"></span>
+        <span style="width:${pctf(tSubv)}%;background:var(--success-accent)"></span>
+        <span style="width:${pctf(fp)}%;background:var(--warning-accent)"></span>
+      </div>
       <div class="oph-figrow" style="grid-template-columns:repeat(4,minmax(0,1fr))">
-        <div class="oph-fig"><span class="oph-fl">Prêts · ${nP}</span><span class="oph-fv">${fmtMontant(tPrets)}</span></div>
-        <div class="oph-fig"><span class="oph-fl">Subventions · ${nS}</span><span class="oph-fv">${fmtMontant(tSubv)}</span></div>
-        <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)}</span></div>
+        <div class="oph-fig"><span class="oph-fl">Prêts · ${nP} <span class="oph-soft">${pctf(tPrets)}%</span></span><span class="oph-fv">${fmtMontant(tPrets)}</span></div>
+        <div class="oph-fig"><span class="oph-fl">Subventions · ${nS} <span class="oph-soft">${pctf(tSubv)}%</span></span><span class="oph-fv">${fmtMontant(tSubv)}</span></div>
+        <div class="oph-fig"><span class="oph-fl">Fonds propres <span class="oph-soft">${pctf(fp)}%</span></span><span class="oph-fv">${fmtMontant(fp)}</span></div>
         <div class="oph-fig"><span class="oph-fl">Prix de revient</span><span class="oph-fv">${fmtMontant(budget)}</span></div>
       </div>
     </div>
@@ -4509,6 +4518,8 @@ function renderPlanFinancementSection(t, op, trCode, trancheSource) {
   const totalFinancement = totalPrets + totalSubv + fondsPropres;
   const totalBudget = bilanTotal(t);
   const ecart = totalBudget - totalFinancement;
+  // % de répartition du financement (affiché en soft)
+  const pfp = x => (totalFinancement > 0 && x) ? `<span class="pf-pct">${Math.round(x / totalFinancement * 100)}%</span>` : '';
 
   // Ecart visual indicator
   let ecartClass = 'pf-ecart-zero';
@@ -4530,7 +4541,7 @@ function renderPlanFinancementSection(t, op, trCode, trancheSource) {
     ? Object.entries(pretsByLigne).map(([ligne, montant]) => `
         <div class="pf-line pf-line-sub">
           <span class="pf-line-label">${escapeHtml(ligne)}</span>
-          <span class="pf-line-value">${fmtMontant(montant)}</span>
+          <span class="pf-line-value">${fmtMontant(montant)} ${pfp(montant)}</span>
         </div>
       `).join('')
     : '<div class="pf-line pf-line-empty"><em>Aucun prêt enregistré sur cette tranche</em></div>';
@@ -4539,7 +4550,7 @@ function renderPlanFinancementSection(t, op, trCode, trancheSource) {
     ? Object.entries(subvByFinanceur).map(([financeur, montant]) => `
         <div class="pf-line pf-line-sub">
           <span class="pf-line-label">${escapeHtml(financeur)}</span>
-          <span class="pf-line-value">${fmtMontant(montant)}</span>
+          <span class="pf-line-value">${fmtMontant(montant)} ${pfp(montant)}</span>
         </div>
       `).join('')
     : '<div class="pf-line pf-line-empty"><em>Aucune subvention enregistrée sur cette tranche</em></div>';
@@ -4560,20 +4571,20 @@ function renderPlanFinancementSection(t, op, trCode, trancheSource) {
         <div class="pf-category">
           <div class="pf-line pf-line-cat">
             <span class="pf-line-label">Prêts ${editMode ? '<span class="auto-tag">auto · cards prêts</span>' : ''}</span>
-            <span class="pf-line-value pf-cat-total">${fmtMontant(totalPrets)}</span>
+            <span class="pf-line-value pf-cat-total">${fmtMontant(totalPrets)} ${pfp(totalPrets)}</span>
           </div>
           ${pretLignesHtml}
         </div>
         <div class="pf-category">
           <div class="pf-line pf-line-cat">
             <span class="pf-line-label">Subventions ${editMode ? '<span class="auto-tag">auto · cards subv.</span>' : ''}</span>
-            <span class="pf-line-value pf-cat-total">${fmtMontant(totalSubv)}</span>
+            <span class="pf-line-value pf-cat-total">${fmtMontant(totalSubv)} ${pfp(totalSubv)}</span>
           </div>
           ${subvLignesHtml}
         </div>
         <div class="pf-category">
           <div class="pf-line pf-line-cat">
-            <span class="pf-line-label">Fonds propres${(!editMode && fpRecap) ? ` <span style="color:var(--text-tertiary);font-weight:400;font-size:11px;margin-left:6px;">${escapeHtml(fpRecap)}</span>` : ''}</span>
+            <span class="pf-line-label">Fonds propres ${pfp(fondsPropres)}${(!editMode && fpRecap) ? ` <span style="color:var(--text-tertiary);font-weight:400;font-size:11px;margin-left:6px;">${escapeHtml(fpRecap)}</span>` : ''}</span>
             ${fpEdit}
           </div>
           ${editMode ? `
@@ -5140,7 +5151,6 @@ function renderSubvCardEdit(i, op) {
       </div>
       <div class="fin-edetail">
         <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
           <div class="card-edit-field"><label>Montant simulé (€)</label><input type="number" min="0" class="card-input" data-field="montant_simule" value="${i.montant_simule || ''}" oninput="updateFinCycle(this,'subvention')"></div>
           <div class="card-edit-field"><label>Date simulation</label><input class="card-input" data-field="date_simule" value="${escapeHtml(i.date_simule || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>Date demande</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA" oninput="updateFinCycle(this,'subvention')"></div>
@@ -5381,7 +5391,7 @@ function renderPretCardEdit(i, op) {
           <option value=""></option>
           ${getRef('banques').map(s => `<option value="${s}"${i.financeur===s?' selected':''}>${s}</option>`).join('')}
         </select>
-        <input type="number" min="0" class="card-input fin-cell fin-num" data-field="montant_valide_ca" value="${i.montant_valide_ca || ''}" placeholder="Validé CA (€)" title="Montant validé CA" oninput="updatePretCycle(this)">
+        <input type="number" min="0" class="card-input fin-cell fin-num" data-field="montant_valide_ca" value="${i.montant_valide_ca || ''}" placeholder="Montant (€)" title="Montant validé CA" oninput="updatePretCycle(this)">
         <select class="card-input fin-cell" data-field="statut" title="Statut" onchange="updatePretCycle(this)">
           <option value=""></option>
           ${getRef('statuts_pret').map(s => `<option value="${s}"${i.statut===s?' selected':''}>${s}</option>`).join('')}
@@ -5397,7 +5407,6 @@ function renderPretCardEdit(i, op) {
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Identité</div>
         <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Tranche (suffixe)</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
           <div class="card-edit-field"><label>N° dossier</label><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}"></div>
         </div>
       </div>
@@ -5850,14 +5859,6 @@ function renderGarantieCardEdit(i, op) {
       </div>
 
       <div class="fin-edetail">
-      <!-- Group 1 - Identité -->
-      <div class="card-edit-subgroup">
-        <div class="card-edit-subgroup-title">Identité</div>
-        <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
-        </div>
-      </div>
-
       <!-- Group 2 - Workflow & dates -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Workflow & dates</div>
@@ -6150,7 +6151,6 @@ function renderReservataireCardEdit(i, op) {
       </div>
       <div class="fin-edetail">
         <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
           <div class="card-edit-field"><label>% réservé <span class="auto-tag">auto</span></label><div class="card-auto-value">${pctReserve}</div></div>
           <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
           ${sharepointEditField(i.lien_sharepoint)}

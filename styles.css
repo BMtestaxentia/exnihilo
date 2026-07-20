@@ -5463,3 +5463,8 @@
 /* Carte de localisation sur le tableau de bord */
 .oph-map { height: 260px; width: 100%; }
 .oph-map-empty { display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 13px; background: var(--bg-secondary); }
+
+/* % de repartition en soft + barre de repartition du financement */
+.pf-pct, .oph-soft { color: var(--text-tertiary); font-weight: 500; font-size: 11px; font-variant-numeric: tabular-nums; }
+.oph-stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--bg-secondary); }
+.oph-stack > span { display: block; height: 100%; }
