@@ -3559,22 +3559,23 @@ function renderOpHomeDashboard(op, displayedOp) {
         <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)}</span></div>
         <div class="oph-fig"><span class="oph-fl">Prix de revient</span><span class="oph-fv">${fmtMontant(budget)}</span></div>
       </div>
-      <div class="oph-tsub">${nG} garantie${nG > 1 ? 's' : ''} · détail des prêts, garanties et subventions par tranche via le bandeau ci-dessus.</div>
     </div>
   </section>`;
+  const commune = esc([op.code_postal, op.commune].filter(Boolean).join(' ') || '—');
   return `<div class="oph-grid">
     ${card('oph-c12', 'alert-triangle', 'Alertes &amp; échéances', alertBadge, 'syn', alertBody)}
     ${finBrick}
     ${card('oph-c6', 'folder', 'Dossier', '', 'dos', `<dl class="oph-kv">
       <dt>Adresse</dt><dd>${esc(op.adresse || '—')}</dd>
+      <dt>Commune</dt><dd>${commune}</dd>
       <dt>Montage</dt><dd>${esc([op.vefa_mod, op.promoteur].filter(Boolean).join(' · ') || '—')}</dd>
-      <dt>Obtention PC</dt><dd>${esc(op.date_obtention_pc || op.date_obt_pc || '—')}</dd>
+      <dt>Date OS</dt><dd>${esc(op.date_os || '—')}</dd>
       <dt>Livraison prévue</dt><dd>${esc(op.date_livraison || '—')}</dd></dl>`)}
     ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', `<div class="oph-figrow">
       <div class="oph-fig"><span class="oph-fl">Logements</span><span class="oph-fv">${totalLgts(displayedOp) || '—'}</span></div>
-      <div class="oph-fig"><span class="oph-fl">Surface utile</span><span class="oph-fv">${fmtSurface(opTotalSurface(displayedOp))}</span></div>
-      <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)}</span></div>
-      <div class="oph-fig"><span class="oph-fl">Tranches</span><span class="oph-fv">${(displayedOp.tranches || []).length}</span></div></div>`)}
+      <div class="oph-fig"><span class="oph-fl">Subventions</span><span class="oph-fv">${fmtMontant(tSubv)}</span></div>
+      <div class="oph-fig"><span class="oph-fl">Emprunts</span><span class="oph-fv">${fmtMontant(tPrets)}</span></div>
+      <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)}</span></div></div>`)}
     ${card('oph-c12', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span>`, 'suivi', comLines)}
   </div>`;
 }
@@ -3582,6 +3583,24 @@ function renderOpHomeDashboard(op, displayedOp) {
 // ---- Tiroir : réutilise le DOM réel des sections (déplacement + placeholder) ----
 let _opsDrawerNodes = [];
 let _opsDrawerDomain = null; // domaine actuellement ouvert (pour ré-ouvrir après un re-render)
+let _opsDrawerOp = null;     // _uid de l'op à laquelle appartient le tiroir ouvert
+let _opsDrawerScroll = 0;    // défilement à restaurer après ré-ouverture
+
+// Ré-ouvre le tiroir après un re-render de #opDetail (kind='op') ou #trancheDetail
+// (kind='tranche') si un tiroir du même type était ouvert sur la même opération.
+// Rend le tiroir robuste à TOUTE interaction interne qui déclenche un re-render.
+function _reopenDrawerIfNeeded(kind) {
+  if (editMode) return;
+  const dom = _opsDrawerDomain;
+  if (!dom) return;
+  if (_opsDrawerOp && _opsDrawerOp !== selectedOpCode) { _opsDrawerDomain = null; _opsDrawerOp = null; return; }
+  const isTr = (dom === 'tranche' || dom === 'tranche-fin');
+  if (kind === 'op' && isTr) return;        // re-render op mais tiroir tranche → attend le render tranche
+  if (kind === 'tranche' && !isTr) return;  // re-render tranche mais tiroir op → ignore
+  openOpsDomain(dom);
+  const nb = document.getElementById('opsDrawerBody');
+  if (nb) nb.scrollTop = _opsDrawerScroll;
+}
 function ensureOpsDrawer() {
   if (document.getElementById('opsDrawer')) return;
   const scrim = document.createElement('div');
@@ -3667,6 +3686,7 @@ function openOpsDomain(id) {
     `<button type="button" class="ops-dn${did === id ? ' active' : ''}${did === 'tranche-fin' ? ' ops-dn-accent' : ''}" onclick="openOpsDomain('${did}')">${escapeHtml(label)}</button>`).join('');
   _setBandeauActive(bandeau);
   _opsDrawerDomain = id;
+  _opsDrawerOp = selectedOpCode;
   positionOpsDrawer();
   document.getElementById('opsScrim').classList.add('open');
   document.getElementById('opsDrawer').classList.add('open');
@@ -3678,25 +3698,11 @@ function openOpsDomain(id) {
 function closeOpsDrawer() {
   _restoreOpsDrawerNodes();
   _opsDrawerDomain = null;
+  _opsDrawerOp = null;
   const d = document.getElementById('opsDrawer'), s = document.getElementById('opsScrim');
   if (d) d.classList.remove('open');
   if (s) s.classList.remove('open');
   _setBandeauActive('op');
-}
-// Ré-exécute fn (qui re-render #opDetail/#trancheDetail) puis ré-ouvre le tiroir
-// sur le domaine courant en préservant le défilement — pour les interactions
-// internes au tiroir qui déclenchent un re-render (dépli du bilan, etc.).
-function withDrawerReopen(fn) {
-  const dom = _opsDrawerDomain;
-  const bodyEl = document.getElementById('opsDrawerBody');
-  const scTop = bodyEl ? bodyEl.scrollTop : 0;
-  fn();
-  if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
-  if (dom) {
-    openOpsDomain(dom);
-    const nb = document.getElementById('opsDrawerBody');
-    if (nb) nb.scrollTop = scTop;
-  }
 }
 
 function renderOpDetail() {
@@ -3713,7 +3719,9 @@ function renderOpDetail() {
   // Consultation = accueil (bandeau tranches + tableau de bord + tiroir).
   // Édition = ancien layout inline par onglet (on n'y touche pas).
   OPS_TAB = effectiveEditMode ? (OPS_TAB === 'home' ? 'syn' : OPS_TAB) : 'home';
-  _resetOpsDrawer(); // le DOM va être reconstruit : on réinitialise le tiroir
+  { const _bd = document.getElementById('opsDrawerBody'); _opsDrawerScroll = _bd ? _bd.scrollTop : 0; }
+  _resetOpsDrawer(); // le DOM va être reconstruit : on réinitialise le tiroir (ré-ouvert en fin si besoin)
+  if (effectiveEditMode) { _opsDrawerDomain = null; _opsDrawerOp = null; }
 
   const volCells = ['plai','plus','pls','pli','libre','autre'].map(k => {
     const n = sumVolKey(displayedOp, k);
@@ -4010,11 +4018,13 @@ function renderOpDetail() {
   initOpLocationMap(op);
   // Wire comité edit inputs (so values are saved as user types)
   bindComiteEditInputs();
+  _reopenDrawerIfNeeded('op'); // ré-ouvre le tiroir op si un re-render l'a fermé
 }
 
 function renderTrancheDetail() {
   const op = findOp(selectedOpCode);
   const c = document.getElementById('trancheDetail');
+  { const _bd = document.getElementById('opsDrawerBody'); if (_bd && _bd.scrollTop) _opsDrawerScroll = _bd.scrollTop; }
   if (c && !c._compactBound) {
     c._compactBound = true;
     c.addEventListener('scroll', () => {
@@ -4341,6 +4351,7 @@ function renderTrancheDetail() {
 
   // Restore edit mode flag if temporarily cleared
   editMode = _savedEditMode;
+  _reopenDrawerIfNeeded('tranche'); // ré-ouvre le tiroir tranche si un re-render l'a fermé
 }
 
 // ============== BILAN D'OPÉRATION (LEON-style) ==============
@@ -4353,15 +4364,18 @@ function isBilanExpanded(op, trCode, sectionKey) {
 function toggleBilanSection(opCode, trCode, sectionKey) {
   const k = `${opCode}|${trCode}|${sectionKey}`;
   bilanExpanded[k] = !bilanExpanded[k];
-  withDrawerReopen(() => { if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail(); });
+  if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail();
+  replaceTablerIcons();
 }
 function expandAllBilanSections(opCode, trCode) {
   BILAN_SECTIONS.forEach(s => { bilanExpanded[`${opCode}|${trCode}|${s.key}`] = true; });
-  withDrawerReopen(() => { if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail(); });
+  if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail();
+  replaceTablerIcons();
 }
 function collapseAllBilanSections(opCode, trCode) {
   BILAN_SECTIONS.forEach(s => { bilanExpanded[`${opCode}|${trCode}|${s.key}`] = false; });
-  withDrawerReopen(() => { if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail(); });
+  if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail();
+  replaceTablerIcons();
 }
 
 function renderBilanSection(t, op, trCode) {
