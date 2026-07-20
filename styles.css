@@ -5415,7 +5415,15 @@
 .ops-dn:hover { background: var(--bg-primary); color: var(--text-primary); }
 .ops-dn.active { background: var(--bg-primary); color: var(--info-accent); border-color: var(--border-color); }
 .ops-drawer-body { padding: 16px 20px 44px; overflow-y: auto; flex: 1; }
-.ops-drawer-body > [data-grp] { margin: 0 0 16px; max-width: none; }
+.ops-drawer-body { display: flex; flex-wrap: wrap; gap: 14px; align-content: flex-start; }
+.ops-drawer-body > [data-grp] { flex: 1 1 100%; margin: 0; max-width: none; min-width: 0; }
+/* Tranche : sections courtes sur 2 colonnes ; Prix de revient + Plan de financement cote a cote. */
+@media (min-width: 900px) {
+  .ops-drawer-body > #sec-tr-id, .ops-drawer-body > #sec-tr-sim, .ops-drawer-body > #sec-tr-loyer,
+  .ops-drawer-body > #sec-tr-convloc, .ops-drawer-body > #sec-tr-bilan, .ops-drawer-body > #sec-tr-pf {
+    flex: 1 1 calc(50% - 7px); min-width: 340px;
+  }
+}
 
 /* Onglet Financements mis en avant dans le tiroir d'une tranche */
 .ops-dn.ops-dn-accent:not(.active) { color: var(--info-accent); background: var(--info-bg); border-color: transparent; }
@@ -5442,3 +5450,5 @@
 .fin-cyc .conn { position: absolute; top: 5px; left: -50%; width: 100%; height: 2px; background: var(--border-color); z-index: 0; }
 .fin-cyc .st.done .conn { background: var(--success-accent); }
 .fin-cyc .st:first-child .conn { display: none; }
+
+.vol-empty-note { font-size: 12.5px; color: var(--text-tertiary); font-style: italic; padding: 2px 0; }

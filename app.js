@@ -3727,7 +3727,9 @@ function renderOpDetail() {
   _resetOpsDrawer(); // le DOM va être reconstruit : on réinitialise le tiroir (ré-ouvert en fin si besoin)
   if (effectiveEditMode) { _opsDrawerDomain = null; _opsDrawerOp = null; }
 
-  const volCells = ['plai','plus','pls','pli','libre','autre'].map(k => {
+  const volCells = ['plai','plus','pls','pli','libre','autre']
+    .filter(k => editMode || sumVolKey(displayedOp, k) > 0)
+    .map(k => {
     const n = sumVolKey(displayedOp, k);
     const surf = sumSurfaceKey(displayedOp, k);
     const surfLine = surf > 0
@@ -3738,7 +3740,7 @@ function renderOpDetail() {
       <div class="vol-cell-value">${n || '-'}</div>
       ${surfLine}
     </div>`;
-  }).join('');
+  }).join('') || (!editMode ? '<div class="vol-empty-note">Aucune volumétrie renseignée.</div>' : '');
 
   // Snapshot banner (when viewing past phase)
   const snapshotBanner = isViewingSnapshot
@@ -4086,18 +4088,23 @@ function renderTrancheDetail() {
     const t = trancheSource.tranches[selectedTrancheIdx];
     const trCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
 
-    const volCells = ['plai','plus','pls','pli','libre','autre'].map(k => {
-      return editableVolCell(k, (t.vol && t.vol[k]) || null, t);
-    }).join('');
+    // Consultation : n'afficher que les typologies actives (>= 1 logement) ; en édition, toutes.
+    const volCells = ['plai','plus','pls','pli','libre','autre']
+      .filter(k => editMode || ((t.vol && t.vol[k]) || 0) > 0)
+      .map(k => editableVolCell(k, (t.vol && t.vol[k]) || null, t)).join('')
+      || (!editMode ? '<div class="vol-empty-note">Aucune volumétrie renseignée.</div>' : '');
 
-    const volAgreeCells = ['plai','plus','pls','pli','libre','autre'].map(k => {
+    const volAgreeCells = ['plai','plus','pls','pli','libre','autre']
+      .filter(k => editMode || ((t.vol_agree && t.vol_agree[k]) || 0) > 0)
+      .map(k => {
       const v = (t.vol_agree && t.vol_agree[k]) || null;
       const label = k.toUpperCase();
       if (editMode) {
         return `<div class="vol-cell vol-cell-edit"><div class="vol-cell-label">${label}</div><div class="vol-cell-edit-row"><input type="number" min="0" class="editable-input vol-cell-input" data-edit-tranche-volagree="${k}" value="${v || ''}" placeholder="lgts" title="Logements agréés"><span class="vol-cell-edit-unit">lgts</span></div></div>`;
       }
       return `<div class="vol-cell${v ? '' : ' vol-cell-empty'}"><div class="vol-cell-label">${label}</div><div class="vol-cell-value">${v || '-'}</div></div>`;
-    }).join('');
+    }).join('')
+      || (!editMode ? '<div class="vol-empty-note">Aucun logement agréé renseigné.</div>' : '');
 
     // Filter sub-entities for this tranche; attach original indices for save/delete
     const trancheKey = trCode;
@@ -5229,21 +5236,44 @@ function renderPretCard(i) {
   `;
 }
 
-// Cycle de vie d'un prêt, déduit des dates renseignées (lecture seule, indicatif).
+// Cycle de vie d'un prêt : étape déduite du statut ET des dates renseignées.
+const PRET_STEPS = ['Simul.', 'Demande', 'Comité', 'LO', 'Contrat'];
+function pretStageFromStatut(statut) {
+  const s = (statut || '').toLowerCase();
+  if (/contrat|sign/.test(s)) return 4;
+  if (/offre|\blo\b/.test(s)) return 3;
+  if (/comit/.test(s)) return 2;
+  if (/demand/.test(s)) return 1;
+  return -1;
+}
+function pretCycleDots(stage) {
+  return PRET_STEPS.map((l, idx) => {
+    const cls = idx <= stage ? 'done' : (idx === stage + 1 ? 'current' : '');
+    return `<div class="st ${cls}"><span class="conn"></span><span class="dot"></span><span class="lbl">${l}</span></div>`;
+  }).join('');
+}
 function pretCycleHtml(i) {
-  const steps = [
-    { l: 'Simul.', on: !!i.montant_sim },
-    { l: 'Demande', on: !!i.date_demande },
-    { l: 'Comité', on: !!i.date_comite_banque },
-    { l: 'LO', on: !!i.date_lo },
-    { l: 'Contrat', on: !!i.date_contrat },
-  ];
-  let last = -1;
-  steps.forEach((s, idx) => { if (s.on) last = idx; });
-  return `<div class="fin-cyc">` + steps.map((s, idx) => {
-    const cls = idx <= last ? 'done' : (idx === last + 1 ? 'current' : '');
-    return `<div class="st ${cls}"><span class="conn"></span><span class="dot"></span><span class="lbl">${s.l}</span></div>`;
-  }).join('') + `</div>`;
+  let stage = pretStageFromStatut(i.statut);
+  if (i.montant_sim) stage = Math.max(stage, 0);
+  if (i.date_demande) stage = Math.max(stage, 1);
+  if (i.date_comite_banque) stage = Math.max(stage, 2);
+  if (i.date_lo) stage = Math.max(stage, 3);
+  if (i.date_contrat) stage = Math.max(stage, 4);
+  return `<div class="fin-cyc">${pretCycleDots(stage)}</div>`;
+}
+// Recalcule et met à jour la timeline en direct (sans attendre la sauvegarde).
+function updatePretCycle(el) {
+  const row = el.closest('.fin-erow');
+  if (!row) return;
+  const val = f => { const x = row.querySelector(`[data-field="${f}"]`); return x ? String(x.value || '').trim() : ''; };
+  let stage = pretStageFromStatut(val('statut'));
+  if (val('montant_sim')) stage = Math.max(stage, 0);
+  if (val('date_demande')) stage = Math.max(stage, 1);
+  if (val('date_comite_banque')) stage = Math.max(stage, 2);
+  if (val('date_lo')) stage = Math.max(stage, 3);
+  if (val('date_contrat')) stage = Math.max(stage, 4);
+  const cyc = row.querySelector('.fin-cyc');
+  if (cyc) cyc.innerHTML = pretCycleDots(stage);
 }
 
 function renderPretCardEdit(i, op) {
@@ -5264,8 +5294,8 @@ function renderPretCardEdit(i, op) {
           <option value=""></option>
           ${getRef('banques').map(s => `<option value="${s}"${i.financeur===s?' selected':''}>${s}</option>`).join('')}
         </select>
-        <input type="number" min="0" class="card-input fin-cell fin-num" data-field="montant_sim" value="${i.montant_sim || ''}" placeholder="Montant sim (€)" title="Montant de simulation">
-        <select class="card-input fin-cell" data-field="statut" title="Statut">
+        <input type="number" min="0" class="card-input fin-cell fin-num" data-field="montant_sim" value="${i.montant_sim || ''}" placeholder="Montant sim (€)" title="Montant de simulation" oninput="updatePretCycle(this)">
+        <select class="card-input fin-cell" data-field="statut" title="Statut" onchange="updatePretCycle(this)">
           <option value=""></option>
           ${getRef('statuts_pret').map(s => `<option value="${s}"${i.statut===s?' selected':''}>${s}</option>`).join('')}
         </select>
