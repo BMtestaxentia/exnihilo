@@ -3348,7 +3348,7 @@ function saveOpEdits() {
   renderAll();
   // === Push modifications to Supabase if op came from Supabase ===
   if (op._uid && op._uid.startsWith('op-supabase-')) {
-    saveOpToSupabase(op);
+    saveOpToSupabase(op, _beforeSnap); // diff : ne PATCH que ce qui a changé
   } else {
     showToast('Modifications enregistrées (mémoire locale — mockup)');
   }
@@ -11493,12 +11493,63 @@ function mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap) {
 // Envoie une op modifiée vers Supabase via PATCH, ainsi que ses entités liées
 let _pendingWrites = 0;   // écritures Supabase en cours (garde-fou anti auto-refresh)
 let _lastWriteAt = 0;     // timestamp de la dernière écriture
-async function saveOpToSupabase(op) {
+// beforeSnap (optionnel) : clone de l'op avant édition. Fourni, il permet de
+// ne PATCH que les entités réellement modifiées (diff de payload). Absent, on
+// synchronise tout (comportement historique, pour les appels hors édition).
+async function saveOpToSupabase(op, beforeSnap) {
   _pendingWrites++; _lastWriteAt = Date.now();
-  try { return await _saveOpToSupabaseImpl(op); }
+  try { return await _saveOpToSupabaseImpl(op, beforeSnap); }
   finally { _pendingWrites = Math.max(0, _pendingWrites - 1); _lastWriteAt = Date.now(); }
 }
-async function _saveOpToSupabaseImpl(op) {
+// Construit le payload Supabase pour l'op (tous les champs). Extrait pour
+// permettre le diff avant/après (skip du PATCH operations si inchangé).
+function buildOpPayload(op) {
+  return {
+    code: op.code,
+    display_name: op.display_name,
+    phase_actuelle: op.phase_actuelle,
+    commune: op.commune,
+    code_postal: op.code_postal,
+    region: op.region,
+    departement: op.departement,
+    adresse: op.adresse,
+    zone_abc: op.zone_abc,
+    zone_123: op.zone_123,
+    lien_sharepoint: op.lien_sharepoint,
+    promoteur: op.promoteur,
+    developpeur: op.developpeur,
+    resp_op: op.resp_op,
+    charge_fin: op.charge_fin,
+    latitude: op.latitude,
+    longitude: op.longitude,
+    vefa_mod: op.vefa_mod,
+    notaire: op.notaire,
+    aap_id: (op.aap_id != null && op.aap_id !== '') ? Number(op.aap_id) : null,
+    aap_tranche: op.aap_tranche || null,
+    type_travaux: op.type_travaux,
+    maitrise_fonciere: op.maitrise_fonciere,
+    anru: op.anru,
+    label_certif: op.label_certif,
+    mode_constructif: op.mode_constructif,
+    mode_chauffage: op.mode_chauffage,
+    nb_batiments: op.nb_batiments,
+    perf_seuil: op.perf_seuil,
+    perf_certif: op.perf_certif,
+    date_promesse: op.date_promesse,
+    date_acte_auth: op.date_acte_auth || op.date_acte,
+    date_depot_pc: op.date_depot_pc,
+    date_obtention_pc: op.date_obtention_pc,
+    date_os: op.date_os,
+    date_livraison: op.date_livraison,
+    date_conv_apl: op.date_conv_apl,
+    date_conv_loc: op.date_conv_loc,
+    date_ca_axentia: op.date_ca_axentia,
+    notes_libres: op.notes_libres,
+    jalons_reel: op.jalons_reel || {},
+    deleted_at: op.deleted_at || null,
+  };
+}
+async function _saveOpToSupabaseImpl(op, beforeSnap) {
   // Extraire l'id Supabase depuis le _uid (format : "op-supabase-1" → 1)
   const supabaseId = op._supabase_id || (op._uid ? parseInt(op._uid.replace('op-supabase-', '')) : null);
   if (!supabaseId || isNaN(supabaseId)) {
@@ -11512,58 +11563,18 @@ async function _saveOpToSupabaseImpl(op) {
     'Prefer': 'return=representation',
   };
   try {
-    // 1. Sauvegarder les champs de l'op (tous les champs Supabase)
-    const opPayload = {
-      code: op.code,
-      display_name: op.display_name,
-      phase_actuelle: op.phase_actuelle,
-      commune: op.commune,
-      code_postal: op.code_postal,
-      region: op.region,
-      departement: op.departement,
-      adresse: op.adresse,
-      zone_abc: op.zone_abc,
-      zone_123: op.zone_123,
-      lien_sharepoint: op.lien_sharepoint,
-      promoteur: op.promoteur,
-      developpeur: op.developpeur,
-      resp_op: op.resp_op,
-      charge_fin: op.charge_fin,
-      latitude: op.latitude,
-      longitude: op.longitude,
-      vefa_mod: op.vefa_mod,
-      notaire: op.notaire,
-      aap_id: (op.aap_id != null && op.aap_id !== '') ? Number(op.aap_id) : null,
-      aap_tranche: op.aap_tranche || null,
-      type_travaux: op.type_travaux,
-      maitrise_fonciere: op.maitrise_fonciere,
-      anru: op.anru,
-      label_certif: op.label_certif,
-      mode_constructif: op.mode_constructif,
-      mode_chauffage: op.mode_chauffage,
-      nb_batiments: op.nb_batiments,
-      perf_seuil: op.perf_seuil,
-      perf_certif: op.perf_certif,
-      date_promesse: op.date_promesse,
-      date_acte_auth: op.date_acte_auth || op.date_acte,
-      date_depot_pc: op.date_depot_pc,
-      date_obtention_pc: op.date_obtention_pc,
-      date_os: op.date_os,
-      date_livraison: op.date_livraison,
-      date_conv_apl: op.date_conv_apl,
-      date_conv_loc: op.date_conv_loc,
-      date_ca_axentia: op.date_ca_axentia,
-      notes_libres: op.notes_libres,
-      jalons_reel: op.jalons_reel || {},
-      deleted_at: op.deleted_at || null,
-    };
-    const opResponse = await fetch(`${SUPABASE_URL}/rest/v1/operations?id=eq.${supabaseId}`, {
-      method: 'PATCH', headers, body: JSON.stringify(opPayload),
-    });
-    if (!opResponse.ok) throw new Error('Op: ' + opResponse.status + ' — ' + await opResponse.text());
+    // 1. Sauvegarder les champs de l'op — sauté si aucun champ d'op n'a bougé
+    const opPayload = buildOpPayload(op);
+    const opChanged = !beforeSnap || JSON.stringify(buildOpPayload(beforeSnap)) !== JSON.stringify(opPayload);
+    if (opChanged) {
+      const opResponse = await fetch(`${SUPABASE_URL}/rest/v1/operations?id=eq.${supabaseId}`, {
+        method: 'PATCH', headers, body: JSON.stringify(opPayload),
+      });
+      if (!opResponse.ok) throw new Error('Op: ' + opResponse.status + ' — ' + await opResponse.text());
+    }
 
     // 2. Synchroniser tranches / prêts / garanties / subventions / réservataires / comités / tags
-    await syncEntitiesToSupabase(op, supabaseId);
+    await syncEntitiesToSupabase(op, supabaseId, beforeSnap);
 
     console.log('Sauvegardé dans Supabase : op', supabaseId, 'et entités liées');
     showToast('Modifications enregistrées dans Supabase', 'check');
@@ -11576,13 +11587,30 @@ async function _saveOpToSupabaseImpl(op) {
 // Synchronise les tranches / prêts / garanties d'une op vers Supabase
 // Stratégie : pour chaque entité locale, INSERT si pas d'_supabase_id, sinon PATCH
 // Pour les entités présentes sur Supabase mais absentes en mémoire, DELETE
-async function syncEntitiesToSupabase(op, operationId) {
+async function syncEntitiesToSupabase(op, operationId, beforeSnap) {
   const headers = {
     'apikey': SUPABASE_KEY,
     'Authorization': `Bearer ${AUTH_TOKEN}`,
     'Content-Type': 'application/json',
     'Prefer': 'return=representation',
   };
+
+  // Diff avant/après : indexe les entités du snapshot par _supabase_id pour
+  // pouvoir sauter le PATCH des lignes inchangées. Sans snapshot → tout est
+  // synchronisé (comportement historique).
+  const snapMapOf = (coll) => {
+    const m = new Map();
+    if (beforeSnap && Array.isArray(beforeSnap[coll])) {
+      for (const it of beforeSnap[coll]) if (it && it._supabase_id != null) m.set(it._supabase_id, it);
+    }
+    return m;
+  };
+  const snapTranches = snapMapOf('tranches');
+  const snapPrets = snapMapOf('prets');
+  const snapGaranties = snapMapOf('garanties');
+  // Renvoie true si l'item existant est identique à sa version d'avant édition.
+  const unchanged = (snapItem, payload, build) =>
+    !!(beforeSnap && snapItem && JSON.stringify(build(snapItem)) === JSON.stringify(payload));
 
   // Vérifie la réponse d'un PATCH/DELETE : en cas d'échec, remonte un toast
   // explicite (avec le message PostgREST) et interrompt la sync via throw,
@@ -11616,10 +11644,12 @@ async function syncEntitiesToSupabase(op, operationId) {
   for (const t of (op.tranches || [])) {
     const trPayload = buildTranchePayload(t, operationId);
     if (t._supabase_id) {
-      // UPDATE
-      await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/tranches?id=eq.${t._supabase_id}`, {
-        method: 'PATCH', headers, body: JSON.stringify(trPayload),
-      }), `PATCH tranche ${t.code_full || t.id}`);
+      // UPDATE — sauté si la tranche est identique à sa version d'avant édition
+      if (!unchanged(snapTranches.get(t._supabase_id), trPayload, (s) => buildTranchePayload(s, operationId))) {
+        await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/tranches?id=eq.${t._supabase_id}`, {
+          method: 'PATCH', headers, body: JSON.stringify(trPayload),
+        }), `PATCH tranche ${t.code_full || t.id}`);
+      }
       localTrIds.add(t._supabase_id);
       trancheIdMap[t.id] = t._supabase_id;
     } else {
@@ -11662,9 +11692,11 @@ async function syncEntitiesToSupabase(op, operationId) {
     const trancheSupabaseId = findTrancheSupabaseIdFromSuffix(op, p.tranche);
     const prPayload = buildPretPayload(p, operationId, trancheSupabaseId);
     if (p._supabase_id) {
-      await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/prets?id=eq.${p._supabase_id}`, {
-        method: 'PATCH', headers, body: JSON.stringify(prPayload),
-      }), `PATCH prêt ${p.ligne || p._supabase_id}`);
+      if (!unchanged(snapPrets.get(p._supabase_id), prPayload, (s) => buildPretPayload(s, operationId, findTrancheSupabaseIdFromSuffix(op, s.tranche)))) {
+        await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/prets?id=eq.${p._supabase_id}`, {
+          method: 'PATCH', headers, body: JSON.stringify(prPayload),
+        }), `PATCH prêt ${p.ligne || p._supabase_id}`);
+      }
       localPrIds.add(p._supabase_id);
       pretLigneToSupabaseId[p.ligne] = p._supabase_id;
     } else {
@@ -11704,9 +11736,11 @@ async function syncEntitiesToSupabase(op, operationId) {
     const pretSupabaseId = pretLigneToSupabaseId[g.pret_lie] || null;
     const gaPayload = buildGarantiePayload(g, operationId, trancheSupabaseId, pretSupabaseId);
     if (g._supabase_id) {
-      await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/garanties?id=eq.${g._supabase_id}`, {
-        method: 'PATCH', headers, body: JSON.stringify(gaPayload),
-      }), `PATCH garantie ${g.garant || g._supabase_id}`);
+      if (!unchanged(snapGaranties.get(g._supabase_id), gaPayload, (s) => buildGarantiePayload(s, operationId, findTrancheSupabaseIdFromSuffix(op, s.tranche), pretLigneToSupabaseId[s.pret_lie] || null))) {
+        await checkRes(await fetch(`${SUPABASE_URL}/rest/v1/garanties?id=eq.${g._supabase_id}`, {
+          method: 'PATCH', headers, body: JSON.stringify(gaPayload),
+        }), `PATCH garantie ${g.garant || g._supabase_id}`);
+      }
       localGaIds.add(g._supabase_id);
     } else {
       const ins = await fetch(`${SUPABASE_URL}/rest/v1/garanties`, {
@@ -11736,6 +11770,7 @@ async function syncEntitiesToSupabase(op, operationId) {
     op, operationId, headers,
     tableName: 'subventions',
     localItems: op.subventions || [],
+    beforeItems: beforeSnap ? (beforeSnap.subventions || []) : null,
     buildPayload: (s) => ({
       operation_id: operationId,
       tranche_id: findTrancheSupabaseIdFromSuffix(op, s.tranche),
@@ -11771,6 +11806,7 @@ async function syncEntitiesToSupabase(op, operationId) {
     op, operationId, headers,
     tableName: 'reservataires',
     localItems: op.reservataires || [],
+    beforeItems: beforeSnap ? (beforeSnap.reservataires || []) : null,
     buildPayload: (r) => ({
       operation_id: operationId,
       tranche_id: findTrancheSupabaseIdFromSuffix(op, r.tranche),
@@ -11797,6 +11833,7 @@ async function syncEntitiesToSupabase(op, operationId) {
     op, operationId, headers,
     tableName: 'prefinancements',
     localItems: op.prefinancements || [],
+    beforeItems: beforeSnap ? (beforeSnap.prefinancements || []) : null,
     buildPayload: (pf) => ({
       operation_id: operationId,
       tranche_id: findTrancheSupabaseIdFromSuffix(op, pf.tranche),
@@ -11820,6 +11857,7 @@ async function syncEntitiesToSupabase(op, operationId) {
     op, operationId, headers,
     tableName: 'avenants',
     localItems: op.avenants || [],
+    beforeItems: beforeSnap ? (beforeSnap.avenants || []) : null,
     buildPayload: (a) => ({
       operation_id: operationId,
       tranche_id: findTrancheSupabaseIdFromSuffix(op, a.tranche),
@@ -11846,6 +11884,7 @@ async function syncEntitiesToSupabase(op, operationId) {
     op, operationId, headers,
     tableName: 'comites',
     localItems: op.comites || [],
+    beforeItems: beforeSnap ? (beforeSnap.comites || []) : null,
     buildPayload: (c) => ({
       operation_id: operationId,
       type: c.type || '',
@@ -11862,21 +11901,25 @@ async function syncEntitiesToSupabase(op, operationId) {
   });
 
   // === TAGS === (modèle particulier : on ne stocke que le nom du tag)
-  // On commence par supprimer tous les tags actuels pour cette op, puis on réinsère
-  await fetch(`${SUPABASE_URL}/rest/v1/tags?operation_id=eq.${operationId}`, {
-    method: 'DELETE', headers,
-  });
+  // delete-all + réinsertion, sauté si la liste de tags n'a pas changé
   const tagNames = (op.tags || []).filter(t => t);
-  if (tagNames.length > 0) {
-    await fetch(`${SUPABASE_URL}/rest/v1/tags`, {
-      method: 'POST', headers,
-      body: JSON.stringify(tagNames.map(name => ({ operation_id: operationId, tag_name: name }))),
+  const beforeTags = beforeSnap ? (beforeSnap.tags || []).filter(t => t) : null;
+  const tagsChanged = !beforeSnap || JSON.stringify(beforeTags) !== JSON.stringify(tagNames);
+  if (tagsChanged) {
+    await fetch(`${SUPABASE_URL}/rest/v1/tags?operation_id=eq.${operationId}`, {
+      method: 'DELETE', headers,
     });
+    if (tagNames.length > 0) {
+      await fetch(`${SUPABASE_URL}/rest/v1/tags`, {
+        method: 'POST', headers,
+        body: JSON.stringify(tagNames.map(name => ({ operation_id: operationId, tag_name: name }))),
+      });
+    }
   }
 }
 
 // Helper générique pour synchroniser une entité simple (1 table, pas de sous-relations)
-async function syncSimpleEntity({ op, operationId, headers, tableName, localItems, buildPayload }) {
+async function syncSimpleEntity({ op, operationId, headers, tableName, localItems, buildPayload, beforeItems }) {
   // Récupérer les remote ids
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?operation_id=eq.${operationId}&select=id`, {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}` }
@@ -11885,12 +11928,22 @@ async function syncSimpleEntity({ op, operationId, headers, tableName, localItem
   const remoteIds = new Set(remote.map(r => r.id));
   const localIds = new Set();
 
+  // Index du snapshot par _supabase_id pour sauter les PATCH inchangés
+  const snapMap = new Map();
+  if (Array.isArray(beforeItems)) {
+    for (const it of beforeItems) if (it && it._supabase_id != null) snapMap.set(it._supabase_id, it);
+  }
+
   for (const item of localItems) {
     const payload = buildPayload(item);
     if (item._supabase_id) {
-      await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?id=eq.${item._supabase_id}`, {
-        method: 'PATCH', headers, body: JSON.stringify(payload),
-      });
+      const snapItem = snapMap.get(item._supabase_id);
+      const isUnchanged = !!(beforeItems && snapItem && JSON.stringify(buildPayload(snapItem)) === JSON.stringify(payload));
+      if (!isUnchanged) {
+        await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?id=eq.${item._supabase_id}`, {
+          method: 'PATCH', headers, body: JSON.stringify(payload),
+        });
+      }
       localIds.add(item._supabase_id);
     } else {
       const ins = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}`, {
