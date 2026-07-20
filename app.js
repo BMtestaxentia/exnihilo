@@ -3575,9 +3575,9 @@ function renderOpHomeDashboard(op, displayedOp) {
         <span style="width:${pctf(fp)}%;background:var(--warning-accent)"></span>
       </div>
       <div class="oph-figrow" style="grid-template-columns:repeat(4,minmax(0,1fr))">
-        <div class="oph-fig"><span class="oph-fl">Prêts · ${nP} <span class="oph-soft">${pctf(tPrets)}%</span></span><span class="oph-fv">${fmtMontant(tPrets)}</span></div>
-        <div class="oph-fig"><span class="oph-fl">Subventions · ${nS} <span class="oph-soft">${pctf(tSubv)}%</span></span><span class="oph-fv">${fmtMontant(tSubv)}</span></div>
-        <div class="oph-fig"><span class="oph-fl">Fonds propres <span class="oph-soft">${pctf(fp)}%</span></span><span class="oph-fv">${fmtMontant(fp)}</span></div>
+        <div class="oph-fig"><span class="oph-fl">Prêts · ${nP}</span><span class="oph-fv">${fmtMontant(tPrets)} <span class="oph-soft">${pctf(tPrets)}%</span></span></div>
+        <div class="oph-fig"><span class="oph-fl">Subventions · ${nS}</span><span class="oph-fv">${fmtMontant(tSubv)} <span class="oph-soft">${pctf(tSubv)}%</span></span></div>
+        <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)} <span class="oph-soft">${pctf(fp)}%</span></span></div>
         <div class="oph-fig"><span class="oph-fl">Prix de revient</span><span class="oph-fv">${fmtMontant(budget)}</span></div>
       </div>
     </div>
@@ -3607,9 +3607,9 @@ function renderOpHomeDashboard(op, displayedOp) {
     ${locBrick}
     ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', `<div class="oph-figrow">
       <div class="oph-fig"><span class="oph-fl">Logements</span><span class="oph-fv">${totalLgts(displayedOp) || '-'}</span></div>
-      <div class="oph-fig"><span class="oph-fl">Subventions</span><span class="oph-fv">${fmtMontant(tSubv)}</span></div>
-      <div class="oph-fig"><span class="oph-fl">Emprunts</span><span class="oph-fv">${fmtMontant(tPrets)}</span></div>
-      <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)}</span></div></div>`)}
+      <div class="oph-fig"><span class="oph-fl">Surface utile</span><span class="oph-fv">${fmtSurface(opTotalSurface(displayedOp))}</span></div>
+      <div class="oph-fig"><span class="oph-fl">Tranches</span><span class="oph-fv">${(displayedOp.tranches || []).length}</span></div>
+      <div class="oph-fig"><span class="oph-fl">Prix / logement</span><span class="oph-fv">${(totalLgts(displayedOp) > 0) ? fmtMontant(Math.round(totalBudget(displayedOp) / totalLgts(displayedOp))) : '-'}</span></div></div>`)}
     ${card('oph-c6', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span>`, 'suivi', comLines)}
   </div>`;
 }
