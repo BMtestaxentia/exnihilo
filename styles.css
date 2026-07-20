@@ -5468,3 +5468,13 @@
 .pf-pct, .oph-soft { color: var(--text-tertiary); font-weight: 500; font-size: 11px; font-variant-numeric: tabular-nums; }
 .oph-stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--bg-secondary); }
 .oph-stack > span { display: block; height: 100%; }
+
+/* Mini calendrier de la brique Dossier */
+.oph-cal { display: flex; flex-direction: column; }
+.oph-calrow { display: flex; align-items: center; gap: 9px; padding: 5px 0; border-top: 1px dashed var(--border-color); font-size: 12.8px; }
+.oph-calrow:first-child { border-top: none; }
+.oph-caldot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-color); flex: none; }
+.oph-calrow.done .oph-caldot { background: var(--success-accent); }
+.oph-callabel { flex: 1; color: var(--text-primary); }
+.oph-calrow.done .oph-callabel { color: var(--text-secondary); }
+.oph-caldate { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-secondary); }

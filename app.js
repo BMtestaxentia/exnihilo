@@ -3564,9 +3564,9 @@ function renderOpHomeDashboard(op, displayedOp) {
   const couvert = budget > 0 ? Math.round((tPrets + tSubv + fp) / budget * 100) : 0;
   const totFin = tPrets + tSubv + fp;
   const pctf = x => totFin > 0 ? Math.round(x / totFin * 100) : 0;
-  const finBrick = `<section class="oph-card oph-c12">
+  const finBrick = `<section class="oph-card oph-c6">
     <div class="oph-head"><span class="oph-ic"><i class="ti ti-coin"></i></span>
-      <span class="oph-title">Financements - vue cumulée</span>
+      <span class="oph-title">Financements</span>
       <span class="oph-pill ${couvert >= 100 ? 'good' : (couvert >= 80 ? 'warn' : 'neutral')}" style="margin-left:auto">${couvert} % couvert</span></div>
     <div class="oph-body">
       <div class="oph-stack" role="img" aria-label="Répartition du financement">
@@ -3574,7 +3574,7 @@ function renderOpHomeDashboard(op, displayedOp) {
         <span style="width:${pctf(tSubv)}%;background:var(--success-accent)"></span>
         <span style="width:${pctf(fp)}%;background:var(--warning-accent)"></span>
       </div>
-      <div class="oph-figrow" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+      <div class="oph-figrow">
         <div class="oph-fig"><span class="oph-fl">Prêts · ${nP}</span><span class="oph-fv">${fmtMontant(tPrets)} <span class="oph-soft">${pctf(tPrets)}%</span></span></div>
         <div class="oph-fig"><span class="oph-fl">Subventions · ${nS}</span><span class="oph-fv">${fmtMontant(tSubv)} <span class="oph-soft">${pctf(tSubv)}%</span></span></div>
         <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)} <span class="oph-soft">${pctf(fp)}%</span></span></div>
@@ -3595,22 +3595,41 @@ function renderOpHomeDashboard(op, displayedOp) {
       ${hasCoords ? `<div id="opLocationMap" class="oph-map"></div>` : `<div class="oph-map oph-map-empty"><i class="ti ti-map-pin"></i>&nbsp;Pas de géolocalisation</div>`}
     </div>
   </section>`;
-  return `<div class="oph-grid">
-    ${card('oph-c12', 'alert-triangle', 'Synthèse &amp; échéances', alertBadge, 'syn', alertBody)}
-    ${finBrick}
-    ${card('oph-c6', 'folder', 'Dossier', '', 'dos', `<dl class="oph-kv">
+  // Mini calendrier de l'opération (jalons datés, passés cochés).
+  const _todayCal = new Date(); _todayCal.setHours(0, 0, 0, 0);
+  const cal = [
+    ['Promesse', op.date_promesse],
+    ['Acte authentique', op.date_acte_auth || op.date_acte],
+    ['Dépôt PC', op.date_depot_pc],
+    ['Obtention PC', op.date_obtention_pc || op.date_obt_pc],
+    ['Ordre de service', op.date_os],
+    ['Livraison prévue', op.date_livraison],
+    ['Convention APL', op.date_conv_apl],
+  ].filter(([, d]) => d);
+  const calHtml = cal.length
+    ? cal.map(([l, d]) => { const dt = parseDateStr(d); const past = dt && dt < _todayCal;
+        return `<div class="oph-calrow${past ? ' done' : ''}"><span class="oph-caldot"></span><span class="oph-callabel">${l}</span><span class="oph-caldate">${esc(d)}</span></div>`;
+      }).join('')
+    : '<div class="oph-tsub">Aucune date renseignée.</div>';
+  const dossierBody = `<dl class="oph-kv">
       <dt>Adresse</dt><dd>${esc(adrFull)}</dd>
       <dt>Équipe</dt><dd>${esc(equipe)}</dd>
       <dt>Montage</dt><dd>${esc([op.vefa_mod, op.promoteur].filter(Boolean).join(' · ') || '-')}</dd>
-      <dt>Date OS</dt><dd>${esc(op.date_os || '-')}</dd>
-      <dt>Livraison prévue</dt><dd>${esc(op.date_livraison || '-')}</dd></dl>`)}
-    ${locBrick}
-    ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', `<div class="oph-figrow">
+    </dl>
+    <div class="oph-mini-h" style="margin-top:13px">Calendrier</div>
+    <div class="oph-cal">${calHtml}</div>`;
+  const bilanBody = `<div class="oph-figrow">
       <div class="oph-fig"><span class="oph-fl">Logements</span><span class="oph-fv">${totalLgts(displayedOp) || '-'}</span></div>
       <div class="oph-fig"><span class="oph-fl">Surface utile</span><span class="oph-fv">${fmtSurface(opTotalSurface(displayedOp))}</span></div>
       <div class="oph-fig"><span class="oph-fl">Tranches</span><span class="oph-fv">${(displayedOp.tranches || []).length}</span></div>
-      <div class="oph-fig"><span class="oph-fl">Prix / logement</span><span class="oph-fv">${(totalLgts(displayedOp) > 0) ? fmtMontant(Math.round(totalBudget(displayedOp) / totalLgts(displayedOp))) : '-'}</span></div></div>`)}
+      <div class="oph-fig"><span class="oph-fl">Prix / logement</span><span class="oph-fv">${(totalLgts(displayedOp) > 0) ? fmtMontant(Math.round(totalBudget(displayedOp) / totalLgts(displayedOp))) : '-'}</span></div></div>`;
+  return `<div class="oph-grid">
+    ${card('oph-c6', 'folder', 'Dossier', '', 'dos', dossierBody)}
+    ${finBrick}
+    ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', bilanBody)}
+    ${locBrick}
     ${card('oph-c6', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span>`, 'suivi', comLines)}
+    ${card('oph-c6', 'alert-triangle', 'Synthèse &amp; échéances', alertBadge, 'syn', alertBody)}
   </div>`;
 }
 
