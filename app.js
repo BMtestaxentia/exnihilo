@@ -3483,8 +3483,106 @@ function switchOpsTab(t) {
   }
 }
 
-// Accueil opération « tableau de bord + drill-in » (Étape 1 : briques résumé
-// qui renvoient vers le détail existant ; le tiroir viendra à l'étape suivante).
+// ===== Refonte vue opération — rail de navigation + tiroir (drill-in) =====
+// Domaines = les groupes existants (hors accueil). Le tiroir réutilise le DOM
+// réel des sections (déplacement + placeholder), donc zéro duplication de champs.
+const OPS_DOMAINS = OPS_TABS_DEF.filter(([id]) => id !== 'home');
+
+function opsRailHtml(op) {
+  const nAlerts = (typeof computeAlerts === 'function')
+    ? computeAlerts(op).filter(al => al.level === 'expired' || al.level === 'critical').length : 0;
+  const items = [['home', 'Vue d\'ensemble', 'home'], ...OPS_DOMAINS];
+  return `<nav class="ops-rail" aria-label="Navigation opération">` + items.map(([id, label, icon]) => {
+    const badge = (id === 'syn' && nAlerts) ? `<span class="ops-rail-badge">${nAlerts}</span>` : '';
+    return `<button type="button" class="ops-rail-item${id === 'home' ? ' active' : ''}" data-domain="${id}"`
+      + ` onclick="openOpsDomain('${id}')" title="${escapeHtml(label)}"><i class="ti ti-${icon}"></i><span>${label}</span>${badge}</button>`;
+  }).join('') + `</nav>`;
+}
+
+let _opsDrawerNodes = [];   // [{ placeholder, node }] sections déplacées dans le tiroir
+let _opsDrawerDomain = null;
+
+function ensureOpsDrawer() {
+  if (document.getElementById('opsDrawer')) return;
+  const scrim = document.createElement('div');
+  scrim.className = 'ops-scrim'; scrim.id = 'opsScrim';
+  scrim.addEventListener('click', closeOpsDrawer);
+  const drawer = document.createElement('aside');
+  drawer.className = 'ops-drawer'; drawer.id = 'opsDrawer';
+  drawer.setAttribute('role', 'dialog'); drawer.setAttribute('aria-modal', 'true');
+  drawer.innerHTML = `<div class="ops-drawer-head">
+      <span class="ops-drawer-title" id="opsDrawerTitle">Détail</span>
+      <button type="button" class="ops-drawer-x" id="opsDrawerX" aria-label="Fermer"><i class="ti ti-x"></i></button>
+    </div>
+    <nav class="ops-drawer-nav" id="opsDrawerNav"></nav>
+    <div class="ops-drawer-body" id="opsDrawerBody"></div>`;
+  document.body.appendChild(scrim);
+  document.body.appendChild(drawer);
+  drawer.querySelector('#opsDrawerX').addEventListener('click', closeOpsDrawer);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOpsDrawer(); });
+}
+
+function _opsDrawerContainerFor(id) {
+  return (id === 'tr' || id === 'fin') ? document.getElementById('trancheDetail') : document.getElementById('opDetail');
+}
+
+// Restaure les sections déplacées à leur position d'origine (via les placeholders).
+function _restoreOpsDrawerNodes() {
+  _opsDrawerNodes.forEach(({ placeholder, node }) => {
+    if (placeholder && placeholder.parentNode) placeholder.parentNode.replaceChild(node, placeholder);
+  });
+  _opsDrawerNodes = [];
+}
+
+// Réinitialise le tiroir sans restaurer (à appeler quand le DOM va être reconstruit).
+function _resetOpsDrawer() {
+  _opsDrawerNodes = [];
+  _opsDrawerDomain = null;
+  const d = document.getElementById('opsDrawer'), s = document.getElementById('opsScrim');
+  if (d) { d.classList.remove('open'); const b = document.getElementById('opsDrawerBody'); if (b) b.innerHTML = ''; }
+  if (s) s.classList.remove('open');
+}
+
+function openOpsDomain(id) {
+  ensureOpsDrawer();
+  if (!id || id === 'home') { closeOpsDrawer(); return; }
+  _restoreOpsDrawerNodes(); // restaure le domaine précédent (changement sans fermer)
+  const container = _opsDrawerContainerFor(id);
+  const body = document.getElementById('opsDrawerBody');
+  if (!container || !body) return;
+  const nodes = Array.from(container.children).filter(el => el.matches && el.matches(`[data-grp~="${id}"]`));
+  nodes.forEach(node => {
+    const ph = document.createComment('ops-domain-' + id);
+    node.parentNode.insertBefore(ph, node);
+    body.appendChild(node);
+    _opsDrawerNodes.push({ placeholder: ph, node });
+  });
+  body.scrollTop = 0;
+  _opsDrawerDomain = id;
+  const def = OPS_TABS_DEF.find(d => d[0] === id);
+  document.getElementById('opsDrawerTitle').textContent = def ? def[1] : 'Détail';
+  document.getElementById('opsDrawerNav').innerHTML = OPS_DOMAINS.map(([did, label]) =>
+    `<button type="button" class="ops-dn${did === id ? ' active' : ''}" onclick="openOpsDomain('${did}')">${escapeHtml(label)}</button>`).join('');
+  document.querySelectorAll('.ops-rail-item').forEach(b => b.classList.toggle('active', b.dataset.domain === id));
+  document.getElementById('opsScrim').classList.add('open');
+  document.getElementById('opsDrawer').classList.add('open');
+  if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
+  // La mini-carte Leaflet (groupe Synthèse) doit se recalibrer une fois visible.
+  if (id === 'syn' && typeof opLocationMapInstance !== 'undefined' && opLocationMapInstance) {
+    setTimeout(() => { try { opLocationMapInstance.invalidateSize(); } catch (e) {} }, 90);
+  }
+}
+
+function closeOpsDrawer() {
+  _restoreOpsDrawerNodes();
+  _opsDrawerDomain = null;
+  const d = document.getElementById('opsDrawer'), s = document.getElementById('opsScrim');
+  if (d) d.classList.remove('open');
+  if (s) s.classList.remove('open');
+  document.querySelectorAll('.ops-rail-item').forEach(b => b.classList.toggle('active', b.dataset.domain === 'home'));
+}
+
+// Accueil opération « tableau de bord + drill-in ».
 function renderOpHomeDashboard(op, displayedOp, effectiveEditMode) {
   const esc = escapeHtml;
   const alerts = (typeof computeAlerts === 'function') ? computeAlerts(displayedOp) : [];
@@ -3493,7 +3591,7 @@ function renderOpHomeDashboard(op, displayedOp, effectiveEditMode) {
   const trs = displayedOp.tranches || [];
   const card = (id, icon, title, badge, tab, body) => `
     <section class="oph-card drill ${id}" role="button" tabindex="0"
-      onclick="switchOpsTab('${tab}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchOpsTab('${tab}')}">
+      onclick="openOpsDomain('${tab}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openOpsDomain('${tab}')}">
       <div class="oph-head"><span class="oph-ic"><i class="ti ti-${icon}"></i></span>
         <span class="oph-title">${title}</span>${badge || ''}
         <span class="oph-open" style="margin-left:auto">Ouvrir →</span></div>
@@ -3505,8 +3603,8 @@ function renderOpHomeDashboard(op, displayedOp, effectiveEditMode) {
     const agr = t.statut_agrement || '';
     const agrCls = /sign|obtenu|acquis|dfa/i.test(agr) ? 'good' : (agr ? 'warn' : 'neutral');
     return `<div class="oph-trow" role="button" tabindex="0"
-        onclick="event.stopPropagation(); selectTranche(${i}); switchOpsTab('tr')"
-        onkeydown="if(event.key==='Enter'){event.stopPropagation();selectTranche(${i});switchOpsTab('tr')}">
+        onclick="event.stopPropagation(); selectTranche(${i}); openOpsDomain('tr')"
+        onkeydown="if(event.key==='Enter'){event.stopPropagation();selectTranche(${i});openOpsDomain('tr')}">
       <span class="oph-tcode">${esc(suffix)}</span>
       <div class="oph-tmain"><div class="oph-tname">${esc(t.type_structure || t.gestionnaire || 'Tranche')}</div>
         <div class="oph-tsub">${t.logements != null ? t.logements + ' logts' : '—'}${t.n_leon ? ' · n° LÉON ' + esc(String(t.n_leon)) : ''}</div></div>
@@ -3577,9 +3675,11 @@ function renderOpDetail() {
   const _savedEditMode = editMode;
   if (isViewingSnapshot) editMode = false;
   const effectiveEditMode = editMode;
-  // L'accueil est une vue synthèse en lecture seule : en mode édition on bascule
-  // sur la Synthèse pour retrouver les champs éditables.
-  if (effectiveEditMode && OPS_TAB === 'home') OPS_TAB = 'syn';
+  // Consultation = accueil (rail + tiroir), toujours. Édition = ancien layout
+  // inline par onglet (flux de saisie éprouvé, on n'y touche pas).
+  OPS_TAB = effectiveEditMode ? (OPS_TAB === 'home' ? 'syn' : OPS_TAB) : 'home';
+  // Le DOM va être reconstruit : on réinitialise le tiroir (sinon nœuds orphelins).
+  _resetOpsDrawer();
 
   const volCells = ['plai','plus','pls','pli','libre','autre'].map(k => {
     const n = sumVolKey(displayedOp, k);
@@ -3756,6 +3856,7 @@ function renderOpDetail() {
       ${editToolbar}
     </div><!-- /op-sticky-top -->
 
+    ${!effectiveEditMode ? opsRailHtml(op) : ''}
     <div class="op-home" data-grp="home">${renderOpHomeDashboard(op, displayedOp, effectiveEditMode)}</div>
 
     <div class="metric-row" data-grp="syn" style="--cols: 4;">
@@ -3863,7 +3964,9 @@ function renderOpDetail() {
   `;
   const _hmk = '</div><!-- /op-sticky-top -->';
   const _hcut = html.indexOf(_hmk) + _hmk.length;
-  document.getElementById('opsHeader').innerHTML = html.slice(0, _hcut) + opsTabsHtml(op);
+  // Barre d'onglets seulement en édition ; en consultation, le rail (dans le
+  // contenu) tient lieu de navigation.
+  document.getElementById('opsHeader').innerHTML = html.slice(0, _hcut) + (effectiveEditMode ? opsTabsHtml(op) : '');
   document.getElementById('opDetail').innerHTML = html.slice(_hcut);
   applyOpsTab();
   // Restore edit mode flag if temporarily cleared

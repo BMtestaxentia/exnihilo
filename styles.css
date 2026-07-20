@@ -5247,10 +5247,12 @@
   .ops-shell[data-tab="tr"] .tranche-detail > [data-grp]:not([data-grp~="tr"]),
   .ops-shell[data-tab="fin"] .tranche-detail > [data-grp]:not([data-grp~="fin"]) { display: none !important; }
 
-  /* Accueil (tableau de bord + drill-in) : seul le groupe "home" est visible */
+  /* Accueil (tableau de bord + drill-in) : seul le groupe "home" est visible,
+     et l'op-detail devient une rangée [rail | tableau de bord]. */
   .ops-shell[data-tab="home"] .tranche-detail { display: none; }
-  .ops-shell[data-tab="home"] .op-detail { grid-column: 2 / 4; padding: 0; }
+  .ops-shell[data-tab="home"] .op-detail { grid-column: 2 / 4; padding: 0; display: flex; align-items: stretch; overflow: hidden; }
   .ops-shell[data-tab="home"] .op-detail > [data-grp]:not([data-grp~="home"]) { display: none !important; }
+  .ops-shell[data-tab="home"] .op-detail > .op-home { flex: 1; min-width: 0; height: 100%; overflow-y: auto; }
 
 
   /* Impression : la fiche complète, sans les onglets */
@@ -5389,3 +5391,48 @@
 .oph-line:first-child { border-top: none; }
 .oph-line .l { flex: 1; color: var(--text-primary); }
 .oph-line .d { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+
+/* ================================================================
+   RAIL DE NAVIGATION + TIROIR (refonte vue opération, étape 2)
+   Rail à gauche du tableau de bord ; le détail d'un domaine glisse
+   dans un tiroir latéral (drill-in). Portée globale.
+   ================================================================ */
+.ops-rail { flex: none; width: 190px; height: 100%; overflow-y: auto; background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color); padding: 12px 10px; display: flex; flex-direction: column; gap: 3px; }
+.ops-rail-item { appearance: none; border: none; background: transparent; cursor: pointer; font-family: inherit;
+  width: 100%; text-align: left; display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 9px;
+  color: var(--text-secondary); position: relative; transition: background .12s ease, color .12s ease; }
+.ops-rail-item:hover { background: var(--bg-primary); color: var(--text-primary); }
+.ops-rail-item.active { background: var(--info-bg); color: var(--info-accent); }
+.ops-rail-item.active::before { content: ""; position: absolute; left: -10px; top: 9px; bottom: 9px; width: 3px;
+  border-radius: 0 3px 3px 0; background: var(--info-accent); }
+.ops-rail-item i { font-size: 18px; flex: none; }
+.ops-rail-item span { font-size: 13px; font-weight: 600; flex: 1; }
+.ops-rail-badge { min-width: 17px; height: 17px; padding: 0 5px; border-radius: 999px; background: #d64545; color: #fff;
+  font-size: 10px; font-weight: 700; display: grid; place-items: center; flex: none; }
+
+.ops-scrim { position: fixed; inset: 0; background: rgba(16,22,30,.42); opacity: 0; pointer-events: none;
+  transition: opacity .2s ease; z-index: 900; }
+.ops-scrim.open { opacity: 1; pointer-events: auto; }
+.ops-drawer { position: fixed; top: 0; right: 0; height: 100%; width: min(700px, 95vw); background: var(--bg-primary);
+  border-left: 1px solid var(--border-color); box-shadow: -8px 0 34px rgba(0,0,0,.20); transform: translateX(100%);
+  transition: transform .26s cubic-bezier(.4,0,.2,1); z-index: 901; display: flex; flex-direction: column; }
+.ops-drawer.open { transform: translateX(0); }
+.ops-drawer-head { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border-color); }
+.ops-drawer-title { flex: 1; font-size: 16px; font-weight: 650; color: var(--text-primary); }
+.ops-drawer-x { appearance: none; border: 1px solid var(--border-color); background: var(--bg-primary); width: 32px; height: 32px;
+  border-radius: 8px; cursor: pointer; color: var(--text-secondary); display: grid; place-items: center; }
+.ops-drawer-x:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.ops-drawer-nav { display: flex; gap: 4px; padding: 8px 14px; border-bottom: 1px solid var(--border-color); overflow-x: auto; background: var(--bg-secondary); }
+.ops-dn { appearance: none; border: 1px solid transparent; background: transparent; font-family: inherit; font-size: 12px;
+  font-weight: 600; color: var(--text-secondary); padding: 5px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+.ops-dn:hover { background: var(--bg-primary); color: var(--text-primary); }
+.ops-dn.active { background: var(--bg-primary); color: var(--info-accent); border-color: var(--border-color); }
+.ops-drawer-body { padding: 16px 20px 44px; overflow-y: auto; flex: 1; }
+.ops-drawer-body > [data-grp] { margin: 0 0 16px; max-width: none; }
+@media (max-width: 700px) {
+  .ops-shell[data-tab="home"] .op-detail { flex-direction: column; overflow: visible; }
+  .ops-rail { width: 100%; height: auto; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
+  .ops-rail-item.active::before { display: none; }
+  .ops-drawer { width: 100vw; }
+}
