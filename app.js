@@ -3749,7 +3749,7 @@ function renderOpDetail() {
           <option value="">— Aucune comparaison —</option>
           ${op.phases_history.map((h, i) => `<option value="${i}"${compareWithIdx === i ? ' selected' : ''}>${escapeHtml(h.name)} · ${escapeHtml(h.date_fige)}</option>`).join('')}
         </select>
-        ${compareWithIdx != null ? `<span class="compare-active-tag">⚡ Comparaison active · les écarts vs ${escapeHtml(op.phases_history[compareWithIdx]?.name || '?')} sont surlignés</span>` : ''}
+        ${compareWithIdx != null ? `<span class="compare-active-tag" title="Écarts vs ${escapeHtml(op.phases_history[compareWithIdx]?.name || '?')} surlignés">⚡ Écarts surlignés</span>` : ''}
       </div>`
     : '';
 
@@ -3822,7 +3822,9 @@ function renderOpDetail() {
       ${nextPhaseBtn}
     </div>
   `;
-  const stickyExtrasHtml = `${compareSelector}${snapshotBanner}`;
+  // compareSelector est désormais placé à gauche du stepper de phases (cf.
+  // .ops-hd-mid) pour alléger le bandeau ; ne reste ici que la bannière snapshot.
+  const stickyExtrasHtml = `${snapshotBanner}`;
 
   const editToolbar = effectiveEditMode ? `
     <div class="edit-toolbar">
@@ -3867,7 +3869,7 @@ function renderOpDetail() {
           ${renderOpTags(op, effectiveEditMode)}
         </div>
       </div>
-      <div class="ops-hd-mid">${phaseStepperHtml}</div>
+      <div class="ops-hd-mid">${compareSelector}${phaseStepperHtml}</div>
       <div class="ops-hd-actions">
         ${!effectiveEditMode ? `<button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-fold-all"></i></button>` : ''}
         ${!effectiveEditMode ? `<button class="icon-btn" onclick="showOpHistory()" title="Historique des modifications"><i class="ti ti-history"></i></button>` : ''}

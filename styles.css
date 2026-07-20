@@ -5272,7 +5272,9 @@
   .ops-header .op-sticky-top { position: static; z-index: auto; margin: 0; padding: 8px 28px 0; display: block; }
   .ops-hd { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 26px; }
   .ops-hd-id { flex: 0 1 auto; min-width: 0; max-width: 52%; }
-  .ops-hd-mid { flex: 1 1 auto; min-width: 0; display: flex; justify-content: flex-end; }
+  .ops-hd-mid { flex: 1 1 auto; min-width: 0; display: flex; justify-content: flex-end; align-items: center; gap: 14px; }
+  .ops-hd-mid .compare-row { flex: none; margin: 0; padding: 5px 10px; gap: 7px; flex-wrap: nowrap; }
+  .ops-hd-mid .compare-label { white-space: nowrap; }
   .ops-hd-mid .phase-stepper-wrap { margin: 0; transform: scale(0.94); transform-origin: right center; }
   .ops-hd-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
   .ops-header .detail-title { font-size: 19px; margin: 1px 0 4px; line-height: 1.2; }
