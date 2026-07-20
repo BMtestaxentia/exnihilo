@@ -3543,8 +3543,28 @@ function renderOpHomeDashboard(op, displayedOp) {
        <div class="oph-tsub">Ouvre la Synthèse pour le détail.</div>`
     : '<div class="oph-tsub">Aucune alerte active sur cette opération.</div>';
   const fp = (displayedOp.tranches || []).reduce((s, t) => s + (Number(t.fonds_propres) || 0), 0);
+  // Vue cumulée des financements (niveau opération, version simplifiée).
+  const nP = (op.prets || []).length, nG = (op.garanties || []).length, nS = (op.subventions || []).length;
+  const tPrets = opTotalPrets(displayedOp), tSubv = opTotalSubv(displayedOp);
+  const budget = totalBudget(displayedOp);
+  const couvert = budget > 0 ? Math.round((tPrets + tSubv + fp) / budget * 100) : 0;
+  const finBrick = `<section class="oph-card oph-c12">
+    <div class="oph-head"><span class="oph-ic"><i class="ti ti-coin"></i></span>
+      <span class="oph-title">Financements — vue cumulée</span>
+      <span class="oph-pill ${couvert >= 100 ? 'good' : (couvert >= 80 ? 'warn' : 'neutral')}" style="margin-left:auto">${couvert} % couvert</span></div>
+    <div class="oph-body">
+      <div class="oph-figrow" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+        <div class="oph-fig"><span class="oph-fl">Prêts · ${nP}</span><span class="oph-fv">${fmtMontant(tPrets)}</span></div>
+        <div class="oph-fig"><span class="oph-fl">Subventions · ${nS}</span><span class="oph-fv">${fmtMontant(tSubv)}</span></div>
+        <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)}</span></div>
+        <div class="oph-fig"><span class="oph-fl">Prix de revient</span><span class="oph-fv">${fmtMontant(budget)}</span></div>
+      </div>
+      <div class="oph-tsub">${nG} garantie${nG > 1 ? 's' : ''} · détail des prêts, garanties et subventions par tranche via le bandeau ci-dessus.</div>
+    </div>
+  </section>`;
   return `<div class="oph-grid">
     ${card('oph-c12', 'alert-triangle', 'Alertes &amp; échéances', alertBadge, 'syn', alertBody)}
+    ${finBrick}
     ${card('oph-c6', 'folder', 'Dossier', '', 'dos', `<dl class="oph-kv">
       <dt>Adresse</dt><dd>${esc(op.adresse || '—')}</dd>
       <dt>Montage</dt><dd>${esc([op.vefa_mod, op.promoteur].filter(Boolean).join(' · ') || '—')}</dd>
@@ -3561,6 +3581,7 @@ function renderOpHomeDashboard(op, displayedOp) {
 
 // ---- Tiroir : réutilise le DOM réel des sections (déplacement + placeholder) ----
 let _opsDrawerNodes = [];
+let _opsDrawerDomain = null; // domaine actuellement ouvert (pour ré-ouvrir après un re-render)
 function ensureOpsDrawer() {
   if (document.getElementById('opsDrawer')) return;
   const scrim = document.createElement('div');
@@ -3610,6 +3631,7 @@ function openOpsDomain(id) {
   if (!id || id === 'home') { closeOpsDrawer(); return; }
   _restoreOpsDrawerNodes();
   const body = document.getElementById('opsDrawerBody');
+  if (body) body.innerHTML = ''; // enlève d'éventuels nœuds orphelins (re-render pendant tiroir ouvert)
   let title = 'Détail', groups = [id], container = document.getElementById('opDetail'), bandeau = 'op';
   if (id === 'tranche') {
     container = document.getElementById('trancheDetail');
@@ -3640,6 +3662,7 @@ function openOpsDomain(id) {
   document.getElementById('opsDrawerNav').innerHTML = OPS_DOMAINS.map(([did, label]) =>
     `<button type="button" class="ops-dn${did === id ? ' active' : ''}" onclick="openOpsDomain('${did}')">${escapeHtml(label)}</button>`).join('');
   _setBandeauActive(bandeau);
+  _opsDrawerDomain = id;
   positionOpsDrawer();
   document.getElementById('opsScrim').classList.add('open');
   document.getElementById('opsDrawer').classList.add('open');
@@ -3650,10 +3673,26 @@ function openOpsDomain(id) {
 }
 function closeOpsDrawer() {
   _restoreOpsDrawerNodes();
+  _opsDrawerDomain = null;
   const d = document.getElementById('opsDrawer'), s = document.getElementById('opsScrim');
   if (d) d.classList.remove('open');
   if (s) s.classList.remove('open');
   _setBandeauActive('op');
+}
+// Ré-exécute fn (qui re-render #opDetail/#trancheDetail) puis ré-ouvre le tiroir
+// sur le domaine courant en préservant le défilement — pour les interactions
+// internes au tiroir qui déclenchent un re-render (dépli du bilan, etc.).
+function withDrawerReopen(fn) {
+  const dom = _opsDrawerDomain;
+  const bodyEl = document.getElementById('opsDrawerBody');
+  const scTop = bodyEl ? bodyEl.scrollTop : 0;
+  fn();
+  if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
+  if (dom) {
+    openOpsDomain(dom);
+    const nb = document.getElementById('opsDrawerBody');
+    if (nb) nb.scrollTop = scTop;
+  }
 }
 
 function renderOpDetail() {
@@ -4308,26 +4347,15 @@ function isBilanExpanded(op, trCode, sectionKey) {
 function toggleBilanSection(opCode, trCode, sectionKey) {
   const k = `${opCode}|${trCode}|${sectionKey}`;
   bilanExpanded[k] = !bilanExpanded[k];
-  if (trCode === '__op__') {
-    renderOpDetail();
-  } else {
-    renderTrancheDetail();
-  }
-  replaceTablerIcons();
+  withDrawerReopen(() => { if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail(); });
 }
 function expandAllBilanSections(opCode, trCode) {
-  BILAN_SECTIONS.forEach(s => {
-    bilanExpanded[`${opCode}|${trCode}|${s.key}`] = true;
-  });
-  if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail();
-  replaceTablerIcons();
+  BILAN_SECTIONS.forEach(s => { bilanExpanded[`${opCode}|${trCode}|${s.key}`] = true; });
+  withDrawerReopen(() => { if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail(); });
 }
 function collapseAllBilanSections(opCode, trCode) {
-  BILAN_SECTIONS.forEach(s => {
-    bilanExpanded[`${opCode}|${trCode}|${s.key}`] = false;
-  });
-  if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail();
-  replaceTablerIcons();
+  BILAN_SECTIONS.forEach(s => { bilanExpanded[`${opCode}|${trCode}|${s.key}`] = false; });
+  withDrawerReopen(() => { if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail(); });
 }
 
 function renderBilanSection(t, op, trCode) {
