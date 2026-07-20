@@ -3913,7 +3913,7 @@ function renderOpDetail() {
       <div class="metric-card"><div class="metric-label">Tranches</div><div class="metric-value">${displayedOp.tranches.length}</div></div>
     </div>
 
-    <div class="op-anchor" id="sec-op-alerts" data-grp="syn">${renderAlertsPanel(displayedOp)}</div>
+    ${!effectiveEditMode ? `<div class="op-anchor" id="sec-op-alerts" data-grp="syn">${renderAlertsPanel(displayedOp)}</div>` : ''}
 
     <div class="section" id="sec-op-vol" data-grp="syn">
       <div class="section-label vol"><i class="ti ti-home"></i>Volumétrie consolidée</div>
