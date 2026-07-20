@@ -2845,7 +2845,7 @@ function totalBudget(op) {
 // Best amount = most committed value (contract > LO > simulation)
 // Renvoie 0 si aucun montant (pour rester compatible avec les reduce)
 function bestPretAmount(p) {
-  return Number(p.montant_contrat) || Number(p.montant_lo) || Number(p.montant_sim) || 0;
+  return Number(p.montant_contrat) || Number(p.montant_lo) || Number(p.montant_valide_ca) || Number(p.montant_sim) || 0;
 }
 function bestSubvAmount(s) {
   return Number(s.montant_notifie ?? s.montant_notif) || Number(s.montant_demande) || 0;
@@ -2856,6 +2856,8 @@ function bestPretAmountOrNull(p) {
   if (!isNaN(c) && c !== 0) return c;
   const l = Number(p.montant_lo);
   if (!isNaN(l) && l !== 0) return l;
+  const ca = Number(p.montant_valide_ca);
+  if (!isNaN(ca) && ca !== 0) return ca;
   const s = Number(p.montant_sim);
   if (!isNaN(s) && s !== 0) return s;
   return null;
@@ -5267,7 +5269,7 @@ function pretCycleDots(stage) {
 }
 function pretCycleHtml(i) {
   let stage = pretStageFromStatut(i.statut);
-  if (i.montant_sim) stage = Math.max(stage, 0);
+  if (i.montant_valide_ca || i.montant_sim) stage = Math.max(stage, 0);
   if (i.date_demande) stage = Math.max(stage, 1);
   if (i.date_comite_banque) stage = Math.max(stage, 2);
   if (i.date_lo) stage = Math.max(stage, 3);
@@ -5280,7 +5282,7 @@ function updatePretCycle(el) {
   if (!row) return;
   const val = f => { const x = row.querySelector(`[data-field="${f}"]`); return x ? String(x.value || '').trim() : ''; };
   let stage = pretStageFromStatut(val('statut'));
-  if (val('montant_sim')) stage = Math.max(stage, 0);
+  if (val('montant_valide_ca')) stage = Math.max(stage, 0);
   if (val('date_demande')) stage = Math.max(stage, 1);
   if (val('date_comite_banque')) stage = Math.max(stage, 2);
   if (val('date_lo')) stage = Math.max(stage, 3);
@@ -5362,15 +5364,15 @@ function renderPretCardEdit(i, op) {
     <div class="entity-card editing fin-erow${diffEntityClass('prets', i)}" data-section="prets" data-row-idx="${i._originalIdx}">
       <!-- Ligne compacte (toujours visible) -->
       <div class="fin-emain">
-        <select class="card-input fin-cell" data-field="ligne" title="Ligne de prêt">
+        <select class="card-input fin-cell" data-field="ligne" title="Ligne / Produit">
           <option value=""></option>
           ${getRef('lignes_prets').map(s => `<option value="${s}"${i.ligne===s?' selected':''}>${s}</option>`).join('')}
         </select>
-        <select class="card-input fin-cell" data-field="financeur" title="Financeur">
+        <select class="card-input fin-cell" data-field="financeur" title="Banque / financeur">
           <option value=""></option>
           ${getRef('banques').map(s => `<option value="${s}"${i.financeur===s?' selected':''}>${s}</option>`).join('')}
         </select>
-        <input type="number" min="0" class="card-input fin-cell fin-num" data-field="montant_sim" value="${i.montant_sim || ''}" placeholder="Montant sim (€)" title="Montant de simulation" oninput="updatePretCycle(this)">
+        <input type="number" min="0" class="card-input fin-cell fin-num" data-field="montant_valide_ca" value="${i.montant_valide_ca || ''}" placeholder="Validé CA (€)" title="Montant validé CA" oninput="updatePretCycle(this)">
         <select class="card-input fin-cell" data-field="statut" title="Statut" onchange="updatePretCycle(this)">
           <option value=""></option>
           ${getRef('statuts_pret').map(s => `<option value="${s}"${i.statut===s?' selected':''}>${s}</option>`).join('')}
@@ -5382,85 +5384,90 @@ function renderPretCardEdit(i, op) {
 
       <!-- Détail replié -->
       <div class="fin-edetail">
-      <!-- Group 1 - Identité -->
+      <!-- Identité -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Identité</div>
         <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
-          <div class="card-edit-field"><label>Source du montant</label>
-            <select class="card-input" data-field="source">
-              <option value=""></option>
-              ${getRef('sources_pret').map(s => `<option value="${s}"${i.source===s?' selected':''}>${s}</option>`).join('')}
-            </select>
-          </div>
+          <div class="card-edit-field"><label>Tranche (suffixe)</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
+          <div class="card-edit-field"><label>N° dossier</label><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}"></div>
         </div>
       </div>
 
-      <!-- Group 2 - Montants -->
+      <!-- Lettre d'offre -->
       <div class="card-edit-subgroup">
-        <div class="card-edit-subgroup-title">Montants</div>
+        <div class="card-edit-subgroup-title">Lettre d'offre</div>
         <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Lettre d'offre (€)</label><input type="number" min="0" class="card-input" data-field="montant_lo" value="${i.montant_lo || ''}"></div>
-          <div class="card-edit-field"><label>Contrat (€)</label><input type="number" min="0" class="card-input" data-field="montant_contrat" value="${i.montant_contrat || ''}"></div>
+          <div class="card-edit-field"><label>Date demande LO</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+          <div class="card-edit-field"><label>Date comité banque LO</label><input class="card-input" data-field="date_comite_banque" data-pret-comite value="${escapeHtml(i.date_comite_banque || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+          <div class="card-edit-field"><label>Montant LO (€)</label><input type="number" min="0" class="card-input" data-field="montant_lo" value="${i.montant_lo || ''}"></div>
+          <div class="card-edit-field"><label>Date LO <span class="auto-tag" data-lo-tag="${i._originalIdx}">${(!i.date_lo && i.date_comite_banque) ? '· prévisionnelle (comité +2sem.)' : ''}</span></label><input class="card-input ${(!i.date_lo && i.date_comite_banque) ? 'previsional-input' : ''}" data-field="date_lo" data-pret-lo value="${escapeHtml(i.date_lo || (i.date_comite_banque ? previsionalLOFromComite(i.date_comite_banque) || '' : ''))}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+          <div class="card-edit-field"><label>Date caducité LO</label><input class="card-input" data-field="date_caducite_lo" value="${escapeHtml(i.date_caducite_lo || '')}" placeholder="JJ/MM/AAAA"></div>
+          ${sharepointEditFields([{ field: 'lien_sp_lo', label: 'Lien SharePoint LO', currentValue: i.lien_sp_lo }])}
         </div>
       </div>
 
-      <!-- Group 3 - Conditions financières (Taux nomenclature + durée + révision) -->
+      <!-- Contrat -->
+      <div class="card-edit-subgroup">
+        <div class="card-edit-subgroup-title">Contrat</div>
+        <div class="card-edit-grid">
+          <div class="card-edit-field"><label>Montant contrat (€)</label><input type="number" min="0" class="card-input" data-field="montant_contrat" value="${i.montant_contrat || ''}"></div>
+          <div class="card-edit-field"><label>Date contrat</label><input class="card-input" data-field="date_contrat" value="${escapeHtml(i.date_contrat || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+          <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
+          ${sharepointEditFields([{ field: 'lien_sp_contrat', label: 'Lien SharePoint contrat', currentValue: i.lien_sp_contrat }])}
+        </div>
+      </div>
+
+      <!-- Conditions financières -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Conditions financières</div>
         <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Index taux</label>
+          <div class="card-edit-field"><label>Durée emprunt (ans)</label><input type="number" min="0" class="card-input" data-field="duree_emprunt" value="${i.duree_emprunt || ''}"></div>
+          <div class="card-edit-field"><label>Indice</label>
             <select class="card-input" data-field="taux_index" onchange="onTauxIndexChange(this)">
               ${getRef('taux_index').map(s => `<option value="${s}"${tauxIdx===s?' selected':''}>${s}</option>`).join('')}
             </select>
           </div>
           <div class="card-edit-field" data-taux-spread-wrap${showSpread ? '' : ' style="display:none;"'}>
-            <label>${isFixe ? 'Taux (%)' : 'Spread (%)'}</label>
+            <label>${isFixe ? 'Taux (%)' : 'Marge (%)'}</label>
             <input type="number" step="0.01" class="card-input" data-field="taux_spread" value="${parsed.spread != null ? parsed.spread : ''}" placeholder="${isFixe ? '1,20' : '+/- 0,20'}">
           </div>
           <div class="card-edit-field" data-taux-libre-wrap${isLibre ? '' : ' style="display:none;"'}>
             <label>Taux (saisie libre)</label>
             <input class="card-input" data-field="taux_libre" value="${escapeHtml(parsed.libre || '')}" placeholder="Ex: TEG 2,4% capé">
           </div>
-          <div class="card-edit-field"><label>Durée emprunt (ans)</label><input type="number" min="0" class="card-input" data-field="duree_emprunt" value="${i.duree_emprunt || ''}"></div>
           <div class="card-edit-field"><label>Révision</label>
             <select class="card-input" data-field="revision">
               <option value=""></option>
               ${getRef('revisions').map(s => `<option value="${s}"${i.revision===s?' selected':''}>${s}</option>`).join('')}
             </select>
           </div>
+          <div class="card-edit-field"><label>Profil amort Caisse d'épargne</label><input class="card-input" data-field="profil_amort" value="${escapeHtml(i.profil_amort || '')}"></div>
         </div>
       </div>
 
-      <!-- Group 3b - Préfinancement -->
+      <!-- Préfinancement -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Préfinancement</div>
         <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Durée phase préfi (mois)</label><input type="number" min="0" class="card-input" data-field="duree_prefi" value="${i.duree_prefi || ''}"></div>
-          <div class="card-edit-field"><label>Date fin de préfi</label><input class="card-input" data-field="date_fin_prefi" value="${escapeHtml(i.date_fin_prefi || '')}" placeholder="JJ/MM/AAAA"></div>
+          <div class="card-edit-field"><label>Durée préfi (mois)</label><input type="number" min="0" class="card-input" data-field="duree_prefi" value="${i.duree_prefi || ''}"></div>
+          <div class="card-edit-field"><label>Date fin préfi</label><input class="card-input" data-field="date_fin_prefi" value="${escapeHtml(i.date_fin_prefi || '')}" placeholder="JJ/MM/AAAA"></div>
+          <div class="card-edit-field"><label>Avenant durée préfi</label><input class="card-input" data-field="avenant_duree_prefi" value="${escapeHtml(i.avenant_duree_prefi || '')}"></div>
         </div>
       </div>
 
-      <!-- Group 4 - Workflow (dates + n° contrat) -->
+      <!-- Divers -->
       <div class="card-edit-subgroup">
-        <div class="card-edit-subgroup-title">Workflow & dates</div>
+        <div class="card-edit-subgroup-title">Divers</div>
         <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Demande</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA"></div>
-          <div class="card-edit-field"><label>Passage comité banque</label><input class="card-input" data-field="date_comite_banque" data-pret-comite value="${escapeHtml(i.date_comite_banque || '')}" placeholder="JJ/MM/AAAA"></div>
-          <div class="card-edit-field"><label>Lettre d'offre <span class="auto-tag" data-lo-tag="${i._originalIdx}">${(!i.date_lo && i.date_comite_banque) ? '· prévisionnelle (comité +2sem.)' : ''}</span></label><input class="card-input ${(!i.date_lo && i.date_comite_banque) ? 'previsional-input' : ''}" data-field="date_lo" data-pret-lo value="${escapeHtml(i.date_lo || (i.date_comite_banque ? previsionalLOFromComite(i.date_comite_banque) || '' : ''))}" placeholder="JJ/MM/AAAA"></div>
-          <div class="card-edit-field"><label>Contrat</label><input class="card-input" data-field="date_contrat" value="${escapeHtml(i.date_contrat || '')}" placeholder="JJ/MM/AAAA"></div>
-          <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
-          <div class="card-edit-field"><label>N° dossier</label><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}"></div>
-          <div class="card-edit-field"><label>Caducité LO</label><input class="card-input" data-field="date_caducite_lo" value="${escapeHtml(i.date_caducite_lo || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">- Aucun -</option>${aapSelectOptions(i.aap_id)}</select></div>
           <div class="card-edit-field"><label>Contact banque</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
-        </div>
-      </div>
-
-      <!-- Group 5 - Pièces attendues + garantie + commentaires -->
-      <div class="card-edit-subgroup">
-        <div class="card-edit-subgroup-title">Émission du contrat</div>
-        <div class="card-edit-grid">
+          <div class="card-edit-field wide"><label class="toggle-row">
+            <span class="toggle-switch">
+              <input type="checkbox" data-field="non_garanti" data-bool ${i.non_garanti ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </span>
+            <span class="toggle-label">Prêt sans garantie requise</span>
+          </label></div>
           <div class="card-edit-field wide"><label>Pièces attendues</label>
             <div class="pieces-multiselect" data-field="pieces_attendues">
               ${getRef('pieces_contrat').map(p => {
@@ -5469,18 +5476,7 @@ function renderPretCardEdit(i, op) {
               }).join('')}
             </div>
           </div>
-          <div class="card-edit-field wide"><label class="toggle-row">
-            <span class="toggle-switch">
-              <input type="checkbox" data-field="non_garanti" data-bool ${i.non_garanti ? 'checked' : ''}>
-              <span class="toggle-slider"></span>
-            </span>
-            <span class="toggle-label">Prêt sans garantie requise</span>
-          </label></div>
           <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
-        ${sharepointEditFields([
-          { field: 'lien_sp_lo', label: "Lien lettre d'offre (SharePoint)", currentValue: i.lien_sp_lo },
-          { field: 'lien_sp_contrat', label: 'Lien contrat de prêt (SharePoint)', currentValue: i.lien_sp_contrat },
-        ])}
         </div>
       </div>
       </div><!-- /fin-edetail -->
@@ -11800,6 +11796,10 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
     date_fin_prefi: p.date_fin_prefi || '',
     aap_id: (p.aap_id !== undefined && p.aap_id !== null) ? p.aap_id : null,
     date_caducite_lo: p.date_caducite_lo || '',
+    // Champs référentiel SFO (nouvelles colonnes)
+    montant_valide_ca: p.montant_valide_ca,
+    profil_amort: p.profil_amort || '',
+    avenant_duree_prefi: p.avenant_duree_prefi || '',
   };
 }
 
@@ -12413,6 +12413,10 @@ function buildPretPayload(p, operationId, trancheId) {
     date_fin_prefi: p.date_fin_prefi || null,
     aap_id: p.aap_id ? Number(p.aap_id) : null,
     date_caducite_lo: p.date_caducite_lo || null,
+    // Champs référentiel SFO (nouvelles colonnes)
+    montant_valide_ca: (p.montant_valide_ca === '' || p.montant_valide_ca == null) ? null : Number(p.montant_valide_ca),
+    profil_amort: p.profil_amort || '',
+    avenant_duree_prefi: p.avenant_duree_prefi || '',
   };
 }
 
