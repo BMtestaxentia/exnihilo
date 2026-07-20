@@ -3629,6 +3629,10 @@ function openOpsDomain(id) {
     const ph = document.createComment('ops-' + id);
     node.parentNode.insertBefore(ph, node);
     body.appendChild(node);
+    // Le tiroir est une vue de détail : on déplie tout par défaut (le clic
+    // sur un titre replie/déplie toujours, cf. handler global).
+    node.classList.remove('collapsed');
+    if (node.querySelectorAll) node.querySelectorAll('.section.collapsed').forEach(s => s.classList.remove('collapsed'));
     _opsDrawerNodes.push({ placeholder: ph, node });
   });
   body.scrollTop = 0;
@@ -10664,7 +10668,7 @@ document.addEventListener('click', (e) => {
   if (!head) return;
   const sec = head.parentElement;
   if (!sec || !sec.classList.contains('section')) return;
-  if (!sec.closest('#opDetail, #trancheDetail')) return;
+  if (!sec.closest('#opDetail, #trancheDetail, #opsDrawerBody')) return;
   sec.classList.toggle('collapsed');
   const k = osnKeyOf(sec);
   if (k) {
