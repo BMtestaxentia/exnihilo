@@ -11246,6 +11246,14 @@ function mapTrancheFromSupabase(t) {
     vol: t.vol || {},
     vol_agree: t.vol_agree || {},
     date_cloture_agrement: t.date_cloture_agrement || '',
+    // Champs agrément/simulation (miroir de buildTranchePayload)
+    famille_agrement: t.famille_agrement || '',
+    uls_rhvs: t.uls_rhvs || '',
+    date_butoir_depot: t.date_butoir_depot || '',
+    date_depot_agr: t.date_depot_agr || '',
+    plai_adapte: t.plai_adapte,
+    n_leon: t.n_leon || '',
+    date_ref: t.date_ref || '',
     // Sous-sections JSONB (bilan d'opération, surfaces)
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
