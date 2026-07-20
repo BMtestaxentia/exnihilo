@@ -5247,6 +5247,13 @@
   .ops-shell[data-tab="tr"] .tranche-detail > [data-grp]:not([data-grp~="tr"]),
   .ops-shell[data-tab="fin"] .tranche-detail > [data-grp]:not([data-grp~="fin"]) { display: none !important; }
 
+  /* Consultation (accueil) : seul le tableau de bord "home" est visible dans
+     #opDetail ; les groupes op (syn/dos/bilan/suivi) restent en DOM comme source
+     du tiroir. #trancheDetail (source tr/fin) est masqué. */
+  .ops-shell[data-tab="home"] .tranche-detail { display: none; }
+  .ops-shell[data-tab="home"] .op-detail { grid-column: 2 / 4; }
+  .ops-shell[data-tab="home"] .op-detail > [data-grp]:not([data-grp~="home"]) { display: none !important; }
+
 
   /* Impression : la fiche complète, sans les onglets */
   body.printing-op-detail .ops-header { display: block !important; }
@@ -5332,3 +5339,78 @@
 
   /* Volumétrie compacte en demi-largeur (3 x 2) */
   .ops-shell[data-tab="syn"] #sec-op-vol .volumetrie-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ================================================================
+   REFONTE VUE OPÉRATION (consultation) : bandeau tranches permanent,
+   tableau de bord, tiroir de détail. Portée globale, tokens de l'app.
+   ================================================================ */
+/* En-tête au-dessus du tiroir (le tiroir est positionné juste en dessous en JS) */
+.ops-header { position: relative; z-index: 60; }
+
+/* Bandeau tranches (dans l'en-tête, toujours visible) */
+.ops-tbar { display: flex; align-items: center; gap: 9px; padding: 9px 24px; border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary); overflow-x: auto; scrollbar-width: thin; }
+.ops-tbar-lead { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-tertiary); flex: none; }
+.ops-tbar-div { width: 1px; align-self: stretch; background: var(--border-color); flex: none; margin: 2px 1px; }
+.ops-tbar-empty { font-size: 12px; color: var(--text-tertiary); font-style: italic; }
+.ops-tpill { appearance: none; font-family: inherit; cursor: pointer; text-align: left; flex: none; position: relative;
+  border: 1px solid var(--border-color); background: var(--bg-primary); border-radius: 10px; padding: 7px 13px; color: var(--text-primary);
+  display: flex; flex-direction: column; gap: 1px; min-width: 122px; transition: border-color .12s, background .12s, box-shadow .12s; }
+.ops-tpill:hover { border-color: var(--border-strong, var(--text-tertiary)); background: var(--bg-secondary); }
+.ops-tpill.active { border-color: var(--info-accent); background: var(--info-bg); box-shadow: 0 0 0 1px var(--info-accent) inset; }
+.ops-tpill.op { min-width: auto; justify-content: center; }
+.ops-tpill-top { display: flex; align-items: center; gap: 7px; font-weight: 650; font-size: 13px; }
+.ops-tpill-top i { font-size: 15px; color: var(--info-accent); }
+.ops-tpill.active .ops-tpill-top { color: var(--info-text); }
+.ops-tpill-meta { font-size: 11px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.ops-tpill-dot { position: absolute; top: 8px; right: 9px; width: 8px; height: 8px; border-radius: 50%; }
+.ops-tpill-dot.good { background: var(--success-accent); } .ops-tpill-dot.warn { background: var(--warning-accent); } .ops-tpill-dot.neutral { background: var(--text-tertiary); }
+
+/* Tableau de bord */
+.op-home { padding: 18px 2px 44px; }
+.oph-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; max-width: 1400px; }
+.oph-card { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: 0 1px 2px rgba(0,0,0,.05); display: flex; flex-direction: column; overflow: hidden; }
+.oph-card.drill { cursor: pointer; transition: transform .13s ease, box-shadow .13s ease, border-color .13s ease; }
+.oph-card.drill:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.10); border-color: var(--info-accent); }
+.oph-card.drill:focus-visible { outline: 2px solid var(--info-accent); outline-offset: 2px; }
+.oph-head { display: flex; align-items: center; gap: 9px; padding: 12px 15px 11px; border-bottom: 1px solid var(--border-color); }
+.oph-ic { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; background: var(--info-bg); color: var(--info-accent); flex: none; }
+.oph-ic i { font-size: 15px; }
+.oph-title { font-size: 13.5px; font-weight: 650; color: var(--text-primary); flex: 1; }
+.oph-open { font-size: 11.5px; font-weight: 600; color: var(--info-accent); opacity: 0; transition: opacity .13s ease; white-space: nowrap; }
+.oph-card.drill:hover .oph-open, .oph-card.drill:focus-visible .oph-open { opacity: 1; }
+.oph-body { padding: 13px 15px 15px; display: flex; flex-direction: column; gap: 11px; flex: 1; }
+.oph-c12 { grid-column: span 12; } .oph-c6 { grid-column: span 6; }
+@media (max-width: 1100px) { .oph-c6 { grid-column: span 12; } }
+@media (max-width: 640px) { .oph-grid { grid-template-columns: 1fr; } .op-home { padding: 14px; } }
+.oph-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.oph-pill.good { background: var(--success-bg); color: var(--success-text); } .oph-pill.warn { background: var(--warning-bg); color: var(--warning-text); }
+.oph-pill.crit { background: var(--danger-bg); color: var(--danger-text); } .oph-pill.neutral { background: var(--bg-secondary); color: var(--text-secondary); }
+.oph-kv { display: grid; grid-template-columns: auto 1fr; gap: 7px 16px; align-items: baseline; margin: 0; font-size: 12.8px; }
+.oph-kv dt { color: var(--text-secondary); } .oph-kv dd { margin: 0; font-weight: 600; text-align: right; color: var(--text-primary); }
+.oph-figrow { display: grid; grid-template-columns: 1fr 1fr; gap: 11px 16px; }
+.oph-fig { display: flex; flex-direction: column; gap: 1px; }
+.oph-fl { font-size: 11.5px; color: var(--text-secondary); }
+.oph-fv { font-size: 16px; font-weight: 650; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.oph-tsub { color: var(--text-secondary); font-size: 12px; }
+.oph-line { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-top: 1px dashed var(--border-color); font-size: 13px; }
+.oph-line:first-child { border-top: none; }
+.oph-line .l { flex: 1; color: var(--text-primary); }
+.oph-line .d { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+
+/* Tiroir */
+.ops-scrim { position: fixed; inset: 0; background: rgba(16,22,30,.42); opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 55; }
+.ops-scrim.open { opacity: 1; pointer-events: auto; }
+.ops-drawer { position: fixed; top: 0; right: 0; width: min(720px, 94vw); background: var(--bg-primary); border-left: 1px solid var(--border-color);
+  box-shadow: -8px 0 34px rgba(0,0,0,.20); transform: translateX(100%); transition: transform .26s cubic-bezier(.4,0,.2,1); z-index: 56; display: flex; flex-direction: column; }
+.ops-drawer.open { transform: translateX(0); }
+.ops-drawer-head { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border-color); flex: none; }
+.ops-drawer-title { flex: 1; font-size: 16px; font-weight: 650; color: var(--text-primary); }
+.ops-drawer-x { appearance: none; border: 1px solid var(--border-color); background: var(--bg-primary); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; color: var(--text-secondary); display: grid; place-items: center; flex: none; }
+.ops-drawer-x:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.ops-drawer-nav { display: flex; gap: 4px; padding: 8px 14px; border-bottom: 1px solid var(--border-color); overflow-x: auto; background: var(--bg-secondary); flex: none; }
+.ops-dn { appearance: none; border: 1px solid transparent; background: transparent; font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text-secondary); padding: 5px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+.ops-dn:hover { background: var(--bg-primary); color: var(--text-primary); }
+.ops-dn.active { background: var(--bg-primary); color: var(--info-accent); border-color: var(--border-color); }
+.ops-drawer-body { padding: 16px 20px 44px; overflow-y: auto; flex: 1; }
+.ops-drawer-body > [data-grp] { margin: 0 0 16px; max-width: none; }

@@ -3482,6 +3482,176 @@ function switchOpsTab(t) {
   }
 }
 
+// ===== Refonte vue opération (consultation) : bandeau tranches permanent +
+// tableau de bord + tiroir de détail (drill-in). L'édition garde l'ancien
+// layout inline par onglet (flux de saisie éprouvé). =====
+
+// Domaines de niveau opération, déplacés dans le tiroir depuis #opDetail.
+const OPS_DOMAINS = [
+  ['syn',   'Synthèse',        'layout-dashboard'],
+  ['dos',   'Dossier',         'folder'],
+  ['bilan', 'Bilan',           'report-money'],
+  ['suivi', 'Comités & suivi', 'activity'],
+];
+
+// Bandeau permanent « Vue opération + pastille par tranche », rendu dans
+// l'en-tête (zone haute non défilante) → toujours visible, au-dessus du tiroir.
+function opsTrancheBandeauHtml(op, displayedOp) {
+  const trs = (displayedOp.tranches || []);
+  const pills = trs.map((t, i) => {
+    const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : (t.id || ('T' + (i + 1)));
+    const agr = t.statut_agrement || '';
+    const dot = /sign|obtenu|acquis|dfa/i.test(agr) ? 'good' : (agr ? 'warn' : 'neutral');
+    return `<button type="button" class="ops-tpill" data-tranche-pill="${i}"
+        onclick="selectTranche(${i}); openOpsDomain('tranche')">
+        <span class="ops-tpill-dot ${dot}"></span>
+        <span class="ops-tpill-top">${escapeHtml(suffix)}</span>
+        <span class="ops-tpill-meta">${trancheLogements(t) || '—'} logts · ${fmtMontant(trancheBudgetTTC(t))}</span>
+      </button>`;
+  }).join('');
+  return `<div class="ops-tbar">
+    <span class="ops-tbar-lead">Tranches</span>
+    <button type="button" class="ops-tpill op active" data-tranche-pill="op" onclick="closeOpsDrawer()">
+      <span class="ops-tpill-top"><i class="ti ti-layout-dashboard"></i>Vue opération</span></button>
+    <span class="ops-tbar-div"></span>
+    ${pills || '<span class="ops-tbar-empty">Aucune tranche — passez en édition pour en créer</span>'}
+  </div>`;
+}
+
+// Tableau de bord : briques de niveau opération (résumé + ouverture en tiroir).
+function renderOpHomeDashboard(op, displayedOp) {
+  const esc = escapeHtml;
+  const alerts = (typeof computeAlerts === 'function') ? computeAlerts(displayedOp) : [];
+  const nCrit = alerts.filter(a => a.level === 'expired' || a.level === 'critical').length;
+  const nWarn = Math.max(0, alerts.length - nCrit);
+  const card = (span, icon, title, badge, domain, body) => `
+    <section class="oph-card drill ${span}" role="button" tabindex="0"
+      onclick="openOpsDomain('${domain}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openOpsDomain('${domain}')}">
+      <div class="oph-head"><span class="oph-ic"><i class="ti ti-${icon}"></i></span>
+        <span class="oph-title">${title}</span>${badge || ''}<span class="oph-open" style="margin-left:auto">Ouvrir →</span></div>
+      <div class="oph-body">${body}</div>
+    </section>`;
+  const coms = op.comites || [];
+  const comLines = coms.slice(0, 4).map(c =>
+    `<div class="oph-line"><span class="l">${esc(c.type || 'Comité')}</span><span class="d">${esc(c.date || '—')}</span></div>`
+  ).join('') || '<div class="oph-tsub">Aucun comité.</div>';
+  const alertBadge = nCrit ? `<span class="oph-pill crit">${nCrit} critique${nCrit > 1 ? 's' : ''}</span>`
+    : (nWarn ? `<span class="oph-pill warn">${nWarn} à surveiller</span>` : '<span class="oph-pill good">À jour</span>');
+  const alertBody = alerts.length
+    ? `<div class="oph-figrow"><div class="oph-fig"><span class="oph-fl">Critiques / expirés</span><span class="oph-fv">${nCrit}</span></div>
+       <div class="oph-fig"><span class="oph-fl">À surveiller</span><span class="oph-fv">${nWarn}</span></div></div>
+       <div class="oph-tsub">Ouvre la Synthèse pour le détail.</div>`
+    : '<div class="oph-tsub">Aucune alerte active sur cette opération.</div>';
+  const fp = (displayedOp.tranches || []).reduce((s, t) => s + (Number(t.fonds_propres) || 0), 0);
+  return `<div class="oph-grid">
+    ${card('oph-c12', 'alert-triangle', 'Alertes &amp; échéances', alertBadge, 'syn', alertBody)}
+    ${card('oph-c6', 'folder', 'Dossier', '', 'dos', `<dl class="oph-kv">
+      <dt>Adresse</dt><dd>${esc(op.adresse || '—')}</dd>
+      <dt>Montage</dt><dd>${esc([op.vefa_mod, op.promoteur].filter(Boolean).join(' · ') || '—')}</dd>
+      <dt>Obtention PC</dt><dd>${esc(op.date_obtention_pc || op.date_obt_pc || '—')}</dd>
+      <dt>Livraison prévue</dt><dd>${esc(op.date_livraison || '—')}</dd></dl>`)}
+    ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', `<div class="oph-figrow">
+      <div class="oph-fig"><span class="oph-fl">Logements</span><span class="oph-fv">${totalLgts(displayedOp) || '—'}</span></div>
+      <div class="oph-fig"><span class="oph-fl">Surface utile</span><span class="oph-fv">${fmtSurface(opTotalSurface(displayedOp))}</span></div>
+      <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)}</span></div>
+      <div class="oph-fig"><span class="oph-fl">Tranches</span><span class="oph-fv">${(displayedOp.tranches || []).length}</span></div></div>`)}
+    ${card('oph-c12', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span>`, 'suivi', comLines)}
+  </div>`;
+}
+
+// ---- Tiroir : réutilise le DOM réel des sections (déplacement + placeholder) ----
+let _opsDrawerNodes = [];
+function ensureOpsDrawer() {
+  if (document.getElementById('opsDrawer')) return;
+  const scrim = document.createElement('div');
+  scrim.className = 'ops-scrim'; scrim.id = 'opsScrim';
+  scrim.addEventListener('click', closeOpsDrawer);
+  const drawer = document.createElement('aside');
+  drawer.className = 'ops-drawer'; drawer.id = 'opsDrawer';
+  drawer.setAttribute('role', 'dialog'); drawer.setAttribute('aria-modal', 'true');
+  drawer.innerHTML = `<div class="ops-drawer-head">
+      <span class="ops-drawer-title" id="opsDrawerTitle">Détail</span>
+      <button type="button" class="ops-drawer-x" id="opsDrawerX" aria-label="Fermer"><i class="ti ti-x"></i></button>
+    </div>
+    <nav class="ops-drawer-nav" id="opsDrawerNav"></nav>
+    <div class="ops-drawer-body" id="opsDrawerBody"></div>`;
+  document.body.appendChild(scrim);
+  document.body.appendChild(drawer);
+  drawer.querySelector('#opsDrawerX').addEventListener('click', closeOpsDrawer);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOpsDrawer(); });
+  window.addEventListener('resize', () => { if (drawer.classList.contains('open')) positionOpsDrawer(); });
+}
+// Le tiroir + le voile démarrent SOUS l'en-tête (bandeau tranches compris),
+// qui reste ainsi entièrement visible et cliquable par-dessus.
+function positionOpsDrawer() {
+  const h = document.querySelector('.ops-header');
+  const top = h ? Math.max(0, Math.round(h.getBoundingClientRect().bottom)) : 0;
+  const dr = document.getElementById('opsDrawer'), sc = document.getElementById('opsScrim');
+  if (dr) { dr.style.top = top + 'px'; dr.style.height = (window.innerHeight - top) + 'px'; }
+  if (sc) { sc.style.top = top + 'px'; }
+}
+function _restoreOpsDrawerNodes() {
+  _opsDrawerNodes.forEach(({ placeholder, node }) => {
+    if (placeholder && placeholder.parentNode) placeholder.parentNode.replaceChild(node, placeholder);
+  });
+  _opsDrawerNodes = [];
+}
+function _resetOpsDrawer() {
+  _opsDrawerNodes = [];
+  const d = document.getElementById('opsDrawer'), s = document.getElementById('opsScrim');
+  if (d) { d.classList.remove('open'); const b = document.getElementById('opsDrawerBody'); if (b) b.innerHTML = ''; }
+  if (s) s.classList.remove('open');
+}
+function _setBandeauActive(key) {
+  document.querySelectorAll('.ops-tpill').forEach(b => b.classList.toggle('active', b.dataset.tranchePill === key));
+}
+function openOpsDomain(id) {
+  ensureOpsDrawer();
+  if (!id || id === 'home') { closeOpsDrawer(); return; }
+  _restoreOpsDrawerNodes();
+  const body = document.getElementById('opsDrawerBody');
+  let title = 'Détail', groups = [id], container = document.getElementById('opDetail'), bandeau = 'op';
+  if (id === 'tranche') {
+    container = document.getElementById('trancheDetail');
+    groups = ['tr', 'fin'];
+    const op = findOp(selectedOpCode);
+    const t = (op && op.tranches) ? op.tranches[selectedTrancheIdx] : null;
+    const suffix = t && t.code_full ? t.code_full.split('-').slice(1).join('-') : '';
+    title = t ? (t.type_structure || suffix || 'Tranche') : 'Tranche';
+    bandeau = String(selectedTrancheIdx);
+  } else {
+    const def = OPS_DOMAINS.find(d => d[0] === id);
+    title = def ? def[1] : 'Détail';
+  }
+  if (!container || !body) return;
+  const nodes = Array.from(container.children).filter(el => el.matches && groups.some(g => el.matches(`[data-grp~="${g}"]`)));
+  nodes.forEach(node => {
+    const ph = document.createComment('ops-' + id);
+    node.parentNode.insertBefore(ph, node);
+    body.appendChild(node);
+    _opsDrawerNodes.push({ placeholder: ph, node });
+  });
+  body.scrollTop = 0;
+  document.getElementById('opsDrawerTitle').textContent = title;
+  document.getElementById('opsDrawerNav').innerHTML = OPS_DOMAINS.map(([did, label]) =>
+    `<button type="button" class="ops-dn${did === id ? ' active' : ''}" onclick="openOpsDomain('${did}')">${escapeHtml(label)}</button>`).join('');
+  _setBandeauActive(bandeau);
+  positionOpsDrawer();
+  document.getElementById('opsScrim').classList.add('open');
+  document.getElementById('opsDrawer').classList.add('open');
+  if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
+  if (groups.includes('syn') && typeof opLocationMapInstance !== 'undefined' && opLocationMapInstance) {
+    setTimeout(() => { try { opLocationMapInstance.invalidateSize(); } catch (e) {} }, 90);
+  }
+}
+function closeOpsDrawer() {
+  _restoreOpsDrawerNodes();
+  const d = document.getElementById('opsDrawer'), s = document.getElementById('opsScrim');
+  if (d) d.classList.remove('open');
+  if (s) s.classList.remove('open');
+  _setBandeauActive('op');
+}
+
 function renderOpDetail() {
   const op = findOp(selectedOpCode);
   if (!op) { document.getElementById('opDetail').innerHTML = ''; const _h = document.getElementById('opsHeader'); if (_h) _h.innerHTML = ''; return; }
@@ -3493,6 +3663,10 @@ function renderOpDetail() {
   const _savedEditMode = editMode;
   if (isViewingSnapshot) editMode = false;
   const effectiveEditMode = editMode;
+  // Consultation = accueil (bandeau tranches + tableau de bord + tiroir).
+  // Édition = ancien layout inline par onglet (on n'y touche pas).
+  OPS_TAB = effectiveEditMode ? (OPS_TAB === 'home' ? 'syn' : OPS_TAB) : 'home';
+  _resetOpsDrawer(); // le DOM va être reconstruit : on réinitialise le tiroir
 
   const volCells = ['plai','plus','pls','pli','libre','autre'].map(k => {
     const n = sumVolKey(displayedOp, k);
@@ -3669,6 +3843,8 @@ function renderOpDetail() {
       ${editToolbar}
     </div><!-- /op-sticky-top -->
 
+    ${!effectiveEditMode ? `<div class="op-home" data-grp="home">${renderOpHomeDashboard(op, displayedOp)}</div>` : ''}
+
     <div class="metric-row" data-grp="syn" style="--cols: 4;">
       <div class="metric-card"><div class="metric-label">Logements</div><div class="metric-value" id="op-total-lgts-live">${diffWrap(String(totalLgts(displayedOp) || '—'), totalLgts(displayedOp), compareWithIdx != null ? totalLgtsFromSnap(op) : null)}</div></div>
       <div class="metric-card"><div class="metric-label">Surface utile</div><div class="metric-value">${fmtSurface(opTotalSurface(displayedOp))}</div></div>
@@ -3774,7 +3950,9 @@ function renderOpDetail() {
   `;
   const _hmk = '</div><!-- /op-sticky-top -->';
   const _hcut = html.indexOf(_hmk) + _hmk.length;
-  document.getElementById('opsHeader').innerHTML = html.slice(0, _hcut) + opsTabsHtml(op);
+  // Consultation : bandeau tranches permanent ; édition : ancienne barre d'onglets.
+  document.getElementById('opsHeader').innerHTML = html.slice(0, _hcut)
+    + (effectiveEditMode ? opsTabsHtml(op) : opsTrancheBandeauHtml(op, displayedOp));
   document.getElementById('opDetail').innerHTML = html.slice(_hcut);
   applyOpsTab();
   // Restore edit mode flag if temporarily cleared
