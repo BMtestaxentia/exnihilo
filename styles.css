@@ -5458,3 +5458,7 @@
 .oph-a-warning .oph-adays { background: var(--warning-bg); color: var(--warning-text); }
 .oph-a-info .oph-adays { background: var(--info-bg); color: var(--info-text); }
 .oph-amsg { flex: 1; color: var(--text-primary); }
+
+/* Carte de localisation sur le tableau de bord */
+.oph-map { height: 260px; width: 100%; }
+.oph-map-empty { display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 13px; background: var(--bg-secondary); }

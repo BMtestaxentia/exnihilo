@@ -3567,9 +3567,18 @@ function renderOpHomeDashboard(op, displayedOp) {
   const adrFull = (op.adresse && op.commune && !op.adresse.includes(op.commune))
     ? `${op.adresse}, ${cpVille}` : (op.adresse || cpVille || '-');
   const equipe = [op.developpeur, op.resp_op, op.charge_fin].filter(Boolean).join(' · ') || '-';
+  const hasCoords = op.latitude != null && op.longitude != null;
+  const locBrick = `<section class="oph-card oph-c12">
+    <div class="oph-head"><span class="oph-ic"><i class="ti ti-map-pin"></i></span><span class="oph-title">Localisation</span>
+      <span class="oph-tsub" style="margin-left:auto;text-align:right">${esc(adrFull)}</span></div>
+    <div class="oph-body" style="padding:0">
+      ${hasCoords ? `<div id="opLocationMap" class="oph-map"></div>` : `<div class="oph-map oph-map-empty"><i class="ti ti-map-pin"></i>&nbsp;Pas de géolocalisation</div>`}
+    </div>
+  </section>`;
   return `<div class="oph-grid">
     ${card('oph-c12', 'alert-triangle', 'Alertes &amp; échéances', alertBadge, 'syn', alertBody)}
     ${finBrick}
+    ${locBrick}
     ${card('oph-c6', 'folder', 'Dossier', '', 'dos', `<dl class="oph-kv">
       <dt>Adresse</dt><dd>${esc(adrFull)}</dd>
       <dt>Équipe</dt><dd>${esc(equipe)}</dd>
@@ -3952,9 +3961,11 @@ function renderOpDetail() {
           </div>
         </div>
         <div class="loc-map-col">
-          ${(op.latitude != null && op.longitude != null)
-            ? `<div class="loc-map-wrap"><div id="opLocationMap" class="loc-map"></div></div>`
-            : `<div class="loc-map-empty"><i class="ti ti-map-pin"></i><p>Aucune géolocalisation</p><p class="loc-map-empty-hint">Renseignez une adresse et cliquez sur « Vérifier l'adresse via la BAN » pour afficher la carte.</p></div>`}
+          ${effectiveEditMode
+            ? ((op.latitude != null && op.longitude != null)
+                ? `<div class="loc-map-wrap"><div id="opLocationMap" class="loc-map"></div></div>`
+                : `<div class="loc-map-empty"><i class="ti ti-map-pin"></i><p>Aucune géolocalisation</p><p class="loc-map-empty-hint">Renseignez une adresse et cliquez sur « Vérifier l'adresse via la BAN » pour afficher la carte.</p></div>`)
+            : `<div class="loc-map-empty"><i class="ti ti-map-pin"></i><p>Carte affichée sur la vue opération</p></div>`}
         </div>
       </div>
     </div>
@@ -5103,36 +5114,35 @@ function renderSubvCard(i) {
 
 function renderSubvCardEdit(i, op) {
   return `
-    <div class="entity-card editing${diffEntityClass('subventions', i)}" data-section="subventions" data-row-idx="${i._originalIdx}">
-      <div class="entity-card-head">
-        <div style="flex:1;font-size:11px;color:var(--text-tertiary);font-weight:600;">SUBVENTION</div>
-        <div class="entity-card-actions">
-          <button class="danger" onclick="deleteEntityRow('subventions', ${i._originalIdx})" title="Supprimer"><i class="ti ti-trash"></i></button>
-        </div>
+    <div class="entity-card editing fin-erow${diffEntityClass('subventions', i)}" data-section="subventions" data-row-idx="${i._originalIdx}">
+      <div class="fin-emain">
+        <input class="card-input fin-cell" data-field="financeur" value="${escapeHtml(i.financeur || '')}" placeholder="Financeur" title="Financeur">
+        <input class="card-input fin-cell" data-field="financement" value="${escapeHtml(i.financement || '')}" placeholder="Financement" title="Type de financement">
+        <input type="number" min="0" class="card-input fin-cell fin-num" data-field="montant_demande" value="${i.montant_demande || ''}" placeholder="Demandé (€)" title="Montant demandé">
+        <select class="card-input fin-cell" data-field="statut" title="Statut" onchange="updateFinCycle(this,'subvention')">
+          <option value=""></option>
+          ${getRef('statuts_subv').map(s => `<option value="${s}"${i.statut===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+        ${subvCycleHtml(i)}
+        <button type="button" class="fin-expand" onclick="toggleFinRow(this)" title="Déplier / replier"><i class="ti ti-chevron-down"></i></button>
+        <button type="button" class="fin-del danger" onclick="deleteEntityRow('subventions', ${i._originalIdx})" title="Supprimer"><i class="ti ti-trash"></i></button>
       </div>
-      <div class="card-edit-grid">
-        <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
-        <div class="card-edit-field"><label>Financeur</label><input class="card-input" data-field="financeur" value="${escapeHtml(i.financeur || '')}"></div>
-        <div class="card-edit-field"><label>Financement</label><input class="card-input" data-field="financement" value="${escapeHtml(i.financement || '')}"></div>
-        <div class="card-edit-field"><label>Statut</label>
-          <select class="card-input" data-field="statut">
-            <option value=""></option>
-            ${getRef('statuts_subv').map(s => `<option value="${s}"${i.statut===s?' selected':''}>${s}</option>`).join('')}
-          </select>
+      <div class="fin-edetail">
+        <div class="card-edit-grid">
+          <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
+          <div class="card-edit-field"><label>Montant simulé (€)</label><input type="number" min="0" class="card-input" data-field="montant_simule" value="${i.montant_simule || ''}" oninput="updateFinCycle(this,'subvention')"></div>
+          <div class="card-edit-field"><label>Date simulation</label><input class="card-input" data-field="date_simule" value="${escapeHtml(i.date_simule || '')}" placeholder="JJ/MM/AAAA"></div>
+          <div class="card-edit-field"><label>Date demande</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA" oninput="updateFinCycle(this,'subvention')"></div>
+          <div class="card-edit-field"><label>Montant notifié (€)</label><input type="number" min="0" class="card-input" data-field="montant_notifie" value="${i.montant_notifie || ''}"></div>
+          <div class="card-edit-field"><label>Date notification</label><input class="card-input" data-field="date_notification" value="${escapeHtml(i.date_notification || '')}" placeholder="JJ/MM/AAAA" oninput="updateFinCycle(this,'subvention')"></div>
+          <div class="card-edit-field"><label>Contact</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
+          <div class="card-edit-field"><label>Droits réservataires (financeur)</label><input type="number" min="0" class="card-input" data-field="nb_droits_reserves" value="${i.nb_droits_reserves || ''}"></div>
+          <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">- Aucun -</option>${aapSelectOptions(i.aap_id)}</select></div>
+          <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
+          ${sharepointEditFields([
+            { field: 'lien_sp_notif', label: "Lien notification (SharePoint)", currentValue: i.lien_sp_notif || i.lien_sharepoint },
+          ])}
         </div>
-        <div class="card-edit-field"><label>Montant simulé (€)</label><input type="number" min="0" class="card-input" data-field="montant_simule" value="${i.montant_simule || ''}"></div>
-        <div class="card-edit-field"><label>Date simulation</label><input class="card-input" data-field="date_simule" value="${escapeHtml(i.date_simule || '')}" placeholder="JJ/MM/AAAA"></div>
-        <div class="card-edit-field"><label>Montant demandé (€)</label><input type="number" min="0" class="card-input" data-field="montant_demande" value="${i.montant_demande || ''}"></div>
-        <div class="card-edit-field"><label>Date demande</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA"></div>
-        <div class="card-edit-field"><label>Montant notifié (€)</label><input type="number" min="0" class="card-input" data-field="montant_notifie" value="${i.montant_notifie || ''}"></div>
-        <div class="card-edit-field"><label>Date notification</label><input class="card-input" data-field="date_notification" value="${escapeHtml(i.date_notification || '')}" placeholder="JJ/MM/AAAA"></div>
-        <div class="card-edit-field"><label>Contact</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
-        <div class="card-edit-field"><label>Droits réservataires (financeur)</label><input type="number" min="0" class="card-input" data-field="nb_droits_reserves" value="${i.nb_droits_reserves || ''}"></div>
-        <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">- Aucun -</option>${aapSelectOptions(i.aap_id)}</select></div>
-        <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
-        ${sharepointEditFields([
-          { field: 'lien_sp_notif', label: "Lien notification (SharePoint)", currentValue: i.lien_sp_notif || i.lien_sharepoint },
-        ])}
       </div>
     </div>
   `;
@@ -5277,6 +5287,69 @@ function updatePretCycle(el) {
   if (val('date_contrat')) stage = Math.max(stage, 4);
   const cyc = row.querySelector('.fin-cyc');
   if (cyc) cyc.innerHTML = pretCycleDots(stage);
+}
+
+// ---- Cycles de vie génériques (garanties / subventions / réservataires) ----
+function finCycleDots(labels, stage) {
+  return labels.map((l, idx) => {
+    const cls = idx <= stage ? 'done' : (idx === stage + 1 ? 'current' : '');
+    return `<div class="st ${cls}"><span class="conn"></span><span class="dot"></span><span class="lbl">${l}</span></div>`;
+  }).join('');
+}
+const GAR_STEPS = ['Demande', 'Accord', 'Délib.', 'Conv.'];
+const SUBV_STEPS = ['Simul.', 'Demande', 'Notif.', 'Conv.'];
+const RES_STEPS = ['Négoc.', 'Validé', 'Convention'];
+function garStage(v) {
+  let st = -1;
+  if (v.date_demande) st = Math.max(st, 0);
+  if (v.date_ap) st = Math.max(st, 1);
+  if (v.date_delib || v.date_comite) st = Math.max(st, 2);
+  if (v.date_conv) st = Math.max(st, 3);
+  const s = (v.statut || '').toLowerCase();
+  if (/convention|sign/.test(s)) st = Math.max(st, 3);
+  else if (/délib|delib|exécut|execut/.test(s)) st = Math.max(st, 2);
+  else if (/accord|principe/.test(s)) st = Math.max(st, 1);
+  else if (/demand|transmis|dossier/.test(s)) st = Math.max(st, 0);
+  return st;
+}
+function subvStage(v) {
+  let st = -1;
+  if (v.montant_simule) st = Math.max(st, 0);
+  if (v.date_demande) st = Math.max(st, 1);
+  if (v.date_notification) st = Math.max(st, 2);
+  const s = (v.statut || '').toLowerCase();
+  if (/convention|versé|verse/.test(s)) st = Math.max(st, 3);
+  else if (/notif/.test(s)) st = Math.max(st, 2);
+  else if (/dépos|depos|demand|instruction/.test(s)) st = Math.max(st, 1);
+  return st;
+}
+function resStage(v) {
+  const s = (v.etape || '').toLowerCase();
+  if (/convention/.test(s)) return 2;
+  if (/valid/.test(s)) return 1;
+  if (/négoc|negoc|cours/.test(s)) return 0;
+  return -1;
+}
+function garCycleHtml(i) { return `<div class="fin-cyc">${finCycleDots(GAR_STEPS, garStage(i))}</div>`; }
+function subvCycleHtml(i) { return `<div class="fin-cyc">${finCycleDots(SUBV_STEPS, subvStage(i))}</div>`; }
+function resCycleHtml(i) { return `<div class="fin-cyc">${finCycleDots(RES_STEPS, resStage(i))}</div>`; }
+// Mise à jour live de la timeline pour garanties / subventions / réservataires.
+function updateFinCycle(el, type) {
+  const row = el.closest('.fin-erow');
+  if (!row) return;
+  const v = f => { const x = row.querySelector(`[data-field="${f}"]`); return x ? String(x.value || '').trim() : ''; };
+  const vals = {
+    statut: v('statut'), etape: v('etape'), montant_simule: v('montant_simule'),
+    date_demande: v('date_demande'), date_ap: v('date_ap'), date_comite: v('date_comite'),
+    date_delib: v('date_delib'), date_conv: v('date_conv'), date_notification: v('date_notification'),
+  };
+  let labels, stage;
+  if (type === 'garantie') { labels = GAR_STEPS; stage = garStage(vals); }
+  else if (type === 'subvention') { labels = SUBV_STEPS; stage = subvStage(vals); }
+  else if (type === 'reservataire') { labels = RES_STEPS; stage = resStage(vals); }
+  else return;
+  const cyc = row.querySelector('.fin-cyc');
+  if (cyc) cyc.innerHTML = finCycleDots(labels, stage);
 }
 
 function renderPretCardEdit(i, op) {
@@ -5754,33 +5827,29 @@ function renderGarantieCardEdit(i, op) {
   const isPrivateGuarantee = ['CEGC', 'Caution bancaire'].includes(i.garant);
 
   return `
-    <div class="entity-card editing${diffEntityClass('garanties', i)}" data-section="garanties" data-row-idx="${i._originalIdx}">
-      <div class="entity-card-head">
-        <div style="flex:1;font-size:11px;color:var(--text-tertiary);font-weight:600;">GARANTIE</div>
-        <div class="entity-card-actions">
-          <button class="danger" onclick="deleteEntityRow('garanties', ${i._originalIdx})" title="Supprimer"><i class="ti ti-trash"></i></button>
-        </div>
+    <div class="entity-card editing fin-erow${diffEntityClass('garanties', i)}" data-section="garanties" data-row-idx="${i._originalIdx}">
+      <div class="fin-emain">
+        <select class="card-input fin-cell" data-field="garant" title="Garant" onchange="onGarantChange(this); updateFinCycle(this,'garantie')">
+          <option value=""></option>
+          ${getRef('garants').map(s => `<option value="${s}"${i.garant===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+        <select class="card-input fin-cell" data-field="pret_lie" title="Prêt rattaché">${pretOpts}</select>
+        <input type="number" step="0.5" min="0" max="100" class="card-input fin-cell fin-num" data-field="quotite" value="${i.quotite || ''}" placeholder="Quotité %" title="Quotité (%)">
+        <select class="card-input fin-cell" data-field="statut" title="Statut" onchange="updateFinCycle(this,'garantie')">
+          <option value=""></option>
+          ${getRef('statuts_garantie').map(s => `<option value="${s}"${i.statut===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+        ${garCycleHtml(i)}
+        <button type="button" class="fin-expand" onclick="toggleFinRow(this)" title="Déplier / replier"><i class="ti ti-chevron-down"></i></button>
+        <button type="button" class="fin-del danger" onclick="deleteEntityRow('garanties', ${i._originalIdx})" title="Supprimer"><i class="ti ti-trash"></i></button>
       </div>
 
+      <div class="fin-edetail">
       <!-- Group 1 - Identité -->
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Identité</div>
         <div class="card-edit-grid">
           <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
-          <div class="card-edit-field"><label>Prêt rattaché</label><select class="card-input" data-field="pret_lie">${pretOpts}</select></div>
-          <div class="card-edit-field"><label>Garant</label>
-            <select class="card-input" data-field="garant" onchange="onGarantChange(this)">
-              <option value=""></option>
-              ${getRef('garants').map(s => `<option value="${s}"${i.garant===s?' selected':''}>${s}</option>`).join('')}
-            </select>
-          </div>
-          <div class="card-edit-field"><label>Quotité (%)</label><input type="number" step="0.5" min="0" max="100" class="card-input" data-field="quotite" value="${i.quotite || ''}" placeholder="Ex: 100"></div>
-          <div class="card-edit-field"><label>Statut</label>
-            <select class="card-input" data-field="statut">
-              <option value=""></option>
-              ${getRef('statuts_garantie').map(s => `<option value="${s}"${i.statut===s?' selected':''}>${s}</option>`).join('')}
-            </select>
-          </div>
         </div>
       </div>
 
@@ -5788,11 +5857,11 @@ function renderGarantieCardEdit(i, op) {
       <div class="card-edit-subgroup">
         <div class="card-edit-subgroup-title">Workflow & dates</div>
         <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Demande</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA"></div>
-          <div class="card-edit-field"><label>Accord de principe</label><input class="card-input" data-field="date_ap" value="${escapeHtml(i.date_ap || '')}" placeholder="JJ/MM/AAAA"></div>
-          <div class="card-edit-field"><label>Passage en comité</label><input class="card-input" data-field="date_comite" value="${escapeHtml(i.date_comite || '')}" placeholder="JJ/MM/AAAA"></div>
-          <div class="card-edit-field"><label>Délibération exécutoire</label><input class="card-input" data-field="date_delib" value="${escapeHtml(i.date_delib || '')}" placeholder="JJ/MM/AAAA"></div>
-          <div class="card-edit-field"><label>Convention signée</label><input class="card-input" data-field="date_conv" value="${escapeHtml(i.date_conv || '')}" placeholder="JJ/MM/AAAA"></div>
+          <div class="card-edit-field"><label>Demande</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA" oninput="updateFinCycle(this,'garantie')"></div>
+          <div class="card-edit-field"><label>Accord de principe</label><input class="card-input" data-field="date_ap" value="${escapeHtml(i.date_ap || '')}" placeholder="JJ/MM/AAAA" oninput="updateFinCycle(this,'garantie')"></div>
+          <div class="card-edit-field"><label>Passage en comité</label><input class="card-input" data-field="date_comite" value="${escapeHtml(i.date_comite || '')}" placeholder="JJ/MM/AAAA" oninput="updateFinCycle(this,'garantie')"></div>
+          <div class="card-edit-field"><label>Délibération exécutoire</label><input class="card-input" data-field="date_delib" value="${escapeHtml(i.date_delib || '')}" placeholder="JJ/MM/AAAA" oninput="updateFinCycle(this,'garantie')"></div>
+          <div class="card-edit-field"><label>Convention signée</label><input class="card-input" data-field="date_conv" value="${escapeHtml(i.date_conv || '')}" placeholder="JJ/MM/AAAA" oninput="updateFinCycle(this,'garantie')"></div>
         </div>
       </div>
 
@@ -5824,6 +5893,7 @@ function renderGarantieCardEdit(i, op) {
         ])}
         </div>
       </div>
+      </div><!-- /fin-edetail -->
     </div>
   `;
 }
@@ -6044,51 +6114,42 @@ function renderReservataireCard(i) {
 }
 
 function renderReservataireCardEdit(i, op) {
+  let trLgts = 0;
+  const tr = (op.tranches || []).find(t => {
+    const tCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
+    return tCode === i.tranche;
+  });
+  if (tr) trLgts = trancheLogements(tr);
+  const pctReserve = trLgts > 0 ? ((Number(i.nb_logements) || 0) / trLgts * 100).toFixed(1).replace('.', ',') + ' %' : '-';
   return `
-    <div class="entity-card editing${diffEntityClass('reservataires', i)}" data-section="reservataires" data-row-idx="${i._originalIdx}">
-      <div class="entity-card-head">
-        <div style="flex:1;font-size:11px;color:var(--text-tertiary);font-weight:600;">RÉSERVATAIRE</div>
-        <div class="entity-card-actions">
-          <button class="danger" onclick="deleteEntityRow('reservataires', ${i._originalIdx})" title="Supprimer"><i class="ti ti-trash"></i></button>
-        </div>
+    <div class="entity-card editing fin-erow${diffEntityClass('reservataires', i)}" data-section="reservataires" data-row-idx="${i._originalIdx}">
+      <div class="fin-emain">
+        <select class="card-input fin-cell" data-field="reservataire" title="Réservataire">
+          <option value=""></option>
+          ${i.reservataire && !['État','État (DDETS)','Action Logement','Commune','Métropole','EPCI','Département','Région','Autre'].includes(i.reservataire) ? `<option value="${escapeHtml(i.reservataire)}" selected>${escapeHtml(i.reservataire)}</option>` : ''}
+          ${['État','État (DDETS)','Action Logement','Commune','Métropole','EPCI','Département','Région','Autre'].map(s => `<option value="${s}"${i.reservataire===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+        <select class="card-input fin-cell" data-field="financement" title="Financement">
+          <option value=""></option>
+          ${i.financement && !['PLAI','PLUS','PLS','PLI','LIBRE'].includes(i.financement) ? `<option value="${escapeHtml(i.financement)}" selected>${escapeHtml(i.financement)}</option>` : ''}
+          ${['PLAI','PLUS','PLS','PLI','LIBRE'].map(s => `<option value="${s}"${i.financement===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+        <input type="number" min="0" class="card-input fin-cell fin-num" data-field="nb_logements" value="${i.nb_logements || ''}" placeholder="Nb logts" title="Nb logements réservés">
+        <select class="card-input fin-cell" data-field="etape" title="Étape" onchange="updateFinCycle(this,'reservataire')">
+          <option value=""></option>
+          ${getRef('etapes_reservataires').map(s => `<option value="${s}"${i.etape===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+        ${resCycleHtml(i)}
+        <button type="button" class="fin-expand" onclick="toggleFinRow(this)" title="Déplier / replier"><i class="ti ti-chevron-down"></i></button>
+        <button type="button" class="fin-del danger" onclick="deleteEntityRow('reservataires', ${i._originalIdx})" title="Supprimer"><i class="ti ti-trash"></i></button>
       </div>
-      <div class="card-edit-grid">
-        <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
-        <div class="card-edit-field"><label>Financement</label>
-          <select class="card-input" data-field="financement">
-            <option value=""></option>
-            ${i.financement && !['PLAI','PLUS','PLS','PLI','LIBRE'].includes(i.financement) ? `<option value="${escapeHtml(i.financement)}" selected>${escapeHtml(i.financement)}</option>` : ''}
-            ${['PLAI','PLUS','PLS','PLI','LIBRE'].map(s => `<option value="${s}"${i.financement===s?' selected':''}>${s}</option>`).join('')}
-          </select>
+      <div class="fin-edetail">
+        <div class="card-edit-grid">
+          <div class="card-edit-field"><label>Tranche</label><select class="card-input" data-field="tranche">${tranchesOptions(op, i.tranche)}</select></div>
+          <div class="card-edit-field"><label>% réservé <span class="auto-tag">auto</span></label><div class="card-auto-value">${pctReserve}</div></div>
+          <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
+          ${sharepointEditField(i.lien_sharepoint)}
         </div>
-        <div class="card-edit-field"><label>Réservataire</label>
-          <select class="card-input" data-field="reservataire">
-            <option value=""></option>
-            ${i.reservataire && !['État','État (DDETS)','Action Logement','Commune','Métropole','EPCI','Département','Région','Autre'].includes(i.reservataire) ? `<option value="${escapeHtml(i.reservataire)}" selected>${escapeHtml(i.reservataire)}</option>` : ''}
-            ${['État','État (DDETS)','Action Logement','Commune','Métropole','EPCI','Département','Région','Autre'].map(s => `<option value="${s}"${i.reservataire===s?' selected':''}>${s}</option>`).join('')}
-          </select>
-        </div>
-        <div class="card-edit-field"><label>Nb logements</label><input type="number" min="0" class="card-input" data-field="nb_logements" value="${i.nb_logements || ''}"></div>
-        <div class="card-edit-field">
-          <label>% réservé <span class="auto-tag">auto</span></label>
-          <div class="card-auto-value">${(() => {
-            let trLgts = 0;
-            const t = (op.tranches || []).find(t => {
-              const tCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
-              return tCode === i.tranche;
-            });
-            if (t) trLgts = trancheLogements(t);
-            return trLgts > 0 ? ((Number(i.nb_logements) || 0) / trLgts * 100).toFixed(1).replace('.', ',') + ' %' : '-';
-          })()}</div>
-        </div>
-        <div class="card-edit-field"><label>Étape</label>
-          <select class="card-input" data-field="etape">
-            <option value=""></option>
-            ${getRef('etapes_reservataires').map(s => `<option value="${s}"${i.etape===s?' selected':''}>${s}</option>`).join('')}
-          </select>
-        </div>
-        <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
-        ${sharepointEditField(i.lien_sharepoint)}
       </div>
     </div>
   `;
