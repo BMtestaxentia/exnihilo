@@ -3561,13 +3561,17 @@ function renderOpHomeDashboard(op, displayedOp) {
       </div>
     </div>
   </section>`;
-  const commune = esc([op.code_postal, op.commune].filter(Boolean).join(' ') || '-');
+  // Adresse complète sur une ligne : on n'ajoute CP + ville que s'ils ne sont pas déjà dans l'adresse.
+  const cpVille = [op.code_postal, op.commune].filter(Boolean).join(' ');
+  const adrFull = (op.adresse && op.commune && !op.adresse.includes(op.commune))
+    ? `${op.adresse}, ${cpVille}` : (op.adresse || cpVille || '-');
+  const equipe = [op.developpeur, op.resp_op, op.charge_fin].filter(Boolean).join(' · ') || '-';
   return `<div class="oph-grid">
     ${card('oph-c12', 'alert-triangle', 'Alertes &amp; échéances', alertBadge, 'syn', alertBody)}
     ${finBrick}
     ${card('oph-c6', 'folder', 'Dossier', '', 'dos', `<dl class="oph-kv">
-      <dt>Adresse</dt><dd>${esc(op.adresse || '-')}</dd>
-      <dt>Commune</dt><dd>${commune}</dd>
+      <dt>Adresse</dt><dd>${esc(adrFull)}</dd>
+      <dt>Équipe</dt><dd>${esc(equipe)}</dd>
       <dt>Montage</dt><dd>${esc([op.vefa_mod, op.promoteur].filter(Boolean).join(' · ') || '-')}</dd>
       <dt>Date OS</dt><dd>${esc(op.date_os || '-')}</dd>
       <dt>Livraison prévue</dt><dd>${esc(op.date_livraison || '-')}</dd></dl>`)}
