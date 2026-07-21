@@ -5319,7 +5319,6 @@
     /* Tranches : identité compacte + volumétrie large, puis paires */
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-id { grid-column: span 4; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-vol { grid-column: span 8; }
-    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-sim { grid-column: span 6; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-agr { grid-column: span 6; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-loyer { grid-column: span 6; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-convloc { grid-column: span 6; }
@@ -5428,7 +5427,7 @@
 
 /* ===== Edition financements : lignes compactes depliables (refonte) ===== */
 .entity-card.editing.fin-erow { padding: 0; overflow: hidden; }
-.fin-emain { display: grid; grid-template-columns: minmax(140px, 230px) minmax(120px, 190px) minmax(90px, 130px) minmax(130px, 200px) minmax(150px, 185px) 32px 32px; gap: 8px; align-items: center; padding: 8px 12px; }
+.fin-emain, .fin-rmain, .fin-lhead { display: grid; grid-template-columns: minmax(140px, 230px) minmax(120px, 190px) minmax(90px, 130px) minmax(130px, 200px) minmax(150px, 185px) 32px 32px; gap: 8px; align-items: center; padding: 8px 12px; }
 .fin-emain .card-input, .fin-cell { min-width: 0; width: 100%; font-size: 12.5px; padding: 5px 7px; }
 .fin-num { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 940px) { .fin-emain { grid-template-columns: 1fr 1fr auto auto; } .fin-cyc { grid-column: 1 / -1; order: 5; } }
@@ -5478,3 +5477,59 @@
 .oph-callabel { flex: 1; color: var(--text-primary); }
 .oph-calrow.done .oph-callabel { color: var(--text-secondary); }
 .oph-caldate { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-secondary); }
+
+/* ===== Audit v51 : KPI header, en-tetes de colonnes, lignes lecture, tiroir finop ===== */
+/* Bandeau KPI compact de l'en-tete */
+.ops-kpis { display: flex; align-items: center; gap: 0; margin-top: 6px; border-top: 1px solid var(--border-color); overflow-x: auto; }
+.ops-kpi { display: flex; flex-direction: column; gap: 1px; padding: 7px 22px 7px 0; margin-right: 22px; border-right: 1px solid var(--border-color); min-width: max-content; }
+.ops-kpi:last-of-type { border-right: none; }
+.ops-kpi .l { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-tertiary); }
+.ops-kpi .v { font-size: 15px; font-weight: 650; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.ops-kpi-alert { appearance: none; border: none; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 700; padding: 4px 11px; border-radius: 999px; background: var(--danger-bg); color: var(--danger-text); margin-left: auto; flex: none; }
+.ops-kpi-alert:hover { background: var(--danger-accent); color: #fff; }
+.ops-kpi-alert i { font-size: 13px; }
+
+/* En-tetes de colonnes des listes de financement */
+.fin-lhead { padding: 4px 12px 3px; }
+.fin-lhead span { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Lignes compactes de consultation */
+.fin-erow.fin-read { padding: 0; overflow: hidden; }
+.fin-rmain { cursor: pointer; transition: background .1s ease; }
+.fin-rmain:hover { background: var(--bg-secondary); }
+.fin-rcell { font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.fin-rcell.strong { font-weight: 650; }
+.fin-rcell.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.fin-rdetail { padding: 10px 12px 12px; }
+.fin-rdetail > .entity-card { margin: 0; }
+
+/* Affordance permanente des briques */
+.oph-chev { color: var(--text-tertiary); display: inline-flex; }
+.oph-chev i { font-size: 15px; }
+.oph-card.drill:hover .oph-chev { color: var(--info-accent); }
+
+/* Mini barres de statut (brique Financements) */
+.oph-sb { display: flex; flex-direction: column; gap: 6px; }
+.oph-sbrow { display: flex; align-items: center; gap: 10px; }
+.oph-sblabel { font-size: 11.5px; color: var(--text-secondary); min-width: 150px; white-space: nowrap; }
+.oph-sbbar { flex: 1; display: flex; height: 7px; border-radius: 4px; overflow: hidden; background: var(--bg-secondary); }
+.oph-sbbar > span { display: block; height: 100%; }
+.oph-pillrow { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* CTA des etats vides */
+.subent-cta { appearance: none; border: 1px solid transparent; background: var(--info-bg); color: var(--info-accent);
+  font-family: inherit; font-size: 11.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; cursor: pointer; margin-left: 6px; }
+.subent-cta:hover { background: var(--info-accent); color: #fff; }
+
+/* Navigation unifiee du tiroir */
+.ops-dn-sep { width: 1px; align-self: stretch; background: var(--border-color); margin: 2px 6px; flex: none; }
+.ops-dn-grp { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-tertiary); align-self: center; flex: none; }
+
+/* Tiroir Financements de l'operation */
+.finop-tr { margin-bottom: 22px; }
+.finop-tr-head { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px; background: var(--bg-secondary); margin-bottom: 9px; }
+.finop-tr-head .ops-tpill-top { color: var(--info-accent); }
+.finop-tr-name { font-weight: 600; font-size: 13px; color: var(--text-primary); }
+.finop-sub { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); margin: 12px 0 4px; }
+.finop-tr .entity-card { margin-bottom: 7px; }

@@ -3498,25 +3498,52 @@ const OPS_DOMAINS = [
 
 // Bandeau permanent « Vue opération + pastille par tranche », rendu dans
 // l'en-tête (zone haute non défilante) → toujours visible, au-dessus du tiroir.
-function opsTrancheBandeauHtml(op, displayedOp) {
+function opsTrancheBandeauHtml(op, displayedOp, editing) {
   const trs = (displayedOp.tranches || []);
   const pills = trs.map((t, i) => {
     const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : (t.id || ('T' + (i + 1)));
     const agr = t.statut_agrement || '';
     const dot = /sign|obtenu|acquis|dfa/i.test(agr) ? 'good' : (agr ? 'warn' : 'neutral');
-    return `<button type="button" class="ops-tpill" data-tranche-pill="${i}"
-        onclick="selectTranche(${i}); openOpsDomain('tranche')">
-        <span class="ops-tpill-dot ${dot}"></span>
+    const tip = `${t.type_structure || 'Tranche ' + suffix} - Agrément : ${agr || 'non renseigné'}`;
+    const click = editing
+      ? `selectTranche(${i}); if (OPS_TAB !== 'tr' && OPS_TAB !== 'fin') switchOpsTab('tr'); _setBandeauActive('${i}')`
+      : `selectTranche(${i}); openOpsDomain('tranche')`;
+    const active = editing && i === selectedTrancheIdx;
+    return `<button type="button" class="ops-tpill${active ? ' active' : ''}" data-tranche-pill="${i}"
+        title="${escapeHtml(tip)}" onclick="${click}">
+        <span class="ops-tpill-dot ${dot}" title="Agrément : ${escapeHtml(agr || 'non renseigné')}"></span>
         <span class="ops-tpill-top">${escapeHtml(suffix)}</span>
         <span class="ops-tpill-meta">${trancheLogements(t) || '-'} logts · ${fmtMontant(trancheBudgetTTC(t))}</span>
       </button>`;
   }).join('');
+  const opClick = editing ? `switchOpsTab('syn'); _setBandeauActive('op')` : `closeOpsDrawer()`;
   return `<div class="ops-tbar">
     <span class="ops-tbar-lead">Tranches</span>
-    <button type="button" class="ops-tpill op active" data-tranche-pill="op" onclick="closeOpsDrawer()">
+    <button type="button" class="ops-tpill op${editing ? '' : ' active'}" data-tranche-pill="op" onclick="${opClick}">
       <span class="ops-tpill-top"><i class="ti ti-layout-dashboard"></i>Vue opération</span></button>
     <span class="ops-tbar-div"></span>
     ${pills || '<span class="ops-tbar-empty">Aucune tranche - passez en édition pour en créer</span>'}
+  </div>`;
+}
+
+// Bandeau KPI compact de l'en-tête (consultation) : lecture "10 secondes" de l'op.
+function opsKpiStripHtml(op, displayedOp) {
+  const budget = totalBudget(displayedOp);
+  const lgts = totalLgts(displayedOp);
+  const fp = (displayedOp.tranches || []).reduce((s, t) => s + (Number(t.fonds_propres) || 0), 0);
+  const tP = opTotalPrets(displayedOp), tS = opTotalSubv(displayedOp);
+  const couvert = budget > 0 ? Math.round((tP + tS + fp) / budget * 100) : 0;
+  const alerts = (typeof computeAlerts === 'function') ? computeAlerts(displayedOp) : [];
+  const nCrit = alerts.filter(a => a.level === 'expired' || a.level === 'critical').length;
+  const kpi = (l, v) => `<div class="ops-kpi"><span class="l">${l}</span><span class="v">${v}</span></div>`;
+  return `<div class="ops-kpis">
+    ${kpi('Prix de revient', fmtMontant(budget))}
+    ${kpi('Logements', lgts || '-')}
+    ${kpi('Tranches', (displayedOp.tranches || []).length)}
+    ${kpi('Financement', couvert + ' %')}
+    ${kpi('Fonds propres', fmtMontant(fp))}
+    ${kpi('Livraison', escapeHtml(op.date_livraison || '-'))}
+    ${nCrit ? `<button type="button" class="ops-kpi-alert" onclick="openOpsDomain('syn')" title="Voir les alertes"><i class="ti ti-alert-triangle"></i>${nCrit} critique${nCrit > 1 ? 's' : ''}</button>` : ''}
   </div>`;
 }
 
@@ -3530,13 +3557,14 @@ function renderOpHomeDashboard(op, displayedOp) {
     <section class="oph-card drill ${span}" role="button" tabindex="0"
       onclick="openOpsDomain('${domain}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openOpsDomain('${domain}')}">
       <div class="oph-head"><span class="oph-ic"><i class="ti ti-${icon}"></i></span>
-        <span class="oph-title">${title}</span>${badge || ''}<span class="oph-open" style="margin-left:auto">Ouvrir →</span></div>
+        <span class="oph-title">${title}</span>${badge || ''}<span class="oph-open" style="margin-left:auto">Ouvrir →</span>
+        <span class="oph-chev"><i class="ti ti-chevron-right"></i></span></div>
       <div class="oph-body">${body}</div>
     </section>`;
   const coms = op.comites || [];
   const comLines = coms.slice(0, 4).map(c =>
     `<div class="oph-line"><span class="l">${esc(c.type || 'Comité')}</span><span class="d">${esc(c.date || '-')}</span></div>`
-  ).join('') || '<div class="oph-tsub">Aucun comité.</div>';
+  ).join('') || `<div class="oph-tsub">Aucun comité. <button type="button" class="subent-cta" onclick="event.stopPropagation();editFromDrawer('suivi')">+ Ajouter en édition</button></div>`;
   const alertBadge = nCrit ? `<span class="oph-pill crit">${nCrit} critique${nCrit > 1 ? 's' : ''}</span>`
     : (nWarn ? `<span class="oph-pill warn">${nWarn} à surveiller</span>` : '<span class="oph-pill good">À jour</span>');
   const _todayMid = new Date(); _todayMid.setHours(0, 0, 0, 0);
@@ -3564,11 +3592,22 @@ function renderOpHomeDashboard(op, displayedOp) {
   const couvert = budget > 0 ? Math.round((tPrets + tSubv + fp) / budget * 100) : 0;
   const totFin = tPrets + tSubv + fp;
   const pctf = x => totFin > 0 ? Math.round(x / totFin * 100) : 0;
-  const finBrick = `<section class="oph-card oph-c6">
-    <div class="oph-head"><span class="oph-ic"><i class="ti ti-coin"></i></span>
-      <span class="oph-title">Financements</span>
-      <span class="oph-pill ${couvert >= 100 ? 'good' : (couvert >= 80 ? 'warn' : 'neutral')}" style="margin-left:auto">${couvert} % couvert</span></div>
-    <div class="oph-body">
+  // Rappels de statut par famille de financement
+  const opPrets = op.prets || [], opSubvs = op.subventions || [], opGars = op.garanties || [];
+  const _isSigned = p => !!(p.date_contrat || /contrat|sign/i.test(p.statut || ''));
+  const _isLO = p => !_isSigned(p) && !!(p.date_lo || /offre/i.test(p.statut || ''));
+  const pSigned = opPrets.filter(_isSigned).length;
+  const pLO = opPrets.filter(_isLO).length;
+  const pOther = Math.max(0, nP - pSigned - pLO);
+  const sNotif = opSubvs.filter(s => s.montant_notifie || /notif|convention|vers/i.test(s.statut || '')).length;
+  const gConv = opGars.filter(g => g.date_conv || /convention|sign/i.test(g.statut || '')).length;
+  const statusBar = (segs, label) => {
+    const tot = segs.reduce((s, [n]) => s + n, 0);
+    if (!tot) return '';
+    return `<div class="oph-sbrow"><span class="oph-sblabel">${label}</span>
+      <span class="oph-sbbar">${segs.map(([n, color]) => n ? `<span style="width:${Math.round(n / tot * 100)}%;background:${color}"></span>` : '').join('')}</span></div>`;
+  };
+  const finBody = `
       <div class="oph-stack" role="img" aria-label="Répartition du financement">
         <span style="width:${pctf(tPrets)}%;background:var(--info-accent)"></span>
         <span style="width:${pctf(tSubv)}%;background:var(--success-accent)"></span>
@@ -3580,8 +3619,20 @@ function renderOpHomeDashboard(op, displayedOp) {
         <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)} <span class="oph-soft">${pctf(fp)}%</span></span></div>
         <div class="oph-fig"><span class="oph-fl">Prix de revient</span><span class="oph-fv">${fmtMontant(budget)}</span></div>
       </div>
-    </div>
-  </section>`;
+      <div class="oph-sb">
+        ${statusBar([[pSigned, 'var(--success-accent)'], [pLO, 'var(--warning-accent)'], [pOther, 'var(--border-color)']], `Prêts signés ${pSigned}/${nP}`)}
+        ${statusBar([[sNotif, 'var(--success-accent)'], [Math.max(0, nS - sNotif), 'var(--border-color)']], `Subv. notifiées ${sNotif}/${nS}`)}
+        ${statusBar([[gConv, 'var(--success-accent)'], [Math.max(0, nG - gConv), 'var(--border-color)']], `Garanties conv. ${gConv}/${nG}`)}
+      </div>
+      <div class="oph-pillrow">
+        ${pSigned ? `<span class="oph-pill good">${pSigned} signé${pSigned > 1 ? 's' : ''}</span>` : ''}
+        ${pLO ? `<span class="oph-pill warn">${pLO} en LO</span>` : ''}
+        ${pOther ? `<span class="oph-pill neutral">${pOther} en montage</span>` : ''}
+        ${(nS - sNotif) > 0 ? `<span class="oph-pill warn">${nS - sNotif} subv. en attente</span>` : ''}
+      </div>`;
+  const finBrick = card('oph-c6', 'coin', 'Financements',
+    `<span class="oph-pill ${couvert >= 100 ? 'good' : (couvert >= 80 ? 'warn' : 'neutral')}">${couvert} % couvert</span>`,
+    'finop', finBody);
   // Adresse complète sur une ligne : on n'ajoute CP + ville que s'ils ne sont pas déjà dans l'adresse.
   const cpVille = [op.code_postal, op.commune].filter(Boolean).join(' ');
   const adrFull = (op.adresse && op.commune && !op.adresse.includes(op.commune))
@@ -3606,10 +3657,15 @@ function renderOpHomeDashboard(op, displayedOp) {
     ['Livraison prévue', op.date_livraison],
     ['Convention APL', op.date_conv_apl],
   ].filter(([, d]) => d);
+  // Limité aux 4 prochains jalons (le calendrier complet est dans le tiroir Dossier)
+  const _calRow = ([l, d]) => { const dt = parseDateStr(d); const past = dt && dt < _todayCal;
+    return `<div class="oph-calrow${past ? ' done' : ''}"><span class="oph-caldot"></span><span class="oph-callabel">${l}</span><span class="oph-caldate">${esc(d)}</span></div>`; };
+  const _calUpcoming = cal.filter(([, d]) => { const dt = parseDateStr(d); return dt && dt >= _todayCal; })
+    .sort((a, b) => parseDateStr(a[1]) - parseDateStr(b[1]));
+  const _calShown = _calUpcoming.length ? _calUpcoming.slice(0, 4) : cal.slice(-2);
+  const _calRest = cal.length - _calShown.length;
   const calHtml = cal.length
-    ? cal.map(([l, d]) => { const dt = parseDateStr(d); const past = dt && dt < _todayCal;
-        return `<div class="oph-calrow${past ? ' done' : ''}"><span class="oph-caldot"></span><span class="oph-callabel">${l}</span><span class="oph-caldate">${esc(d)}</span></div>`;
-      }).join('')
+    ? _calShown.map(_calRow).join('') + (_calRest > 0 ? `<div class="oph-tsub">+ ${_calRest} autre${_calRest > 1 ? 's' : ''} jalon${_calRest > 1 ? 's' : ''} · tout le calendrier dans le Dossier</div>` : '')
     : '<div class="oph-tsub">Aucune date renseignée.</div>';
   const dossierBody = `<dl class="oph-kv">
       <dt>Adresse</dt><dd>${esc(adrFull)}</dd>
@@ -3706,37 +3762,50 @@ function openOpsDomain(id) {
   if (body) body.innerHTML = ''; // enlève d'éventuels nœuds orphelins (re-render pendant tiroir ouvert)
   let title = 'Détail', groups = [id], container = document.getElementById('opDetail'), bandeau = 'op';
   const isTranche = (id === 'tranche' || id === 'tranche-fin');
+  const isGenerated = (id === 'finop'); // contenu généré, pas de déplacement de DOM
+  const op = findOp(selectedOpCode);
+  const t = (op && op.tranches) ? op.tranches[selectedTrancheIdx] : null;
+  const trSuffix = t ? (t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id) : 'Tranche';
   if (isTranche) {
     container = document.getElementById('trancheDetail');
     groups = (id === 'tranche-fin') ? ['fin'] : ['tr'];
-    const op = findOp(selectedOpCode);
-    const t = (op && op.tranches) ? op.tranches[selectedTrancheIdx] : null;
-    const suffix = t && t.code_full ? t.code_full.split('-').slice(1).join('-') : '';
-    const tname = t ? (t.type_structure || suffix || 'Tranche') : 'Tranche';
+    const tname = t ? (t.type_structure || trSuffix || 'Tranche') : 'Tranche';
     title = (id === 'tranche-fin') ? (tname + ' - Financements') : tname;
     bandeau = String(selectedTrancheIdx);
+  } else if (isGenerated) {
+    title = 'Financements de l\'opération';
   } else {
     const def = OPS_DOMAINS.find(d => d[0] === id);
     title = def ? def[1] : 'Détail';
   }
-  if (!container || !body) return;
-  const nodes = Array.from(container.children).filter(el => el.matches && groups.some(g => el.matches(`[data-grp~="${g}"]`)));
-  nodes.forEach(node => {
-    const ph = document.createComment('ops-' + id);
-    node.parentNode.insertBefore(ph, node);
-    body.appendChild(node);
-    // Le tiroir est une vue de détail : on déplie tout par défaut (le clic
-    // sur un titre replie/déplie toujours, cf. handler global).
-    node.classList.remove('collapsed');
-    if (node.querySelectorAll) node.querySelectorAll('.section.collapsed').forEach(s => s.classList.remove('collapsed'));
-    _opsDrawerNodes.push({ placeholder: ph, node });
-  });
+  if (!body) return;
+  if (isGenerated) {
+    body.innerHTML = op ? renderOpFinancementsDrawer(op) : '';
+  } else {
+    if (!container) return;
+    const nodes = Array.from(container.children).filter(el => el.matches && groups.some(g => el.matches(`[data-grp~="${g}"]`)));
+    nodes.forEach(node => {
+      const ph = document.createComment('ops-' + id);
+      node.parentNode.insertBefore(ph, node);
+      body.appendChild(node);
+      // Le tiroir est une vue de détail : on déplie tout par défaut (le clic
+      // sur un titre replie/déplie toujours, cf. handler global).
+      node.classList.remove('collapsed');
+      if (node.querySelectorAll) node.querySelectorAll('.section.collapsed').forEach(s => s.classList.remove('collapsed'));
+      _opsDrawerNodes.push({ placeholder: ph, node });
+    });
+  }
   body.scrollTop = 0;
   document.getElementById('opsDrawerTitle').textContent = title;
-  // Sous-navigation : pour une tranche, Détail / Financements dédiés ; sinon les domaines opération.
-  const navItems = isTranche ? [['tranche', 'Détail'], ['tranche-fin', 'Financements']] : OPS_DOMAINS;
-  document.getElementById('opsDrawerNav').innerHTML = navItems.map(([did, label]) =>
-    `<button type="button" class="ops-dn${did === id ? ' active' : ''}${did === 'tranche-fin' ? ' ops-dn-accent' : ''}" onclick="openOpsDomain('${did}')">${escapeHtml(label)}</button>`).join('');
+  // Navigation unifiée : domaines opération + la tranche courante (Détail / Financements),
+  // pour circuler dans tout le tiroir sans jamais le fermer.
+  const opNav = [['syn', 'Synthèse'], ['dos', 'Dossier'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
+  const trNav = [['tranche', 'Détail'], ['tranche-fin', 'Financements']];
+  const dnBtn = ([did, label]) =>
+    `<button type="button" class="ops-dn${did === id ? ' active' : ''}" onclick="openOpsDomain('${did}')">${escapeHtml(label)}</button>`;
+  document.getElementById('opsDrawerNav').innerHTML =
+    opNav.map(dnBtn).join('')
+    + (t ? `<span class="ops-dn-sep"></span><span class="ops-dn-grp">${escapeHtml(trSuffix)}</span>` + trNav.map(dnBtn).join('') : '');
   _setBandeauActive(bandeau);
   _opsDrawerDomain = id;
   _opsDrawerOp = selectedOpCode;
@@ -3756,6 +3825,83 @@ function closeOpsDrawer() {
   if (d) d.classList.remove('open');
   if (s) s.classList.remove('open');
   _setBandeauActive('op');
+}
+
+// Ferme le tiroir, passe en édition et ouvre l'onglet demandé (CTA des états vides).
+function editFromDrawer(tab) {
+  closeOpsDrawer();
+  if (!editMode && typeof toggleEditMode === 'function') toggleEditMode();
+  if (tab) switchOpsTab(tab);
+}
+
+// ---- Lignes compactes de consultation (mêmes colonnes que l'édition) ----
+// Le détail déplié réutilise la carte de lecture existante : aucune info perdue.
+function finReadRow(section, i, cells, cycleHtml, detailHtml) {
+  return `<div class="entity-card fin-erow fin-read${diffEntityClass(section, i)}" data-section="${section}" data-row-idx="${i._originalIdx != null ? i._originalIdx : ''}">
+    <div class="fin-rmain" onclick="toggleFinRow(this)">
+      ${cells.map((c, idx) => `<span class="fin-rcell${idx === 0 ? ' strong' : ''}${c && c.num ? ' num' : ''}">${c && c.num ? c.html : (c || '-')}</span>`).join('')}
+      ${cycleHtml}
+      <button type="button" class="fin-expand" onclick="event.stopPropagation();toggleFinRow(this)" title="Déplier / replier"><i class="ti ti-chevron-down"></i></button>
+      <span></span>
+    </div>
+    <div class="fin-edetail fin-rdetail">${detailHtml}</div>
+  </div>`;
+}
+function renderPretRow(i) {
+  return finReadRow('prets', i,
+    [escapeHtml(i.ligne || '-'), escapeHtml(i.financeur || '-'), { num: true, html: fmtMontant(bestPretAmount(i)) }, statusBadge(i.statut)],
+    pretCycleHtml(i), renderPretCard(i));
+}
+function renderSubvRow(i) {
+  return finReadRow('subventions', i,
+    [escapeHtml(i.financeur || '-'), escapeHtml(i.financement || i.type || '-'), { num: true, html: fmtMontant(bestSubvAmount(i)) }, statusBadge(i.statut)],
+    subvCycleHtml(i), renderSubvCard(i));
+}
+function renderResRow(i, op) {
+  return finReadRow('reservataires', i,
+    [escapeHtml(i.reservataire || '-'), escapeHtml(i.financement || '-'), { num: true, html: (i.nb_logements || '-') + ' logts' }, statusBadge(i.etape)],
+    resCycleHtml(i), renderReservataireCard(i));
+}
+function renderGarantieRow(i) {
+  return finReadRow('garanties', i,
+    [escapeHtml(i.garant || '-'), escapeHtml(i.pret_lie || '-'), { num: true, html: (i.quotite != null && i.quotite !== '') ? i.quotite + ' %' : '-' }, statusBadge(i.statut)],
+    garCycleHtml(i), renderGarantieCard(i));
+}
+// En-têtes de colonnes des listes de financement
+const FIN_HEADS = {
+  prets: ['Ligne / Produit', 'Banque / financeur', 'Montant', 'Statut', 'Cycle de vie'],
+  garanties: ['Garant', 'Prêt lié', 'Quotité', 'Statut', 'Cycle de vie'],
+  subventions: ['Financeur', 'Financement', 'Montant', 'Statut', 'Cycle de vie'],
+  reservataires: ['Réservataire', 'Financement', 'Nb logts', 'Étape', 'Cycle de vie'],
+};
+function finHeadHtml(type) {
+  const h = FIN_HEADS[type];
+  return h ? `<div class="fin-lhead">${h.map(x => `<span>${x}</span>`).join('')}<span></span><span></span></div>` : '';
+}
+
+// Tiroir "Financements de l'opération" : toutes les tranches, contenu généré.
+function renderOpFinancementsDrawer(op) {
+  const trs = op.tranches || [];
+  if (!trs.length) return '<div class="subent-empty">Aucune tranche sur cette opération.</div>';
+  return trs.map((t, idx) => {
+    const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
+    const wIdx = arr => (arr || []).map((x, i2) => ({ ...x, _originalIdx: i2 })).filter(x => x.tranche === suffix);
+    const prets = wIdx(op.prets), gars = wIdx(op.garanties), subvs = wIdx(op.subventions);
+    const tot = prets.reduce((s, p) => s + bestPretAmount(p), 0) + subvs.reduce((s, x) => s + bestSubvAmount(x), 0) + (Number(t.fonds_propres) || 0);
+    const rows =
+      (prets.length ? `<div class="finop-sub">Prêts · ${prets.length}</div>${finHeadHtml('prets')}${prets.map(renderPretRow).join('')}` : '')
+      + (gars.length ? `<div class="finop-sub">Garanties · ${gars.length}</div>${finHeadHtml('garanties')}${gars.map(renderGarantieRow).join('')}` : '')
+      + (subvs.length ? `<div class="finop-sub">Subventions · ${subvs.length}</div>${finHeadHtml('subventions')}${subvs.map(renderSubvRow).join('')}` : '');
+    return `<div class="finop-tr">
+      <div class="finop-tr-head">
+        <span class="ops-tpill-top">${escapeHtml(suffix)}</span>
+        <span class="finop-tr-name">${escapeHtml(t.type_structure || '')}</span>
+        <span class="oph-soft">${fmtMontant(tot)} mobilisés</span>
+        <button type="button" class="ops-dn" style="margin-left:auto" onclick="selectTranche(${idx}); openOpsDomain('tranche-fin')">Ouvrir la tranche →</button>
+      </div>
+      ${rows || '<div class="subent-empty">Aucun financement sur cette tranche.</div>'}
+    </div>`;
+  }).join('');
 }
 
 function renderOpDetail() {
@@ -3951,6 +4097,7 @@ function renderOpDetail() {
         ${!isViewingSnapshot && !effectiveEditMode ? `<button class="icon-btn" onclick="toggleEditMode()" title="Modifier la fiche"><i class="ti ti-pencil"></i></button>` : ''}
       </div>
       </div>
+      ${!effectiveEditMode ? opsKpiStripHtml(op, displayedOp) : ''}
       ${stickyExtrasHtml}
       ${editToolbar}
     </div><!-- /op-sticky-top -->
@@ -4064,9 +4211,12 @@ function renderOpDetail() {
   `;
   const _hmk = '</div><!-- /op-sticky-top -->';
   const _hcut = html.indexOf(_hmk) + _hmk.length;
-  // Consultation : bandeau tranches permanent ; édition : ancienne barre d'onglets.
+  // Consultation : bandeau tranches permanent ; édition : onglets + bandeau
+  // tranches (contexte tranche conservé pendant la saisie).
   document.getElementById('opsHeader').innerHTML = html.slice(0, _hcut)
-    + (effectiveEditMode ? opsTabsHtml(op) : opsTrancheBandeauHtml(op, displayedOp));
+    + (effectiveEditMode
+        ? opsTabsHtml(op) + opsTrancheBandeauHtml(op, displayedOp, true)
+        : opsTrancheBandeauHtml(op, displayedOp, false));
   document.getElementById('opDetail').innerHTML = html.slice(_hcut);
   applyOpsTab();
   // Restore edit mode flag if temporarily cleared
@@ -4209,19 +4359,15 @@ function renderTrancheDetail() {
       </div>
 
       <div class="section" id="sec-tr-id" data-grp="tr">
-        <div class="section-label id"><i class="ti ti-building-skyscraper"></i>Identité tranche</div>
+        <div class="section-label id"><i class="ti ti-building-skyscraper"></i>Identité & simulation</div>
         ${editableKV('Gestionnaire', t.gestionnaire, 'gestionnaire', 'text', 'tranche-field')}
+        ${editableKV('N° Simulation LEON', t.n_leon, 'n_leon', 'text', 'tranche-field')}
+        ${editableKV('Date de référence', t.date_ref, 'date_ref', 'text', 'tranche-field')}
       </div>
 
       <div class="section" id="sec-tr-vol" data-grp="tr">
         <div class="section-label vol"><i class="ti ti-home"></i>Volumétrie</div>
         <div class="volumetrie-grid">${volCells}</div>
-      </div>
-
-      <div class="section" id="sec-tr-sim" data-grp="tr">
-        <div class="section-label sim"><i class="ti ti-chart-bar"></i>Simulation / Budget</div>
-        ${editableKV('N° Simulation LEON', t.n_leon, 'n_leon', 'text', 'tranche-field')}
-        ${editableKV('Date de référence', t.date_ref, 'date_ref', 'text', 'tranche-field')}
       </div>
 
       <div class="op-anchor" id="sec-tr-bilan" data-grp="tr">${renderBilanSection(t, op, trCode)}</div>
@@ -5089,8 +5235,8 @@ function renderSubvSection(items, op) {
   const total_dem = items.reduce((s, i) => s + (i.montant_demande || 0), 0);
   const total_notif = items.reduce((s, i) => s + (i.montant_notifie || 0), 0);
   const body = items.length > 0
-    ? items.map(i => editMode ? renderSubvCardEdit(i, op) : renderSubvCard(i)).join('')
-    : '<div class="subent-empty">Aucune subvention enregistrée.</div>';
+    ? finHeadHtml('subventions') + items.map(i => editMode ? renderSubvCardEdit(i, op) : renderSubvRow(i)).join('')
+    : `<div class="subent-empty">Aucune subvention enregistrée.${!editMode ? ` <button type="button" class="subent-cta" onclick="editFromDrawer('fin')">+ Ajouter en édition</button>` : ''}</div>`;
   const addBtn = editMode ? `<button class="add-row-btn" onclick="addEntityRow('subventions')"><i class="ti ti-plus"></i>Ajouter une subvention</button>` : '';
   // Deleted entities (in snapshot but not current)
   const deleted = entitiesDeleted(op, 'subventions', items).filter(d => d.tranche === (op.tranches[selectedTrancheIdx]?.code_full?.split('-').slice(1).join('-') || op.tranches[selectedTrancheIdx]?.id));
@@ -5194,8 +5340,8 @@ function renderPretsSection(items, op) {
   const total_sim = items.reduce((s, i) => s + (i.montant_sim || 0), 0);
   const total_contrat = items.reduce((s, i) => s + (i.montant_contrat || 0), 0);
   const body = items.length > 0
-    ? items.map(i => editMode ? renderPretCardEdit(i, op) : renderPretCard(i)).join('')
-    : '<div class="subent-empty">Aucun prêt enregistré.</div>';
+    ? finHeadHtml('prets') + items.map(i => editMode ? renderPretCardEdit(i, op) : renderPretRow(i)).join('')
+    : `<div class="subent-empty">Aucun prêt enregistré.${!editMode ? ` <button type="button" class="subent-cta" onclick="editFromDrawer('fin')">+ Ajouter en édition</button>` : ''}</div>`;
   const addBtn = editMode ? `<button class="add-row-btn" onclick="addEntityRow('prets')"><i class="ti ti-plus"></i>Ajouter un prêt</button>` : '';
   return `
     <div class="section">
@@ -6093,8 +6239,8 @@ function renderAvenantCardEdit(i, op) {
 function renderReservatairesSection(items, op) {
   const total_lgts = items.reduce((s, i) => s + (i.nb_logements || 0), 0);
   const body = items.length > 0
-    ? items.map(i => editMode ? renderReservataireCardEdit(i, op) : renderReservataireCard(i)).join('')
-    : '<div class="subent-empty">Aucun réservataire enregistré.</div>';
+    ? finHeadHtml('reservataires') + items.map(i => editMode ? renderReservataireCardEdit(i, op) : renderResRow(i, op)).join('')
+    : `<div class="subent-empty">Aucun réservataire enregistré.${!editMode ? ` <button type="button" class="subent-cta" onclick="editFromDrawer('fin')">+ Ajouter en édition</button>` : ''}</div>`;
   const addBtn = editMode ? `<button class="add-row-btn" onclick="addEntityRow('reservataires')"><i class="ti ti-plus"></i>Ajouter un réservataire</button>` : '';
   return `
     <div class="section">
@@ -9308,7 +9454,7 @@ function initOpLocationMap(op) {
     zoomControl: true,
     scrollWheelZoom: false, // less aggressive inside form
     attributionControl: true,
-  }).setView([op.latitude, op.longitude], 16);
+  }).setView([op.latitude, op.longitude], 15);
 
   // Tile layer (Plan by default) + Plan/Satellite toggle
   applyMapLayer(opLocationMapInstance, 'plan');
