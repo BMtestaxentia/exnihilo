@@ -2812,12 +2812,24 @@ function trancheBudgetTTC(t) {
   }
   return hasAny ? total : null;
 }
-// Logements d'une tranche : saisie directe (champ logements stocké en DB)
-// La volumétrie T1-T5+ est un détail informatif qui ne court-circuite plus la saisie.
+// Logements d'une tranche - modèle SFO : agréés (PLAI+PLUS+PLS) + hors agrément
+// (LLI + RHVS + LIBRE). Fallback sur l'ancienne volumétrie générale (t.vol) puis
+// sur le scalaire stocké, pour les données historiques.
+function trancheLogementsSFO(t) {
+  const agr = t.vol_agree || {};
+  const parts = [agr.plai, agr.plus, agr.pls, t.logts_lli, t.logts_rhvs, t.logts_libre];
+  let has = false, sum = 0;
+  parts.forEach(v => {
+    if (v === null || v === undefined || v === '') return;
+    const n = Number(v);
+    if (!isNaN(n)) { has = true; sum += n; }
+  });
+  return has ? sum : null;
+}
 function trancheLogements(t) {
-  // Volumétrie = source de vérité (cohérent avec "auto · somme volumétrie" et les snapshots).
-  // Si un détail vol existe, total = sa somme (jamais le scalaire stocké, qui peut être obsolète).
   if (!t) return null;
+  const sfo = trancheLogementsSFO(t);
+  if (sfo !== null) return sfo;
   if (t.vol) return sumVol(t);
   const v = t.logements;
   if (v === null || v === undefined || v === '') return null;
@@ -3193,7 +3205,7 @@ function saveOpEdits() {
     document.querySelectorAll('[data-edit-tranche-field]').forEach(el => {
       const field = el.dataset.editTrancheField;
       let val = el.value;
-      const numFields = ['logements','budget_ttc','fonds_propres','accord_redevance','duree_reconstitution_fp','taux_remuneration_fp','injection_pgerc','nb_droits_etat'];
+      const numFields = ['logements','budget_ttc','fonds_propres','accord_redevance','duree_reconstitution_fp','taux_remuneration_fp','injection_pgerc','nb_droits_etat','logts_lli','logts_rhvs','logts_libre','locaux_libre'];
       if (numFields.includes(field)) {
         val = val === '' ? null : parseFloat(val);
       }
@@ -3224,8 +3236,8 @@ function saveOpEdits() {
       if (v) t.bilan[sec][line] = v;
       else delete t.bilan[sec][line];
     });
-    // Resync du scalaire logements sur la volumétrie (source de vérité), toujours.
-    t.logements = sumVol(t);
+    // Resync du scalaire logements : agréés + hors agrément (SFO), fallback volumétrie legacy.
+    { const n = trancheLogements(t); if (n !== null) t.logements = n; }
 
     // Handle tranche code (short name) rename + cascade to sub-entities
     const codeInput = document.querySelector('[data-edit-tranche-code]');
@@ -3289,6 +3301,7 @@ function saveOpEdits() {
   if (_beforeSnap) {
     const trackedOpFields = [
       'display_name','code','adresse','code_postal','commune','departement','region','zone_abc',
+      'qpv','action_coeur_ville','pvd','date_revue_op',
       'developpeur','resp_op','charge_fin','promoteur','vefa_mod','type_travaux','notaire',
       'date_promesse','date_acte','date_depot_pc','date_obtention_pc','date_obt_pc',
       'date_os','date_livraison','date_conv_loc','date_conv_apl','date_ca_axentia',
@@ -3446,7 +3459,21 @@ function renderSidebar() {
   });
 }
 
-function sumVolKey(op, key) { return op.tranches.reduce((s, t) => s + ((t.vol && t.vol[key]) || 0), 0); }
+// Volumétrie consolidée op - modèle SFO : agréés (PLAI/PLUS/PLS) et LIBRE (logts_libre),
+// avec fallback sur l'ancienne volumétrie générale (t.vol) pour les données historiques.
+function sumVolKey(op, key) {
+  return op.tranches.reduce((s, t) => {
+    let v;
+    if (key === 'plai' || key === 'plus' || key === 'pls') {
+      v = (t.vol_agree && t.vol_agree[key] != null && t.vol_agree[key] !== '') ? t.vol_agree[key] : (t.vol && t.vol[key]);
+    } else if (key === 'libre') {
+      v = (t.logts_libre != null && t.logts_libre !== '') ? t.logts_libre : (t.vol && t.vol[key]);
+    } else {
+      v = t.vol && t.vol[key];
+    }
+    return s + (Number(v) || 0);
+  }, 0);
+}
 function sumSurfaceKey(op, key) { return op.tranches.reduce((s, t) => s + ((t.surfaces && t.surfaces[key]) || 0), 0); }
 
 // ===== Espace Opérations : onglets du dossier =====
@@ -4098,6 +4125,9 @@ function renderOpDetail() {
             ${editableSelect('Zone ABC', op.zone_abc, 'zone_abc', getRef('zones_abc'))}
             ${editableKV('Zone 123', op.zone_123, 'zone_123')}
             ${editableSelect('QPV (Quartier Prioritaire)', op.qpv, 'qpv', getRef('oui_non'))}
+            ${editableSelect('Action cœur de ville', op.action_coeur_ville, 'action_coeur_ville', getRef('oui_non'))}
+            ${editableSelect('PVD (Petites villes de demain)', op.pvd, 'pvd', getRef('oui_non'))}
+            ${editableSelect('ANRU', op.anru, 'anru', getRef('oui_non'))}
           </div>
           <div class="geo-panel">
             <div class="geo-panel-status">
@@ -4137,7 +4167,6 @@ function renderOpDetail() {
       ${editableSelect('VEFA / MOD', op.vefa_mod, 'vefa_mod', getRef('vefa_mod'))}
       ${editableSelect('Type travaux', op.type_travaux, 'type_travaux', getRef('type_travaux'))}
       ${editableSelect('Maîtrise foncière', op.maitrise_fonciere, 'maitrise_fonciere', getRef('maitrise_fonciere'))}
-      ${editableSelect('ANRU', op.anru, 'anru', getRef('oui_non'))}
     </div>
     </div>
 
@@ -4152,6 +4181,7 @@ function renderOpDetail() {
       ${editableDateJalon('Convention location', op.date_conv_loc, 'date_conv_loc', op)}
       ${editableDateJalon('Convention APL', op.date_conv_apl, 'date_conv_apl', op)}
       ${editableDateJalon('Dernier CA Axentia', op.date_ca_axentia, 'date_ca_axentia', op)}
+      ${editableDateJalon('Dernière revue d\'opération', op.date_revue_op, 'date_revue_op', op)}
       ${(() => { const n = countOpTimelineEvents(op); return n ? `<button class="timeline-open-btn" onclick="openTimelineModal('${escapeHtml(op._uid)}')" type="button"><i class="ti ti-timeline"></i>Voir la chronologie de l'opération<span class="timeline-open-count">${n}</span></button>` : ''; })()}
     </div>
 
@@ -4256,12 +4286,21 @@ function renderTrancheDetail() {
     const trCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
 
     // Consultation : n'afficher que les typologies actives (>= 1 logement) ; en édition, toutes.
-    const volCells = ['plai','plus','pls','pli','libre','autre']
-      .filter(k => editMode || ((t.vol && t.vol[k]) || 0) > 0)
-      .map(k => editableVolCell(k, (t.vol && t.vol[k]) || null, t)).join('')
-      || (!editMode ? '<div class="vol-empty-note">Aucune volumétrie renseignée.</div>' : '');
+    // Modèle SFO : surfaces utiles (SU) par typologie - la volumétrie « générale »
+    // (t.vol) n'est plus saisie ; les logements viennent des agréés + hors agrément.
+    const suCells = ['plai','plus','pls','pli','libre']
+      .filter(k => editMode || ((t.surfaces && t.surfaces[k]) || 0) > 0)
+      .map(k => {
+        const surface = (t.surfaces && t.surfaces[k]) || null;
+        const label = 'SU ' + k.toUpperCase();
+        if (editMode) {
+          return `<div class="vol-cell vol-cell-edit"><div class="vol-cell-label">${label}</div><div class="vol-cell-edit-row"><input type="number" min="0" step="0.01" class="editable-input vol-cell-input" data-edit-tranche-surface="${k}" value="${surface || ''}" placeholder="m²" title="Surface utile (m²)"><span class="vol-cell-edit-unit">m²</span></div></div>`;
+        }
+        return `<div class="vol-cell${surface ? '' : ' vol-cell-empty'}"><div class="vol-cell-label">${label}</div><div class="vol-cell-value">${surface ? fmtSurface(surface) : '-'}</div></div>`;
+      }).join('')
+      || (!editMode ? '<div class="vol-empty-note">Aucune surface renseignée.</div>' : '');
 
-    const volAgreeCells = ['plai','plus','pls','pli','libre','autre']
+    const volAgreeCells = ['plai','plus','pls']
       .filter(k => editMode || ((t.vol_agree && t.vol_agree[k]) || 0) > 0)
       .map(k => {
       const v = (t.vol_agree && t.vol_agree[k]) || null;
@@ -4326,14 +4365,17 @@ function renderTrancheDetail() {
 
       <div class="section" id="sec-tr-id" data-grp="tr">
         <div class="section-label id"><i class="ti ti-building-skyscraper"></i>Identité & simulation</div>
-        ${editableKV('Gestionnaire', t.gestionnaire, 'gestionnaire', 'text', 'tranche-field')}
+        ${editableKV('Nom interne tranche', t.nom_interne, 'nom_interne', 'text', 'tranche-field')}
+        ${editableKV('Gestionnaire nom', t.gestionnaire, 'gestionnaire', 'text', 'tranche-field')}
+        ${editableKV('Gestionnaire statut', t.gestionnaire_statut, 'gestionnaire_statut', 'text', 'tranche-field')}
+        ${editableKV('Capacité HAS / totale', t.capacite_has, 'capacite_has', 'text', 'tranche-field')}
         ${editableKV('N° Simulation LEON', t.n_leon, 'n_leon', 'text', 'tranche-field')}
-        ${editableKV('Date de référence', t.date_ref, 'date_ref', 'text', 'tranche-field')}
+        ${editableKV('Date de référence LEON', t.date_ref, 'date_ref', 'text', 'tranche-field')}
       </div>
 
       <div class="section" id="sec-tr-vol" data-grp="tr">
-        <div class="section-label vol"><i class="ti ti-home"></i>Volumétrie</div>
-        <div class="volumetrie-grid">${volCells}</div>
+        <div class="section-label vol"><i class="ti ti-home"></i>Surfaces utiles</div>
+        <div class="volumetrie-grid">${suCells}</div>
       </div>
 
       <div class="op-anchor" id="sec-tr-bilan" data-grp="tr">${renderBilanSection(t, op, trCode)}</div>
@@ -4356,6 +4398,16 @@ function renderTrancheDetail() {
         ${editableSelect('Public', t.public_cible, 'public_cible', (t.public_cible && !getRef('public').includes(t.public_cible)) ? [t.public_cible, ...getRef('public')] : getRef('public'), 'tranche-field')}
         ${(t.vol_agree && Number(t.vol_agree.plai) > 0) ? editableKV('PLAI adapté (nb logts)', t.plai_adapte, 'plai_adapte', 'number', 'tranche-field') : ''}
         ${editableNotes(t.detail_logements, 'detail_logements', 'tranche-field', 'Ex: Dont 75 PLAI T1 prime · 22 PLAI T2 standard…')}
+      </div>
+
+      <div class="section" id="sec-tr-horsagr" data-grp="tr">
+        <div class="section-label vol"><i class="ti ti-home-2"></i>Hors agrément</div>
+        ${editableKV('Logements LLI (nombre)', t.logts_lli, 'logts_lli', 'number', 'tranche-field')}
+        ${editableKV('Date déclaration LLI', t.date_decl_lli, 'date_decl_lli', 'text', 'tranche-field')}
+        ${editableKV('Logements RHVS (nombre)', t.logts_rhvs, 'logts_rhvs', 'number', 'tranche-field')}
+        ${editableKV('Date arrêté préfectoral RHVS', t.date_arrete_rhvs, 'date_arrete_rhvs', 'text', 'tranche-field')}
+        ${editableKV('Logements LIBRE (nombre)', t.logts_libre, 'logts_libre', 'number', 'tranche-field')}
+        ${editableKV('Locaux LIBRE (nombre)', t.locaux_libre, 'locaux_libre', 'number', 'tranche-field')}
       </div>
 
       ${(t.type_redevance || t.montant_redevance || editMode) ? `<div class="section" id="sec-tr-loyer" data-grp="tr">
@@ -4392,20 +4444,27 @@ function renderTrancheDetail() {
   // Live update logements display as user edits vol cells
   if (editMode) {
     const updateLive = () => {
+      // Modèle SFO : logements = agréés (PLAI/PLUS/PLS) + hors agrément (LLI, RHVS, LIBRE)
       let sum = 0;
-      c.querySelectorAll('[data-edit-tranche-vol]').forEach(x => sum += Number(x.value) || 0);
+      c.querySelectorAll('[data-edit-tranche-volagree]').forEach(x => {
+        const k = x.dataset.editTrancheVolagree;
+        if (k === 'plai' || k === 'plus' || k === 'pls') sum += Number(x.value) || 0;
+      });
+      c.querySelectorAll('[data-edit-tranche-field="logts_lli"],[data-edit-tranche-field="logts_rhvs"],[data-edit-tranche-field="logts_libre"]').forEach(x => {
+        sum += Number(x.value) || 0;
+      });
       const disp = document.getElementById('tranche-logements-live');
       if (disp) disp.textContent = sum || '-';
       // Also update op-level total logements
       let opSum = 0;
       op.tranches.forEach((tr, idx) => {
         if (idx === selectedTrancheIdx) opSum += sum;
-        else opSum += trancheLogements(tr);
+        else opSum += trancheLogements(tr) || 0;
       });
       const opDisp = document.getElementById('op-total-lgts-live');
       if (opDisp) opDisp.textContent = opSum || '-';
     };
-    c.querySelectorAll('[data-edit-tranche-vol]').forEach(el => el.addEventListener('input', updateLive));
+    c.querySelectorAll('[data-edit-tranche-volagree],[data-edit-tranche-field="logts_lli"],[data-edit-tranche-field="logts_rhvs"],[data-edit-tranche-field="logts_libre"]').forEach(el => el.addEventListener('input', updateLive));
 
     // Live update for bilan inputs (section sub-totals and grand total)
     const updateBilanLive = () => {
@@ -5284,6 +5343,7 @@ function renderSubvCardEdit(i, op) {
       </div>
       <div class="fin-edetail">
         <div class="card-edit-grid">
+          <div class="card-edit-field"><label>Montant validé CA (€)</label><input type="number" min="0" class="card-input" data-field="montant_valide_ca" value="${i.montant_valide_ca || ''}"></div>
           <div class="card-edit-field"><label>Montant simulé (€)</label><input type="number" min="0" class="card-input" data-field="montant_simule" value="${i.montant_simule || ''}" oninput="updateFinCycle(this,'subvention')"></div>
           <div class="card-edit-field"><label>Date simulation</label><input class="card-input" data-field="date_simule" value="${escapeHtml(i.date_simule || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>Date demande</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA" oninput="updateFinCycle(this,'subvention')"></div>
@@ -6029,6 +6089,7 @@ function renderGarantieCardEdit(i, op) {
         ${sharepointEditFields([
           { field: 'lien_sp_accord', label: 'Lien accord de principe (SharePoint)', currentValue: i.lien_sp_accord },
           { field: 'lien_sp_delib', label: 'Lien délibération (SharePoint)', currentValue: i.lien_sp_delib },
+          { field: 'lien_sp_conv', label: 'Lien convention (SharePoint)', currentValue: i.lien_sp_conv },
         ])}
         </div>
       </div>
@@ -11589,6 +11650,9 @@ async function loadFromSupabase(opts) {
         type_travaux: row.type_travaux || '',
         maitrise_fonciere: row.maitrise_fonciere || '',
         anru: row.anru || '',
+        qpv: row.qpv || '',
+        action_coeur_ville: row.action_coeur_ville || '',
+        pvd: row.pvd || '',
         label_certif: row.label_certif || '',
         mode_constructif: row.mode_constructif || '',
         mode_chauffage: row.mode_chauffage || '',
@@ -11606,6 +11670,7 @@ async function loadFromSupabase(opts) {
         date_conv_apl: row.date_conv_apl || '',
         date_conv_loc: row.date_conv_loc || '',
         date_ca_axentia: row.date_ca_axentia || '',
+        date_revue_op: row.date_revue_op || '',
         notes_libres: row.notes_libres || '',
         jalons_reel: row.jalons_reel || {},
         tranches: tranchesForOp,
@@ -11733,6 +11798,15 @@ function mapTrancheFromSupabase(t) {
     vol_agree: t.vol_agree || {},
     date_cloture_agrement: t.date_cloture_agrement || '',
     // Champs agrément/simulation (miroir de buildTranchePayload)
+    nom_interne: t.nom_interne || '',
+    gestionnaire_statut: t.gestionnaire_statut || '',
+    capacite_has: t.capacite_has || '',
+    logts_lli: t.logts_lli,
+    date_decl_lli: t.date_decl_lli || '',
+    logts_rhvs: t.logts_rhvs,
+    date_arrete_rhvs: t.date_arrete_rhvs || '',
+    logts_libre: t.logts_libre,
+    locaux_libre: t.locaux_libre,
     famille_agrement: t.famille_agrement || '',
     uls_rhvs: t.uls_rhvs || '',
     date_butoir_depot: t.date_butoir_depot || '',
@@ -11774,6 +11848,7 @@ function mapSubventionFromSupabase(s, trancheSuffixMap) {
     date_notification: s.date_notif || '',  // alias pour compat front
     montant_notif: s.montant_notif,
     montant_notifie: s.montant_notif,  // alias pour compat front
+    montant_valide_ca: s.montant_valide_ca,
     date_conv_signature: s.date_conv_signature || '',
     montant_verse: s.montant_verse,
     statut: s.statut || '',
@@ -11946,6 +12021,7 @@ function mapPretFromSupabase(p, trancheSuffixMap) {
 }
 
 function mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap) {
+  // (lien_sp_conv ajouté plus bas dans le return - alignement SFO)
   // Convertir quotite : si entre 0 et 1, multiplier par 100 (format pourcentage attendu)
   let quotite = g.quotite;
   if (quotite != null && quotite > 0 && quotite <= 1) {
@@ -11974,6 +12050,7 @@ function mapGarantieFromSupabase(g, trancheSuffixMap, pretLigneMap) {
     commission: g.commission,
     lien_sp_accord: g.lien_sp_accord || '',
     lien_sp_delib: g.lien_sp_delib || '',
+    lien_sp_conv: g.lien_sp_conv || '',
     lien_sharepoint: g.lien_sharepoint || '',
     nb_droits_reserves: g.nb_droits_reserves,
   };
@@ -12019,6 +12096,10 @@ function buildOpPayload(op) {
     type_travaux: op.type_travaux,
     maitrise_fonciere: op.maitrise_fonciere,
     anru: op.anru,
+    qpv: op.qpv || '',
+    action_coeur_ville: op.action_coeur_ville || '',
+    pvd: op.pvd || '',
+    date_revue_op: op.date_revue_op || null,
     label_certif: op.label_certif,
     mode_constructif: op.mode_constructif,
     mode_chauffage: op.mode_chauffage,
@@ -12267,6 +12348,7 @@ async function syncEntitiesToSupabase(op, operationId, beforeSnap) {
       // Colonne 'type' ← champ front 'financement'
       type: s.financement || s.type || '',
       financeur: s.financeur || '',
+      montant_valide_ca: (s.montant_valide_ca === '' || s.montant_valide_ca == null) ? null : Number(s.montant_valide_ca),
       montant_simule: s.montant_simule,
       date_simule: s.date_simule || null,
       montant_demande: s.montant_demande,
@@ -12504,6 +12586,16 @@ function buildTranchePayload(t, operationId) {
     plai_adapte: t.plai_adapte,
     n_leon: t.n_leon || '',
     date_ref: t.date_ref || null,
+    // Alignement SFO : identification + hors agrément
+    nom_interne: t.nom_interne || '',
+    gestionnaire_statut: t.gestionnaire_statut || '',
+    capacite_has: t.capacite_has || '',
+    logts_lli: (t.logts_lli === '' || t.logts_lli == null) ? null : Number(t.logts_lli),
+    date_decl_lli: t.date_decl_lli || null,
+    logts_rhvs: (t.logts_rhvs === '' || t.logts_rhvs == null) ? null : Number(t.logts_rhvs),
+    date_arrete_rhvs: t.date_arrete_rhvs || null,
+    logts_libre: (t.logts_libre === '' || t.logts_libre == null) ? null : Number(t.logts_libre),
+    locaux_libre: (t.locaux_libre === '' || t.locaux_libre == null) ? null : Number(t.locaux_libre),
     notes: t.notes || '',
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
@@ -12588,6 +12680,7 @@ function buildGarantiePayload(g, operationId, trancheId, pretId) {
     commission: g.commission,
     lien_sp_accord: g.lien_sp_accord || '',
     lien_sp_delib: g.lien_sp_delib || '',
+    lien_sp_conv: g.lien_sp_conv || '',
     lien_sharepoint: g.lien_sharepoint || '',
     nb_droits_reserves: g.nb_droits_reserves,
   };

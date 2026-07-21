@@ -5320,6 +5320,7 @@
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-id { grid-column: span 4; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-vol { grid-column: span 8; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-agr { grid-column: span 6; }
+    .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-horsagr { grid-column: span 6; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-loyer { grid-column: span 6; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-convloc { grid-column: span 6; }
     .ops-shell[data-tab="tr"] .tranche-detail > #sec-tr-bilan { grid-column: span 6; }
