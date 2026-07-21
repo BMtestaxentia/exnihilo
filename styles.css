@@ -5401,10 +5401,10 @@
 .oph-line .d { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
 
 /* Tiroir */
-.ops-scrim { position: fixed; inset: 0; background: rgba(16,22,30,.42); opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 55; }
+.ops-scrim { position: fixed; inset: 0; background: rgba(16,22,30,.42); opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 65; }
 .ops-scrim.open { opacity: 1; pointer-events: auto; }
 .ops-drawer { position: fixed; top: 0; right: 0; width: min(96vw, 1240px); background: var(--bg-primary); border-left: 1px solid var(--border-color);
-  box-shadow: -8px 0 34px rgba(0,0,0,.20); transform: translateX(100%); transition: transform .26s cubic-bezier(.4,0,.2,1); z-index: 56; display: flex; flex-direction: column; }
+  box-shadow: -8px 0 34px rgba(0,0,0,.20); transform: translateX(100%); transition: transform .26s cubic-bezier(.4,0,.2,1); z-index: 66; display: flex; flex-direction: column; }
 .ops-drawer.open { transform: translateX(0); }
 .ops-drawer-head { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border-color); flex: none; }
 .ops-drawer-title { flex: 1; font-size: 16px; font-weight: 650; color: var(--text-primary); }
@@ -5533,3 +5533,8 @@
 .finop-tr-name { font-weight: 600; font-size: 13px; color: var(--text-primary); }
 .finop-sub { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); margin: 12px 0 4px; }
 .finop-tr .entity-card { margin-bottom: 7px; }
+
+/* v52 : swatch legende bilan + pastilles tranches dans la nav du tiroir */
+.oph-lsw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.ops-dn-trpill { border: 1px solid var(--border-color); font-variant-numeric: tabular-nums; }
+.ops-dn-trpill.active { background: var(--info-bg); color: var(--info-text); border-color: var(--info-accent); }

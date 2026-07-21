@@ -2747,10 +2747,15 @@ function editableVolCell(key, value, t) {
 }
 
 // JS formatters (mirror Python ones, used at render time)
+// Mode d'affichage des montants : 'k' (k€) ou 'eur' (€, 2 décimales max)
+let MONEY_FMT = (function () { try { return storageGet('moneyFmt') || 'k'; } catch (e) { return 'k'; } })();
 function fmtMontant(v) {
   if (v === null || v === undefined || v === 0 || v === '') return '-';
   const n = Number(v);
   if (isNaN(n)) return '-';
+  if (MONEY_FMT === 'eur') {
+    return n.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
+  }
   const k = Math.round(n / 1000);
   return k.toLocaleString('fr-FR').replace(/ /g, ' ').replace(/,/g, ' ') + ' k€';
 }
@@ -3507,7 +3512,7 @@ function opsTrancheBandeauHtml(op, displayedOp, editing) {
     const tip = `${t.type_structure || 'Tranche ' + suffix} - Agrément : ${agr || 'non renseigné'}`;
     const click = editing
       ? `selectTranche(${i}); if (OPS_TAB !== 'tr' && OPS_TAB !== 'fin') switchOpsTab('tr'); _setBandeauActive('${i}')`
-      : `selectTranche(${i}); openOpsDomain('tranche')`;
+      : `selectTranche(${i}); openOpsDomain(_opsDrawerDomain === 'tranche-fin' ? 'tranche-fin' : 'tranche')`;
     const active = editing && i === selectedTrancheIdx;
     return `<button type="button" class="ops-tpill${active ? ' active' : ''}" data-tranche-pill="${i}"
         title="${escapeHtml(tip)}" onclick="${click}">
@@ -3646,27 +3651,15 @@ function renderOpHomeDashboard(op, displayedOp) {
       ${hasCoords ? `<div id="opLocationMap" class="oph-map"></div>` : `<div class="oph-map oph-map-empty"><i class="ti ti-map-pin"></i>&nbsp;Pas de géolocalisation</div>`}
     </div>
   </section>`;
-  // Mini calendrier de l'opération (jalons datés, passés cochés).
+  // Deux dates clés seulement : OS et livraison (le calendrier complet est dans le Dossier).
   const _todayCal = new Date(); _todayCal.setHours(0, 0, 0, 0);
-  const cal = [
-    ['Promesse', op.date_promesse],
-    ['Acte authentique', op.date_acte_auth || op.date_acte],
-    ['Dépôt PC', op.date_depot_pc],
-    ['Obtention PC', op.date_obtention_pc || op.date_obt_pc],
-    ['Ordre de service', op.date_os],
-    ['Livraison prévue', op.date_livraison],
-    ['Convention APL', op.date_conv_apl],
-  ].filter(([, d]) => d);
-  // Limité aux 4 prochains jalons (le calendrier complet est dans le tiroir Dossier)
   const _calRow = ([l, d]) => { const dt = parseDateStr(d); const past = dt && dt < _todayCal;
     return `<div class="oph-calrow${past ? ' done' : ''}"><span class="oph-caldot"></span><span class="oph-callabel">${l}</span><span class="oph-caldate">${esc(d)}</span></div>`; };
-  const _calUpcoming = cal.filter(([, d]) => { const dt = parseDateStr(d); return dt && dt >= _todayCal; })
-    .sort((a, b) => parseDateStr(a[1]) - parseDateStr(b[1]));
-  const _calShown = _calUpcoming.length ? _calUpcoming.slice(0, 4) : cal.slice(-2);
-  const _calRest = cal.length - _calShown.length;
-  const calHtml = cal.length
-    ? _calShown.map(_calRow).join('') + (_calRest > 0 ? `<div class="oph-tsub">+ ${_calRest} autre${_calRest > 1 ? 's' : ''} jalon${_calRest > 1 ? 's' : ''} · tout le calendrier dans le Dossier</div>` : '')
-    : '<div class="oph-tsub">Aucune date renseignée.</div>';
+  const cal = [
+    ['Ordre de service', op.date_os],
+    ['Livraison prévue', op.date_livraison],
+  ].filter(([, d]) => d);
+  const calHtml = cal.length ? cal.map(_calRow).join('') : '<div class="oph-tsub">Aucune date renseignée.</div>';
   const dossierBody = `<dl class="oph-kv">
       <dt>Adresse</dt><dd>${esc(adrFull)}</dd>
       <dt>Équipe</dt><dd>${esc(equipe)}</dd>
@@ -3674,11 +3667,23 @@ function renderOpHomeDashboard(op, displayedOp) {
     </dl>
     <div class="oph-mini-h" style="margin-top:13px">Calendrier</div>
     <div class="oph-cal">${calHtml}</div>`;
-  const bilanBody = `<div class="oph-figrow">
-      <div class="oph-fig"><span class="oph-fl">Logements</span><span class="oph-fv">${totalLgts(displayedOp) || '-'}</span></div>
-      <div class="oph-fig"><span class="oph-fl">Surface utile</span><span class="oph-fv">${fmtSurface(opTotalSurface(displayedOp))}</span></div>
-      <div class="oph-fig"><span class="oph-fl">Tranches</span><span class="oph-fv">${(displayedOp.tranches || []).length}</span></div>
-      <div class="oph-fig"><span class="oph-fl">Prix / logement</span><span class="oph-fv">${(totalLgts(displayedOp) > 0) ? fmtMontant(Math.round(totalBudget(displayedOp) / totalLgts(displayedOp))) : '-'}</span></div></div>`;
+  // Décomposition du prix de revient par poste (le vrai contenu d'un bilan)
+  const _secSum = key => (displayedOp.tranches || []).reduce((s2, tt) =>
+    s2 + Object.values((tt.bilan && tt.bilan[key]) || {}).reduce((a, b) => a + (Number(b) || 0), 0), 0);
+  const _postes = [
+    ['Charge foncière', _secSum('charge_fonciere'), 'var(--warning-accent)'],
+    ['Bâtiment', _secSum('batiment'), 'var(--info-accent)'],
+    ['Honoraires', _secSum('honoraires'), 'var(--success-accent)'],
+    ['Frais divers & financiers', _secSum('frais_divers') + _secSum('frais_financiers'), 'var(--border-color)'],
+  ].filter(([, v]) => v > 0);
+  const _postesTot = _postes.reduce((s2, [, v]) => s2 + v, 0);
+  const bilanBody = _postes.length
+    ? `<div class="oph-stack" role="img" aria-label="Répartition du prix de revient">
+        ${_postes.map(([, v, c]) => `<span style="width:${Math.round(v / _postesTot * 100)}%;background:${c}"></span>`).join('')}
+      </div>
+      ${_postes.map(([l, v, c]) => `<div class="oph-line"><span class="oph-lsw" style="background:${c}"></span><span class="l">${l}</span><span class="d">${fmtMontant(v)} <span class="oph-soft">${Math.round(v / _postesTot * 100)}%</span></span></div>`).join('')}
+      <div class="oph-tsub">Surface utile ${fmtSurface(opTotalSurface(displayedOp))} · Prix / logement ${(totalLgts(displayedOp) > 0) ? fmtMontant(Math.round(totalBudget(displayedOp) / totalLgts(displayedOp))) : '-'}</div>`
+    : `<div class="oph-tsub">Aucun bilan renseigné.${!editMode ? ` <button type="button" class="subent-cta" onclick="event.stopPropagation();editFromDrawer('tr')">+ Saisir en édition</button>` : ''}</div>`;
   return `<div class="oph-grid">
     ${card('oph-c6', 'folder', 'Dossier', '', 'dos', dossierBody)}
     ${finBrick}
@@ -3730,14 +3735,12 @@ function ensureOpsDrawer() {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOpsDrawer(); });
   window.addEventListener('resize', () => { if (drawer.classList.contains('open')) positionOpsDrawer(); });
 }
-// Le tiroir + le voile démarrent SOUS l'en-tête (bandeau tranches compris),
-// qui reste ainsi entièrement visible et cliquable par-dessus.
+// Le tiroir occupe toute la hauteur de l'écran (il recouvre le bandeau ;
+// la navigation entre tranches se fait via la nav interne du tiroir).
 function positionOpsDrawer() {
-  const h = document.querySelector('.ops-header');
-  const top = h ? Math.max(0, Math.round(h.getBoundingClientRect().bottom)) : 0;
   const dr = document.getElementById('opsDrawer'), sc = document.getElementById('opsScrim');
-  if (dr) { dr.style.top = top + 'px'; dr.style.height = (window.innerHeight - top) + 'px'; }
-  if (sc) { sc.style.top = top + 'px'; }
+  if (dr) { dr.style.top = '0'; dr.style.height = '100%'; }
+  if (sc) { sc.style.top = '0'; }
 }
 function _restoreOpsDrawerNodes() {
   _opsDrawerNodes.forEach(({ placeholder, node }) => {
@@ -3803,9 +3806,15 @@ function openOpsDomain(id) {
   const trNav = [['tranche', 'Détail'], ['tranche-fin', 'Financements']];
   const dnBtn = ([did, label]) =>
     `<button type="button" class="ops-dn${did === id ? ' active' : ''}" onclick="openOpsDomain('${did}')">${escapeHtml(label)}</button>`;
+  // Pastilles de tranches dans la nav : changer de tranche garde le sous-onglet courant (Détail ou Financements).
+  const trPills = ((op && op.tranches) || []).map((tt, i2) => {
+    const suf = tt.code_full ? tt.code_full.split('-').slice(1).join('-') : tt.id;
+    return `<button type="button" class="ops-dn ops-dn-trpill${(isTranche && i2 === selectedTrancheIdx) ? ' active' : ''}"
+      onclick="selectTranche(${i2}); openOpsDomain(_opsDrawerDomain === 'tranche' || _opsDrawerDomain === 'tranche-fin' ? _opsDrawerDomain : 'tranche')">${escapeHtml(String(suf))}</button>`;
+  }).join('');
   document.getElementById('opsDrawerNav').innerHTML =
     opNav.map(dnBtn).join('')
-    + (t ? `<span class="ops-dn-sep"></span><span class="ops-dn-grp">${escapeHtml(trSuffix)}</span>` + trNav.map(dnBtn).join('') : '');
+    + (t ? `<span class="ops-dn-sep"></span>${trPills}<span class="ops-dn-sep"></span>` + trNav.map(dnBtn).join('') : '');
   _setBandeauActive(bandeau);
   _opsDrawerDomain = id;
   _opsDrawerOp = selectedOpCode;
@@ -12711,6 +12720,20 @@ function addLogoutButton(){
     applyScopeRerender();
   });
   nav.appendChild(scopeBtn);
+
+  // Bascule d'affichage des montants : k€ / € (2 décimales max)
+  const moneyBtn = document.createElement('button');
+  moneyBtn.id = 'moneyFmtToggle'; moneyBtn.className = 'sess-btn sess-icon-btn';
+  const _moneyLabel = () => (MONEY_FMT === 'eur' ? '€' : 'k€');
+  moneyBtn.textContent = _moneyLabel();
+  moneyBtn.title = 'Basculer l\'affichage des montants entre k€ et €';
+  moneyBtn.addEventListener('click', () => {
+    MONEY_FMT = (MONEY_FMT === 'eur') ? 'k' : 'eur';
+    try { storageSet('moneyFmt', MONEY_FMT); } catch (e) {}
+    moneyBtn.textContent = _moneyLabel();
+    applyScopeRerender(); // re-render la vue courante avec le nouveau format
+  });
+  nav.appendChild(moneyBtn);
 
   // Bouton rafraîchir (icône seule)
   const rbtn = document.createElement('button');
