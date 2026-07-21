@@ -3483,8 +3483,9 @@ function switchOpsTab(t) {
   try { sessionStorage.setItem('exnihilo_ops_tab', t); } catch (e) {}
   applyOpsTab();
   document.querySelectorAll('.ops-tab').forEach(b => b.classList.toggle('active', b.dataset.tabid === t));
+  if (typeof _syncOpsNav === 'function') _syncOpsNav();
   // La mini-carte Leaflet doit se recalibrer si elle a été créée dans un onglet masqué
-  if (t === 'syn' && typeof opLocationMapInstance !== 'undefined' && opLocationMapInstance) {
+  if ((t === 'syn' || t === 'home') && typeof opLocationMapInstance !== 'undefined' && opLocationMapInstance) {
     setTimeout(() => { try { opLocationMapInstance.invalidateSize(); } catch (e) {} }, 80);
   }
 }
@@ -3512,7 +3513,7 @@ function opsTrancheBandeauHtml(op, displayedOp, editing) {
     const tip = `${t.type_structure || 'Tranche ' + suffix} - Agrément : ${agr || 'non renseigné'}`;
     const click = editing
       ? `selectTranche(${i}); if (OPS_TAB !== 'tr' && OPS_TAB !== 'fin') switchOpsTab('tr'); _setBandeauActive('${i}')`
-      : `selectTranche(${i}); openOpsDomain(_opsDrawerDomain === 'tranche-fin' ? 'tranche-fin' : 'tranche')`;
+      : `selectTranche(${i}); switchOpsTab(OPS_TAB === 'fin' ? 'fin' : 'tr')`;
     const active = editing && i === selectedTrancheIdx;
     return `<button type="button" class="ops-tpill${active ? ' active' : ''}" data-tranche-pill="${i}"
         title="${escapeHtml(tip)}" onclick="${click}">
@@ -3694,151 +3695,57 @@ function renderOpHomeDashboard(op, displayedOp) {
   </div>`;
 }
 
-// ---- Tiroir : réutilise le DOM réel des sections (déplacement + placeholder) ----
-let _opsDrawerNodes = [];
-let _opsDrawerDomain = null; // domaine actuellement ouvert (pour ré-ouvrir après un re-render)
-let _opsDrawerOp = null;     // _uid de l'op à laquelle appartient le tiroir ouvert
-let _opsDrawerScroll = 0;    // défilement à restaurer après ré-ouverture
-
-// Ré-ouvre le tiroir après un re-render de #opDetail (kind='op') ou #trancheDetail
-// (kind='tranche') si un tiroir du même type était ouvert sur la même opération.
-// Rend le tiroir robuste à TOUTE interaction interne qui déclenche un re-render.
-function _reopenDrawerIfNeeded(kind) {
-  if (editMode) return;
-  const dom = _opsDrawerDomain;
-  if (!dom) return;
-  if (_opsDrawerOp && _opsDrawerOp !== selectedOpCode) { _opsDrawerDomain = null; _opsDrawerOp = null; return; }
-  const isTr = (dom === 'tranche' || dom === 'tranche-fin');
-  if (kind === 'op' && isTr) return;        // re-render op mais tiroir tranche → attend le render tranche
-  if (kind === 'tranche' && !isTr) return;  // re-render tranche mais tiroir op → ignore
-  openOpsDomain(dom);
-  const nb = document.getElementById('opsDrawerBody');
-  if (nb) nb.scrollTop = _opsDrawerScroll;
-}
-function ensureOpsDrawer() {
-  if (document.getElementById('opsDrawer')) return;
-  const scrim = document.createElement('div');
-  scrim.className = 'ops-scrim'; scrim.id = 'opsScrim';
-  scrim.addEventListener('click', closeOpsDrawer);
-  const drawer = document.createElement('aside');
-  drawer.className = 'ops-drawer'; drawer.id = 'opsDrawer';
-  drawer.setAttribute('role', 'dialog'); drawer.setAttribute('aria-modal', 'true');
-  drawer.innerHTML = `<div class="ops-drawer-head">
-      <span class="ops-drawer-title" id="opsDrawerTitle">Détail</span>
-      <button type="button" class="ops-drawer-x" id="opsDrawerX" aria-label="Fermer"><i class="ti ti-x"></i></button>
-    </div>
-    <nav class="ops-drawer-nav" id="opsDrawerNav"></nav>
-    <div class="ops-drawer-body" id="opsDrawerBody"></div>`;
-  document.body.appendChild(scrim);
-  document.body.appendChild(drawer);
-  drawer.querySelector('#opsDrawerX').addEventListener('click', closeOpsDrawer);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOpsDrawer(); });
-  window.addEventListener('resize', () => { if (drawer.classList.contains('open')) positionOpsDrawer(); });
-}
-// Le tiroir occupe toute la hauteur de l'écran (il recouvre le bandeau ;
-// la navigation entre tranches se fait via la nav interne du tiroir).
-function positionOpsDrawer() {
-  const dr = document.getElementById('opsDrawer'), sc = document.getElementById('opsScrim');
-  if (dr) { dr.style.top = '0'; dr.style.height = '100%'; }
-  if (sc) { sc.style.top = '0'; }
-}
-function _restoreOpsDrawerNodes() {
-  _opsDrawerNodes.forEach(({ placeholder, node }) => {
-    if (placeholder && placeholder.parentNode) placeholder.parentNode.replaceChild(node, placeholder);
-  });
-  _opsDrawerNodes = [];
-}
-function _resetOpsDrawer() {
-  _opsDrawerNodes = [];
-  const d = document.getElementById('opsDrawer'), s = document.getElementById('opsScrim');
-  if (d) { d.classList.remove('open'); const b = document.getElementById('opsDrawerBody'); if (b) b.innerHTML = ''; }
-  if (s) s.classList.remove('open');
-}
 function _setBandeauActive(key) {
   document.querySelectorAll('.ops-tpill').forEach(b => b.classList.toggle('active', b.dataset.tranchePill === key));
 }
+// ===== Vues EN PLACE (le tiroir est retiré) =====
+// openOpsDomain garde son nom (appelé partout : briques, nav, CTA…) mais
+// bascule désormais la vue centrale via le mécanisme data-tab existant.
+const _DOMAIN_TO_TAB = { home: 'home', syn: 'syn', dos: 'dos', bilan: 'bilan', suivi: 'suivi', finop: 'finop', tranche: 'tr', 'tranche-fin': 'fin' };
 function openOpsDomain(id) {
-  ensureOpsDrawer();
-  if (!id || id === 'home') { closeOpsDrawer(); return; }
-  _restoreOpsDrawerNodes();
-  const body = document.getElementById('opsDrawerBody');
-  if (body) body.innerHTML = ''; // enlève d'éventuels nœuds orphelins (re-render pendant tiroir ouvert)
-  let title = 'Détail', groups = [id], container = document.getElementById('opDetail'), bandeau = 'op';
-  const isTranche = (id === 'tranche' || id === 'tranche-fin');
-  const isGenerated = (id === 'finop'); // contenu généré, pas de déplacement de DOM
-  const op = findOp(selectedOpCode);
-  const t = (op && op.tranches) ? op.tranches[selectedTrancheIdx] : null;
-  const trSuffix = t ? (t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id) : 'Tranche';
-  if (isTranche) {
-    container = document.getElementById('trancheDetail');
-    groups = (id === 'tranche-fin') ? ['fin'] : ['tr'];
-    const tname = t ? (t.type_structure || trSuffix || 'Tranche') : 'Tranche';
-    title = (id === 'tranche-fin') ? (tname + ' - Financements') : tname;
-    bandeau = String(selectedTrancheIdx);
-  } else if (isGenerated) {
-    title = 'Financements de l\'opération';
-  } else {
-    const def = OPS_DOMAINS.find(d => d[0] === id);
-    title = def ? def[1] : 'Détail';
-  }
-  if (!body) return;
-  if (isGenerated) {
-    body.innerHTML = op ? renderOpFinancementsDrawer(op) : '';
-  } else {
-    if (!container) return;
-    const nodes = Array.from(container.children).filter(el => el.matches && groups.some(g => el.matches(`[data-grp~="${g}"]`)));
-    nodes.forEach(node => {
-      const ph = document.createComment('ops-' + id);
-      node.parentNode.insertBefore(ph, node);
-      body.appendChild(node);
-      // Le tiroir est une vue de détail : on déplie tout par défaut (le clic
-      // sur un titre replie/déplie toujours, cf. handler global).
-      node.classList.remove('collapsed');
-      if (node.querySelectorAll) node.querySelectorAll('.section.collapsed').forEach(s => s.classList.remove('collapsed'));
-      _opsDrawerNodes.push({ placeholder: ph, node });
-    });
-  }
-  body.scrollTop = 0;
-  document.getElementById('opsDrawerTitle').textContent = title;
-  // Navigation unifiée : domaines opération + la tranche courante (Détail / Financements),
-  // pour circuler dans tout le tiroir sans jamais le fermer.
-  const opNav = [['syn', 'Synthèse'], ['dos', 'Dossier'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
-  const trNav = [['tranche', 'Détail'], ['tranche-fin', 'Financements']];
-  const dnBtn = ([did, label]) =>
-    `<button type="button" class="ops-dn${did === id ? ' active' : ''}" onclick="openOpsDomain('${did}')">${escapeHtml(label)}</button>`;
-  // Pastilles de tranches dans la nav : changer de tranche garde le sous-onglet courant (Détail ou Financements).
-  const trPills = ((op && op.tranches) || []).map((tt, i2) => {
-    const suf = tt.code_full ? tt.code_full.split('-').slice(1).join('-') : tt.id;
-    return `<button type="button" class="ops-dn ops-dn-trpill${(isTranche && i2 === selectedTrancheIdx) ? ' active' : ''}"
-      onclick="selectTranche(${i2}); openOpsDomain(_opsDrawerDomain === 'tranche' || _opsDrawerDomain === 'tranche-fin' ? _opsDrawerDomain : 'tranche')">${escapeHtml(String(suf))}</button>`;
-  }).join('');
-  document.getElementById('opsDrawerNav').innerHTML =
-    opNav.map(dnBtn).join('')
-    + (t ? `<span class="ops-dn-sep"></span>${trPills}<span class="ops-dn-sep"></span>` + trNav.map(dnBtn).join('') : '');
-  _setBandeauActive(bandeau);
-  _opsDrawerDomain = id;
-  _opsDrawerOp = selectedOpCode;
-  positionOpsDrawer();
-  document.getElementById('opsScrim').classList.add('open');
-  document.getElementById('opsDrawer').classList.add('open');
-  if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
-  if (groups.includes('syn') && typeof opLocationMapInstance !== 'undefined' && opLocationMapInstance) {
-    setTimeout(() => { try { opLocationMapInstance.invalidateSize(); } catch (e) {} }, 90);
-  }
+  const tab = _DOMAIN_TO_TAB[id] || 'home';
+  switchOpsTab(tab);
+  const c = document.getElementById((tab === 'tr' || tab === 'fin') ? 'trancheDetail' : 'opDetail');
+  if (c) c.scrollTop = 0;
 }
-function closeOpsDrawer() {
-  _restoreOpsDrawerNodes();
-  _opsDrawerDomain = null;
-  _opsDrawerOp = null;
-  const d = document.getElementById('opsDrawer'), s = document.getElementById('opsScrim');
-  if (d) d.classList.remove('open');
-  if (s) s.classList.remove('open');
-  _setBandeauActive('op');
+function closeOpsDrawer() { switchOpsTab('home'); } // compat : « fermer » = retour vue d'ensemble
+
+// Synchronise les états actifs (bandeau tranches + nav de vues) sur OPS_TAB.
+function _syncOpsNav() {
+  const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
+  _setBandeauActive(isTr ? String(selectedTrancheIdx) : 'op');
+  document.querySelectorAll('.ops-vn [data-view]').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === OPS_TAB));
+  document.querySelectorAll('.ops-vn [data-trpill]').forEach(b =>
+    b.classList.toggle('active', isTr && b.dataset.trpill === String(selectedTrancheIdx)));
 }
 
-// Ferme le tiroir, passe en édition et ouvre l'onglet demandé (CTA des états vides).
+// Barre de navigation des vues (consultation), sous le bandeau tranches.
+function opsViewNavHtml(op) {
+  const opNav = [['home', 'Vue d\'ensemble'], ['syn', 'Synthèse'], ['dos', 'Dossier'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
+  const vBtn = ([tab, label]) =>
+    `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="openOpsDomain('${Object.keys(_DOMAIN_TO_TAB).find(k => _DOMAIN_TO_TAB[k] === tab) || 'home'}')">${escapeHtml(label)}</button>`;
+  const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
+  const trPills = (op.tranches || []).map((tt, i2) => {
+    const suf = tt.code_full ? tt.code_full.split('-').slice(1).join('-') : tt.id;
+    return `<button type="button" class="ops-dn ops-dn-trpill${(isTr && i2 === selectedTrancheIdx) ? ' active' : ''}" data-trpill="${i2}"
+      onclick="selectTranche(${i2}); switchOpsTab(OPS_TAB === 'fin' ? 'fin' : 'tr')">${escapeHtml(String(suf))}</button>`;
+  }).join('');
+  const trNav = `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" onclick="openOpsDomain('tranche')">Détail</button>
+    <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" onclick="openOpsDomain('tranche-fin')">Financements</button>`;
+  return `<nav class="ops-vn">${opNav.map(vBtn).join('')}
+    ${(op.tranches || []).length ? `<span class="ops-dn-sep"></span><span class="ops-dn-grp">Tranche</span>${trPills}${trNav}` : ''}</nav>`;
+}
+
+// Échap : retour à la vue d'ensemble (consultation uniquement)
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || editMode) return;
+  const sh = document.getElementById('opsShell');
+  if (sh && sh.offsetParent !== null && OPS_TAB !== 'home') switchOpsTab('home');
+});
+
+// Passe en édition et ouvre l'onglet demandé (CTA des états vides).
 function editFromDrawer(tab) {
-  closeOpsDrawer();
   if (!editMode && typeof toggleEditMode === 'function') toggleEditMode();
   if (tab) switchOpsTab(tab);
 }
@@ -3926,10 +3833,11 @@ function renderOpDetail() {
   const effectiveEditMode = editMode;
   // Consultation = accueil (bandeau tranches + tableau de bord + tiroir).
   // Édition = ancien layout inline par onglet (on n'y touche pas).
-  OPS_TAB = effectiveEditMode ? (OPS_TAB === 'home' ? 'syn' : OPS_TAB) : 'home';
-  { const _bd = document.getElementById('opsDrawerBody'); _opsDrawerScroll = _bd ? _bd.scrollTop : 0; }
-  _resetOpsDrawer(); // le DOM va être reconstruit : on réinitialise le tiroir (ré-ouvert en fin si besoin)
-  if (effectiveEditMode) { _opsDrawerDomain = null; _opsDrawerOp = null; }
+  // La vue courante persiste (vues en place) ; en édition, les vues purement
+  // consultation (accueil, financements op) basculent sur Synthèse.
+  OPS_TAB = effectiveEditMode
+    ? ((OPS_TAB === 'home' || OPS_TAB === 'finop') ? 'syn' : OPS_TAB)
+    : (OPS_TAB || 'home');
 
   const volCells = ['plai','plus','pls','pli','libre','autre']
     .filter(k => editMode || sumVolKey(displayedOp, k) > 0)
@@ -4111,7 +4019,8 @@ function renderOpDetail() {
       ${editToolbar}
     </div><!-- /op-sticky-top -->
 
-    ${!effectiveEditMode ? `<div class="op-home" data-grp="home">${renderOpHomeDashboard(op, displayedOp)}</div>` : ''}
+    ${!effectiveEditMode ? `<div class="op-home" data-grp="home">${renderOpHomeDashboard(op, displayedOp)}</div>
+    <div class="op-anchor op-finop" data-grp="finop">${renderOpFinancementsDrawer(op)}</div>` : ''}
 
     <div class="metric-row" data-grp="syn" style="--cols: 4;">
       <div class="metric-card"><div class="metric-label">Logements</div><div class="metric-value" id="op-total-lgts-live">${diffWrap(String(totalLgts(displayedOp) || '-'), totalLgts(displayedOp), compareWithIdx != null ? totalLgtsFromSnap(op) : null)}</div></div>
@@ -4220,12 +4129,12 @@ function renderOpDetail() {
   `;
   const _hmk = '</div><!-- /op-sticky-top -->';
   const _hcut = html.indexOf(_hmk) + _hmk.length;
-  // Consultation : bandeau tranches permanent ; édition : onglets + bandeau
-  // tranches (contexte tranche conservé pendant la saisie).
+  // Consultation : bandeau tranches + nav de vues (en place) ; édition :
+  // onglets + bandeau tranches (contexte tranche conservé pendant la saisie).
   document.getElementById('opsHeader').innerHTML = html.slice(0, _hcut)
     + (effectiveEditMode
         ? opsTabsHtml(op) + opsTrancheBandeauHtml(op, displayedOp, true)
-        : opsTrancheBandeauHtml(op, displayedOp, false));
+        : opsTrancheBandeauHtml(op, displayedOp, false) + opsViewNavHtml(op));
   document.getElementById('opDetail').innerHTML = html.slice(_hcut);
   applyOpsTab();
   // Restore edit mode flag if temporarily cleared
@@ -4234,13 +4143,12 @@ function renderOpDetail() {
   initOpLocationMap(op);
   // Wire comité edit inputs (so values are saved as user types)
   bindComiteEditInputs();
-  _reopenDrawerIfNeeded('op'); // ré-ouvre le tiroir op si un re-render l'a fermé
+  if (typeof _syncOpsNav === 'function') _syncOpsNav();
 }
 
 function renderTrancheDetail() {
   const op = findOp(selectedOpCode);
   const c = document.getElementById('trancheDetail');
-  { const _bd = document.getElementById('opsDrawerBody'); if (_bd && _bd.scrollTop) _opsDrawerScroll = _bd.scrollTop; }
   if (c && !c._compactBound) {
     c._compactBound = true;
     c.addEventListener('scroll', () => {
@@ -4568,7 +4476,7 @@ function renderTrancheDetail() {
 
   // Restore edit mode flag if temporarily cleared
   editMode = _savedEditMode;
-  _reopenDrawerIfNeeded('tranche'); // ré-ouvre le tiroir tranche si un re-render l'a fermé
+  if (typeof _syncOpsNav === 'function') _syncOpsNav();
 }
 
 // ============== BILAN D'OPÉRATION (LEON-style) ==============
@@ -6520,7 +6428,7 @@ function revertOpEdits() {
   });
   editSessionSnap = null;
 }
-function selectTranche(idx) { selectedTrancheIdx = idx; renderTrancheDetail(); replaceTablerIcons(); }
+function selectTranche(idx) { selectedTrancheIdx = idx; renderTrancheDetail(); replaceTablerIcons(); if (typeof _syncOpsNav === 'function') _syncOpsNav(); }
 function renderAll() { renderSidebar(); renderOpDetail(); renderTrancheDetail(); replaceTablerIcons(); }
 
 
@@ -11013,7 +10921,7 @@ document.addEventListener('click', (e) => {
   if (!head) return;
   const sec = head.parentElement;
   if (!sec || !sec.classList.contains('section')) return;
-  if (!sec.closest('#opDetail, #trancheDetail, #opsDrawerBody')) return;
+  if (!sec.closest('#opDetail, #trancheDetail')) return;
   sec.classList.toggle('collapsed');
   const k = osnKeyOf(sec);
   if (k) {
@@ -12780,9 +12688,8 @@ function updateSyncStamp(){
 
 async function refreshData(silent){
   // Ne jamais écraser une saisie en cours
-  // Ne pas rafraîchir en arrière-plan pendant une saisie NI tant qu'un tiroir de
-  // détail est ouvert (sinon le re-render le ferait clignoter / se fermer).
-  if (silent && (editMode || _pendingWrites > 0 || _opsDrawerDomain != null || (Date.now() - _lastWriteAt < 8000) || (typeof hasUnsavedChanges === 'function' && hasUnsavedChanges()))) return;
+  // Ne jamais rafraîchir en arrière-plan pendant une saisie en cours.
+  if (silent && (editMode || _pendingWrites > 0 || (Date.now() - _lastWriteAt < 8000) || (typeof hasUnsavedChanges === 'function' && hasUnsavedChanges()))) return;
   const selCode = (typeof storageGet === 'function') ? storageGet('selectedOp') : null;
   const view = (typeof storageGet === 'function') ? storageGet('activeView') : null;
   const rbtn = document.getElementById('sessRefreshBtn');

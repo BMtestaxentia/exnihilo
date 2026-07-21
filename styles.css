@@ -5538,3 +5538,13 @@
 .oph-lsw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
 .ops-dn-trpill { border: 1px solid var(--border-color); font-variant-numeric: tabular-nums; }
 .ops-dn-trpill.active { background: var(--info-bg); color: var(--info-text); border-color: var(--info-accent); }
+
+/* ===== v53 : vues EN PLACE (tiroir retire) ===== */
+/* Vue "Financements de l'operation" (contenu genere, pleine zone centrale) */
+.ops-shell[data-tab="finop"] .tranche-detail { display: none; }
+.ops-shell[data-tab="finop"] .op-detail { grid-column: 2 / 4; }
+.ops-shell[data-tab="finop"] .op-detail > [data-grp]:not([data-grp~="finop"]) { display: none !important; }
+.op-finop { padding: 16px 0 48px; max-width: 1400px; }
+/* Nav de vues sous le bandeau tranches (reutilise les boutons .ops-dn) */
+.ops-vn { display: flex; align-items: center; gap: 4px; padding: 7px 24px; border-top: 1px solid var(--border-color);
+  background: var(--bg-primary); overflow-x: auto; scrollbar-width: thin; }
