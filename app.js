@@ -12665,7 +12665,10 @@ function addLogoutButton(){
     MONEY_FMT = (MONEY_FMT === 'eur') ? 'k' : 'eur';
     try { storageSet('moneyFmt', MONEY_FMT); } catch (e) {}
     moneyBtn.textContent = _moneyLabel();
-    applyScopeRerender(); // re-render la vue courante avec le nouveau format
+    // renderAll re-render la fiche opération ouverte (applyScopeRerender seul
+    // ne le fait pas quand la vue active reste la même) ; puis les autres vues.
+    try { if (!editMode) renderAll(); } catch (e) {}
+    applyScopeRerender();
   });
   nav.appendChild(moneyBtn);
 
