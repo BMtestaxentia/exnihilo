@@ -4357,7 +4357,9 @@ function renderTrancheDetail() {
     `;
   }
 
-  c.innerHTML = selectorHtml + detailHtml;
+  // En consultation, le bandeau tranches de l'en-tête fait office de sélecteur :
+  // le sélecteur interne (avec « Nouvelle tranche ») n'est gardé qu'en édition.
+  c.innerHTML = (editMode ? selectorHtml : '') + detailHtml;
   c.querySelectorAll('[data-tranche-idx]').forEach(el => {
     el.addEventListener('click', (e) => { e.stopPropagation(); selectTranche(parseInt(el.dataset.trancheIdx, 10)); });
   });
