@@ -3714,10 +3714,8 @@ function closeOpsDrawer() { switchOpsTab('home'); } // compat : « fermer » = r
 function _syncOpsNav() {
   const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
   _setBandeauActive(isTr ? String(selectedTrancheIdx) : 'op');
-  document.querySelectorAll('.ops-vn [data-view]').forEach(b =>
+  document.querySelectorAll('.ops-vn [data-view], .ops-unibar [data-view]').forEach(b =>
     b.classList.toggle('active', b.dataset.view === OPS_TAB));
-  document.querySelectorAll('.ops-vn [data-trpill]').forEach(b =>
-    b.classList.toggle('active', isTr && b.dataset.trpill === String(selectedTrancheIdx)));
 }
 
 // Barre de navigation des vues (consultation), sous le bandeau tranches.
@@ -3731,6 +3729,33 @@ function opsViewNavHtml(op) {
     <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" onclick="openOpsDomain('tranche-fin')">Financements</button>`;
   return `<nav class="ops-vn">${opNav.map(vBtn).join('')}
     ${(op.tranches || []).length ? `<span class="ops-dn-sep"></span><span class="ops-dn-grp">Tranche</span>${trNav}` : ''}</nav>`;
+}
+
+// Bandeau unique (consultation) : nav de vues + pastilles de tranches + sous-vues.
+function opsUnifiedBarHtml(op, displayedOp) {
+  const opNav = [['home', 'Vue d\'ensemble'], ['syn', 'Synthèse'], ['dos', 'Dossier'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
+  const vBtn = ([tab, label]) =>
+    `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="openOpsDomain('${tab}')">${escapeHtml(label)}</button>`;
+  const trs = displayedOp.tranches || [];
+  const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
+  const pills = trs.map((t, i) => {
+    const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : (t.id || ('T' + (i + 1)));
+    const agr = t.statut_agrement || '';
+    const dot = /sign|obtenu|acquis|dfa/i.test(agr) ? 'good' : (agr ? 'warn' : 'neutral');
+    return `<button type="button" class="ops-tpill${(isTr && i === selectedTrancheIdx) ? ' active' : ''}" data-tranche-pill="${i}"
+        title="${escapeHtml((t.type_structure || 'Tranche ' + suffix) + ' - Agrément : ' + (agr || 'non renseigné'))}"
+        onclick="selectTranche(${i}); switchOpsTab(OPS_TAB === 'fin' ? 'fin' : 'tr')">
+        <span class="ops-tpill-dot ${dot}"></span>
+        <span class="ops-tpill-top">${escapeHtml(suffix)}</span>
+        <span class="ops-tpill-meta">${trancheLogements(t) || '-'} logts · ${fmtMontant(trancheBudgetTTC(t))}</span>
+      </button>`;
+  }).join('');
+  const trNav = `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" onclick="openOpsDomain('tranche')">Détail</button>
+    <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" onclick="openOpsDomain('tranche-fin')">Financements</button>`;
+  return `<div class="ops-tbar ops-unibar">
+    ${opNav.map(vBtn).join('')}
+    ${trs.length ? `<span class="ops-tbar-div"></span><span class="ops-tbar-lead">Tranches</span>${pills}<span class="ops-tbar-div"></span>${trNav}` : ''}
+  </div>`;
 }
 
 // Échap : retour à la vue d'ensemble (consultation uniquement)
@@ -4153,12 +4178,12 @@ function renderOpDetail() {
   `;
   const _hmk = '</div><!-- /op-sticky-top -->';
   const _hcut = html.indexOf(_hmk) + _hmk.length;
-  // Consultation : bandeau tranches + nav de vues (en place) ; édition :
+  // Consultation : bandeau unique (nav + tranches + sous-vues) ; édition :
   // onglets + bandeau tranches (contexte tranche conservé pendant la saisie).
   document.getElementById('opsHeader').innerHTML = html.slice(0, _hcut)
     + (effectiveEditMode
         ? opsTabsHtml(op) + opsTrancheBandeauHtml(op, displayedOp, true)
-        : opsTrancheBandeauHtml(op, displayedOp, false) + opsViewNavHtml(op));
+        : opsUnifiedBarHtml(op, displayedOp));
   document.getElementById('opDetail').innerHTML = html.slice(_hcut);
   applyOpsTab();
   // Restore edit mode flag if temporarily cleared

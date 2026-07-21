@@ -5557,3 +5557,8 @@
 .finop-garchip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-primary); }
 .finop-garchip b { font-variant-numeric: tabular-nums; }
 .finop-garnone { font-size: 12px; color: var(--warning-text); }
+
+/* v57 : bandeau unique (nav + tranches + sous-vues) */
+.ops-unibar { gap: 5px; }
+.ops-unibar .ops-tpill { padding: 4px 11px; min-width: auto; }
+.ops-unibar .ops-tpill-meta { font-size: 10.5px; }
