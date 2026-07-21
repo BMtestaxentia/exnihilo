@@ -3725,16 +3725,12 @@ function opsViewNavHtml(op) {
   const opNav = [['home', 'Vue d\'ensemble'], ['syn', 'Synthèse'], ['dos', 'Dossier'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
   const vBtn = ([tab, label]) =>
     `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="openOpsDomain('${Object.keys(_DOMAIN_TO_TAB).find(k => _DOMAIN_TO_TAB[k] === tab) || 'home'}')">${escapeHtml(label)}</button>`;
-  const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
-  const trPills = (op.tranches || []).map((tt, i2) => {
-    const suf = tt.code_full ? tt.code_full.split('-').slice(1).join('-') : tt.id;
-    return `<button type="button" class="ops-dn ops-dn-trpill${(isTr && i2 === selectedTrancheIdx) ? ' active' : ''}" data-trpill="${i2}"
-      onclick="selectTranche(${i2}); switchOpsTab(OPS_TAB === 'fin' ? 'fin' : 'tr')">${escapeHtml(String(suf))}</button>`;
-  }).join('');
+  // Le choix de la tranche se fait dans le bandeau au-dessus (pas de doublon ici) ;
+  // on ne garde que les deux sous-vues de la tranche sélectionnée.
   const trNav = `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" onclick="openOpsDomain('tranche')">Détail</button>
     <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" onclick="openOpsDomain('tranche-fin')">Financements</button>`;
   return `<nav class="ops-vn">${opNav.map(vBtn).join('')}
-    ${(op.tranches || []).length ? `<span class="ops-dn-sep"></span><span class="ops-dn-grp">Tranche</span>${trPills}${trNav}` : ''}</nav>`;
+    ${(op.tranches || []).length ? `<span class="ops-dn-sep"></span><span class="ops-dn-grp">Tranche</span>${trNav}` : ''}</nav>`;
 }
 
 // Échap : retour à la vue d'ensemble (consultation uniquement)
@@ -3752,7 +3748,7 @@ function editFromDrawer(tab) {
 
 // ---- Lignes compactes de consultation (mêmes colonnes que l'édition) ----
 // Le détail déplié réutilise la carte de lecture existante : aucune info perdue.
-function finReadRow(section, i, cells, cycleHtml, detailHtml) {
+function finReadRow(section, i, cells, cycleHtml, detailHtml, extraHtml) {
   return `<div class="entity-card fin-erow fin-read${diffEntityClass(section, i)}" data-section="${section}" data-row-idx="${i._originalIdx != null ? i._originalIdx : ''}">
     <div class="fin-rmain" onclick="toggleFinRow(this)">
       ${cells.map((c, idx) => `<span class="fin-rcell${idx === 0 ? ' strong' : ''}${c && c.num ? ' num' : ''}">${c && c.num ? c.html : (c || '-')}</span>`).join('')}
@@ -3760,13 +3756,38 @@ function finReadRow(section, i, cells, cycleHtml, detailHtml) {
       <button type="button" class="fin-expand" onclick="event.stopPropagation();toggleFinRow(this)" title="Déplier / replier"><i class="ti ti-chevron-down"></i></button>
       <span></span>
     </div>
+    ${extraHtml || ''}
     <div class="fin-edetail fin-rdetail">${detailHtml}</div>
   </div>`;
 }
-function renderPretRow(i) {
+function renderPretRow(i, extraHtml) {
   return finReadRow('prets', i,
     [escapeHtml(i.ligne || '-'), escapeHtml(i.financeur || '-'), { num: true, html: fmtMontant(bestPretAmount(i)) }, statusBadge(i.statut)],
-    pretCycleHtml(i), renderPretCard(i));
+    pretCycleHtml(i), renderPretCard(i), extraHtml);
+}
+
+// Strip de couverture des garanties d'un prêt (synthèse : barre + chips garants)
+function garStripHtml(pret, gars) {
+  if (pret.non_garanti) return `<div class="finop-garstrip"><span class="oph-tsub">Prêt sans garantie requise</span></div>`;
+  if (!gars.length) return `<div class="finop-garstrip"><span class="finop-garnone">○ Aucune garantie rattachée</span></div>`;
+  const segs = gars.map(g => {
+    const pct = parseQuotite(g.quotite);
+    if (pct <= 0) return '';
+    const title = `${g.garant || '-'} : ${pct}% - ${g.statut || 'statut inconnu'}`;
+    return `<div class="gar-segment" style="flex: 0 0 ${pct}%; background: ${garantColor(g.garant)};" title="${escapeHtml(title)}">${pct >= 12 ? Math.round(pct) + '%' : ''}</div>`;
+  }).join('');
+  const tot = gars.reduce((s, g) => s + parseQuotite(g.quotite), 0);
+  const remaining = Math.max(0, 100 - tot);
+  const unc = remaining > 0.5
+    ? `<div class="gar-segment uncovered" style="flex: 0 0 ${remaining}%;">${remaining >= 18 ? remaining.toFixed(0) + '% à couvrir' : ''}</div>`
+    : '';
+  const chips = gars.map(g => `<span class="finop-garchip">
+      <span class="gar-color-dot" style="background: ${garantColor(g.garant)};"></span>${escapeHtml(g.garant || '-')}
+      <b>${Math.round(parseQuotite(g.quotite))}%</b> ${statusBadge(g.statut)}</span>`).join('');
+  return `<div class="finop-garstrip">
+    <div class="gar-coverage-bar finop-bar">${segs}${unc}</div>
+    <div class="finop-garchips">${chips}</div>
+  </div>`;
 }
 function renderSubvRow(i) {
   return finReadRow('subventions', i,
@@ -3804,9 +3825,12 @@ function renderOpFinancementsDrawer(op) {
     const wIdx = arr => (arr || []).map((x, i2) => ({ ...x, _originalIdx: i2 })).filter(x => x.tranche === suffix);
     const prets = wIdx(op.prets), gars = wIdx(op.garanties), subvs = wIdx(op.subventions);
     const tot = prets.reduce((s, p) => s + bestPretAmount(p), 0) + subvs.reduce((s, x) => s + bestSubvAmount(x), 0) + (Number(t.fonds_propres) || 0);
+    // Les garanties sont intégrées sous chaque prêt (barre de couverture + chips) ;
+    // seules les orphelines (sans prêt rattaché) restent listées à part.
+    const orphGars = gars.filter(g => !prets.some(p => p.ligne === g.pret_lie));
     const rows =
-      (prets.length ? `<div class="finop-sub">Prêts · ${prets.length}</div>${finHeadHtml('prets')}${prets.map(renderPretRow).join('')}` : '')
-      + (gars.length ? `<div class="finop-sub">Garanties · ${gars.length}</div>${finHeadHtml('garanties')}${gars.map(renderGarantieRow).join('')}` : '')
+      (prets.length ? `<div class="finop-sub">Prêts &amp; garanties · ${prets.length}</div>${finHeadHtml('prets')}${prets.map(p => renderPretRow(p, garStripHtml(p, gars.filter(g => g.pret_lie === p.ligne)))).join('')}` : '')
+      + (orphGars.length ? `<div class="finop-sub">Garanties sans prêt rattaché · ${orphGars.length}</div>${finHeadHtml('garanties')}${orphGars.map(renderGarantieRow).join('')}` : '')
       + (subvs.length ? `<div class="finop-sub">Subventions · ${subvs.length}</div>${finHeadHtml('subventions')}${subvs.map(renderSubvRow).join('')}` : '');
     return `<div class="finop-tr">
       <div class="finop-tr-head">

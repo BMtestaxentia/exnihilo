@@ -5548,3 +5548,12 @@
 /* Nav de vues sous le bandeau tranches (reutilise les boutons .ops-dn) */
 .ops-vn { display: flex; align-items: center; gap: 4px; padding: 7px 24px; border-top: 1px solid var(--border-color);
   background: var(--bg-primary); overflow-x: auto; scrollbar-width: thin; }
+
+/* v54 : garanties integrees sous chaque pret dans la vue Financements op */
+.finop-garstrip { padding: 6px 12px 10px; border-top: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 7px; }
+.finop-bar { height: 16px; }
+.finop-bar .gar-segment { font-size: 10px; }
+.finop-garchips { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.finop-garchip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-primary); }
+.finop-garchip b { font-variant-numeric: tabular-nums; }
+.finop-garnone { font-size: 12px; color: var(--warning-text); }
