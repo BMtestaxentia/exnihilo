@@ -5683,3 +5683,18 @@
 .kpi-card.kpi-warn .kpi-value { color: var(--warning-text); }
 .kpi-sub .kpi-bar { display: block; height: 5px; border-radius: 3px; background: var(--bg-secondary); overflow: hidden; margin: 3px 0 5px; }
 .kpi-sub .kpi-bar > span { display: block; height: 100%; border-radius: 3px; background: var(--success-accent); }
+
+/* ===== v64 : filtres Synthese reworkes (chips actifs, vues modifiables) ===== */
+.synth-active-filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 7px 0 2px; }
+.synth-fchip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+  background: var(--info-bg); color: var(--info-text); border-radius: 999px; padding: 3px 6px 3px 10px; }
+.synth-fchip .l { font-size: 9.5px; text-transform: uppercase; letter-spacing: .03em; opacity: .75; font-weight: 700; }
+.synth-fchip .x { appearance: none; border: none; cursor: pointer; width: 17px; height: 17px; border-radius: 50%;
+  display: grid; place-items: center; background: transparent; color: inherit; font-size: 13px; line-height: 1; padding: 0; }
+.synth-fchip .x:hover { background: var(--info-accent); color: #fff; }
+.synth-filter-select.has-value { border-color: var(--info-accent); background: var(--info-bg); color: var(--info-text); font-weight: 600; }
+.synth-saved-chip.dirty { border-style: dashed; }
+.synth-dirty-dot { color: var(--warning-accent); font-size: 9px; vertical-align: middle; }
+.synth-saved-chip-upd { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--warning-bg); color: var(--warning-text); font-size: 12px; font-weight: 700; cursor: pointer; }
+.synth-saved-chip-upd:hover { background: var(--warning-accent); color: #fff; }

@@ -10571,10 +10571,13 @@ function renderSynthTable() {
   }
 
   if (countEl) {
-    countEl.textContent = q
-      ? `${filtered.length} / ${DATA.length} opérations`
-      : `${DATA.length} opérations`;
+    const scopedTotal = DATA.filter(o => !o.deleted && inScope(o)).length;
+    const nbF = (typeof countActiveSynthFilters === 'function') ? countActiveSynthFilters() : 0;
+    countEl.textContent = nbF
+      ? `${filtered.length} / ${scopedTotal} opérations · ${nbF} filtre${nbF > 1 ? 's' : ''}`
+      : `${scopedTotal} opérations`;
   }
+  if (typeof renderActiveFilterChips === 'function') renderActiveFilterChips();
 
   // Compute the sticky-left widths (Code is ~80px, Nom ~220px)
   const stickyCodeWidth = 90;
@@ -10696,30 +10699,54 @@ function renderSynthContextFilters() {
 }
 
 // ============== SAVED VIEWS for Synthese ==============
+// Une vue = l'état COMPLET du tableau : onglet, recherche, filtres communs et
+// contextuels, filtre de période et tri. Elle peut être mise à jour, renommée
+// (double-clic) et supprimée ; modifier un filtre marque la vue « modifiée ».
+let synthViewDirty = false;
+
+function _snapshotSynthState() {
+  return {
+    tab: synthActiveTab,
+    filter: synthFilter,
+    filters: { ...synthFilters },
+    dateFilter: { ...synthDateFilter },
+    sort: { ...synthSort },
+  };
+}
+
 function renderSavedViews() {
   const c = document.getElementById('synthSavedList');
   if (!c) return;
   if (synthSavedViews.length === 0) {
-    c.innerHTML = '<span class="synth-saved-empty">Aucune vue sauvegardée pour l\'instant.</span>';
+    c.innerHTML = '<span class="synth-saved-empty">Aucune vue sauvegardée - filtre puis clique « Sauvegarder ».</span>';
     return;
   }
-  c.innerHTML = synthSavedViews.map(v => `
-    <button class="synth-saved-chip${synthActiveViewId === v.id ? ' active' : ''}" data-view-id="${escapeHtml(v.id)}" title="Appliquer cette vue">
-      <span class="synth-saved-chip-name">${escapeHtml(v.name)}</span>
+  c.innerHTML = synthSavedViews.map(v => {
+    const isActive = synthActiveViewId === v.id;
+    const dirty = isActive && synthViewDirty;
+    return `
+    <button class="synth-saved-chip${isActive ? ' active' : ''}${dirty ? ' dirty' : ''}" data-view-id="${escapeHtml(v.id)}"
+      title="${dirty ? 'Vue modifiée - cliquer ↻ pour enregistrer les filtres actuels' : 'Appliquer cette vue (double-clic : renommer)'}">
+      <span class="synth-saved-chip-name">${escapeHtml(v.name)}${dirty ? ' <span class="synth-dirty-dot">●</span>' : ''}</span>
+      ${dirty ? `<span class="synth-saved-chip-upd" data-view-update="${escapeHtml(v.id)}" title="Mettre à jour la vue avec les filtres actuels">↻</span>` : ''}
       <span class="synth-saved-chip-x" data-view-delete="${escapeHtml(v.id)}" title="Supprimer cette vue">×</span>
-    </button>
-  `).join('');
+    </button>`;
+  }).join('');
   c.querySelectorAll('[data-view-id]').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      if (e.target.closest('[data-view-delete]')) return; // delete click handled separately
+      if (e.target.closest('[data-view-delete]') || e.target.closest('[data-view-update]')) return;
       applySavedView(btn.dataset.viewId);
     });
+    btn.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      renameSavedView(btn.dataset.viewId);
+    });
+  });
+  c.querySelectorAll('[data-view-update]').forEach(x => {
+    x.addEventListener('click', (e) => { e.stopPropagation(); updateSavedView(x.dataset.viewUpdate); });
   });
   c.querySelectorAll('[data-view-delete]').forEach(x => {
-    x.addEventListener('click', (e) => {
-      e.stopPropagation();
-      deleteSavedView(x.dataset.viewDelete);
-    });
+    x.addEventListener('click', (e) => { e.stopPropagation(); deleteSavedView(x.dataset.viewDelete); });
   });
 }
 
@@ -10727,17 +10754,32 @@ function saveCurrentView() {
   const name = prompt('Nom de la vue (ex : "Mes ops PLAI 2026", "Travaux en cours") :');
   if (!name || !name.trim()) return;
   const id = 'view-' + Date.now();
-  synthSavedViews.push({
-    id,
-    name: name.trim(),
-    tab: synthActiveTab,
-    filter: synthFilter,
-    filters: { ...synthFilters },
-  });
+  synthSavedViews.push({ id, name: name.trim(), ..._snapshotSynthState() });
   synthActiveViewId = id;
+  synthViewDirty = false;
   persistSavedViews();
   renderSavedViews();
   showToast(`Vue « ${name.trim()} » sauvegardée`, 'bookmark');
+}
+
+function updateSavedView(id) {
+  const v = synthSavedViews.find(x => x.id === id);
+  if (!v) return;
+  Object.assign(v, _snapshotSynthState());
+  synthViewDirty = false;
+  persistSavedViews();
+  renderSavedViews();
+  showToast(`Vue « ${v.name} » mise à jour`, 'bookmark');
+}
+
+function renameSavedView(id) {
+  const v = synthSavedViews.find(x => x.id === id);
+  if (!v) return;
+  const name = prompt('Nouveau nom de la vue :', v.name);
+  if (!name || !name.trim()) return;
+  v.name = name.trim();
+  persistSavedViews();
+  renderSavedViews();
 }
 
 function applySavedView(id) {
@@ -10745,8 +10787,11 @@ function applySavedView(id) {
   if (!v) return;
   synthActiveTab = v.tab || synthActiveTab;
   synthFilter = v.filter || '';
-  synthFilters = { ...v.filters };
+  synthFilters = { ...(v.filters || {}) };
+  synthDateFilter = { ...(v.dateFilter || { field: 'date_os', from: '', to: '' }) };
+  synthSort = { ...(v.sort || { tabId: null, colIdx: null, direction: null }) };
   synthActiveViewId = id;
+  synthViewDirty = false;
   // Refresh UI controls
   const filterInput = document.getElementById('synthFilter');
   if (filterInput) filterInput.value = synthFilter;
@@ -10768,14 +10813,69 @@ function deleteSavedView(id) {
   if (!v) return;
   if (!confirm(`Supprimer la vue « ${v.name} » ?`)) return;
   synthSavedViews = synthSavedViews.filter(x => x.id !== id);
-  if (synthActiveViewId === id) synthActiveViewId = null;
+  if (synthActiveViewId === id) { synthActiveViewId = null; synthViewDirty = false; }
   persistSavedViews();
   renderSavedViews();
   showToast('Vue supprimée', 'trash');
 }
 
-// Reset active view marker when user changes filters manually (after view applied)
-function clearActiveView() { synthActiveViewId = null; renderSavedViews(); }
+// Un filtre change alors qu'une vue est active : la vue devient « modifiée »
+// (elle reste affichée, avec ↻ pour l'enregistrer) au lieu d'être désactivée.
+function clearActiveView() {
+  if (synthActiveViewId) { synthViewDirty = true; renderSavedViews(); }
+}
+
+// ---- Chips des filtres actifs (récapitulatif + suppression unitaire) ----
+const SYNTH_FILTER_LABELS = { phase: 'Phase', region: 'Région', equipe: 'Équipe', type_travaux: 'Type travaux' };
+function _synthCtxLabel(id) {
+  for (const tabId in TAB_FILTERS) {
+    const f = TAB_FILTERS[tabId].find(x => x.id === id);
+    if (f) return f.label;
+  }
+  return id;
+}
+function countActiveSynthFilters() {
+  let n = 0;
+  if (synthFilter.trim()) n++;
+  Object.values(synthFilters).forEach(v => { if (v) n++; });
+  if (synthDateFilter.from || synthDateFilter.to) n++;
+  return n;
+}
+function synthClearOneFilter(kind, key) {
+  if (kind === 'q') { synthFilter = ''; const i = document.getElementById('synthFilter'); if (i) i.value = ''; }
+  else if (kind === 'f') { synthFilters[key] = ''; const s = document.querySelector(`.synth-filter-select[data-filter="${key}"]`); if (s) s.value = ''; }
+  else if (kind === 'date') { synthDateFilter = { field: synthDateFilter.field, from: '', to: '' }; }
+  else if (kind === 'sort') { synthSort = { tabId: null, colIdx: null, direction: null }; }
+  renderSynthContextFilters();
+  renderSynthTable();
+  clearActiveView();
+}
+function renderActiveFilterChips() {
+  const c = document.getElementById('synthActiveFilters');
+  if (!c) return;
+  const chips = [];
+  const chip = (label, val, kind, key) =>
+    `<span class="synth-fchip"><span class="l">${escapeHtml(label)}</span>${escapeHtml(val)}<button type="button" class="x" data-clear-kind="${kind}" data-clear-key="${key || ''}" title="Retirer ce filtre">×</button></span>`;
+  if (synthFilter.trim()) chips.push(chip('Recherche', synthFilter.trim(), 'q'));
+  Object.entries(synthFilters).forEach(([k, v]) => {
+    if (v) chips.push(chip(SYNTH_FILTER_LABELS[k] || _synthCtxLabel(k), v, 'f', k));
+  });
+  if (synthDateFilter.from || synthDateFilter.to) {
+    chips.push(chip('Période', `${synthDateFilter.from || '…'} → ${synthDateFilter.to || '…'}`, 'date'));
+  }
+  if (synthSort.tabId && synthSort.colIdx != null && synthSort.direction) {
+    const tab = SYNTH_TABS.find(t => t.id === synthSort.tabId);
+    const col = tab && tab.cols[synthSort.colIdx];
+    if (col) chips.push(chip('Tri', col.label + (synthSort.direction === 'asc' ? ' ↑' : ' ↓'), 'sort'));
+  }
+  c.innerHTML = chips.length ? chips.join('') : '';
+  c.style.display = chips.length ? '' : 'none';
+  c.querySelectorAll('[data-clear-kind]').forEach(b =>
+    b.addEventListener('click', () => synthClearOneFilter(b.dataset.clearKind, b.dataset.clearKey)));
+  // Surligner les selects porteurs d'une valeur
+  document.querySelectorAll('.synth-filter-select[data-filter]').forEach(s =>
+    s.classList.toggle('has-value', !!(s.dataset.filter && synthFilters[s.dataset.filter])));
+}
 // ============== END SAVED VIEWS ==============
 
 function renderOpTable() {
@@ -10813,6 +10913,7 @@ function renderOpTable() {
       synthFilter = '';
       synthFilters = { phase: '', region: '', equipe: '', type_travaux: '' };
       synthDateFilter = { field: 'date_os', from: '', to: '' };
+      synthSort = { tabId: null, colIdx: null, direction: null };
       if (filterInput) filterInput.value = '';
       document.querySelectorAll('.synth-filter-select[data-filter]').forEach(s => s.value = '');
       renderSynthContextFilters();
