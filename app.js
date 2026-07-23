@@ -11101,39 +11101,29 @@ async function addReferentielItem(refKey, refLabel, value, order) {
 }
 
 function populateSynthFilters() {
-  // Populate region dropdown from unique values in DATA
-  const regionSel = document.getElementById('synthFilterRegion');
-  if (regionSel && regionSel.options.length <= 1) {
-    const regions = [...new Set(DATA.map(o => o.region).filter(Boolean))].sort();
-    regions.forEach(r => {
+  // Reconstruit TOUJOURS les options depuis DATA (avant : peuplé une seule fois,
+  // donc figé sur les données de démo si la vue s'affichait avant le chargement
+  // Supabase - ex. une seule région dans la liste). Sélection courante préservée.
+  const fill = (sel, values) => {
+    if (!sel) return;
+    const placeholder = sel.options[0]; // « Toutes les … »
+    const cur = sel.value;
+    sel.innerHTML = '';
+    if (placeholder) sel.appendChild(placeholder);
+    values.forEach(v => {
       const opt = document.createElement('option');
-      opt.value = r; opt.textContent = r;
-      regionSel.appendChild(opt);
+      opt.value = v; opt.textContent = v;
+      sel.appendChild(opt);
     });
-  }
-  // Populate équipe dropdown (union of developpeur, resp_op, charge_fin)
-  const equipeSel = document.getElementById('synthFilterEquipe');
-  if (equipeSel && equipeSel.options.length <= 1) {
-    const teams = new Set();
-    DATA.forEach(o => {
-      [o.developpeur, o.resp_op, o.charge_fin].filter(Boolean).forEach(p => teams.add(p));
-    });
-    [...teams].sort().forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p; opt.textContent = p;
-      equipeSel.appendChild(opt);
-    });
-  }
-  // Populate type travaux dropdown
-  const travauxSel = document.getElementById('synthFilterTravaux');
-  if (travauxSel && travauxSel.options.length <= 1) {
-    const types = [...new Set(DATA.map(o => o.type_travaux).filter(Boolean))].sort();
-    types.forEach(t => {
-      const opt = document.createElement('option');
-      opt.value = t; opt.textContent = t;
-      travauxSel.appendChild(opt);
-    });
-  }
+    sel.value = (cur && values.includes(cur)) ? cur : '';
+  };
+  fill(document.getElementById('synthFilterRegion'),
+    [...new Set(DATA.map(o => o.region).filter(Boolean))].sort());
+  const teams = new Set();
+  DATA.forEach(o => { [o.developpeur, o.resp_op, o.charge_fin].filter(Boolean).forEach(p => teams.add(p)); });
+  fill(document.getElementById('synthFilterEquipe'), [...teams].sort());
+  fill(document.getElementById('synthFilterTravaux'),
+    [...new Set(DATA.map(o => o.type_travaux).filter(Boolean))].sort());
 }
 
 // View switching
