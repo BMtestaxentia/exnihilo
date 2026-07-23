@@ -6584,47 +6584,72 @@ function refreshDashboardKpis() {
     `).join('') + '</div>';
   };
 
-  // 1) KPI grid (4 tiles)
-  let totalLgts = 0, totalBudget = 0;
-  const regions = new Set();
+  // 1) KPI grid - 8 tuiles : lecture directeur (volumes, sécurisation) +
+  //    pilotage opérationnel (fonds propres, signatures, alertes, livraisons).
+  let totalLgts = 0, totalBudget = 0, totalFP = 0;
+  let finSecurise = 0;   // contrats de prêt signés + subventions notifiées + fonds propres
+  let finMobilise = 0;   // meilleur montant connu toutes lignes (sécurisé ou non)
+  let pretsSignesMt = 0, pretsSignesNb = 0, pretsTotNb = 0;
+  let nCritTotal = 0, opsEnRisque = 0;
+  let liv12Ops = 0, liv12Lgts = 0;
+  const _now = new Date(); const _in12m = new Date(); _in12m.setMonth(_in12m.getMonth() + 12);
+  const _pretSigned = p => !!(p.date_contrat || /contrat|sign/i.test(p.statut || ''));
+  const _subvNotif = s => !!(s.montant_notifie || /notif|convention|vers/i.test(s.statut || ''));
   ops.forEach(op => {
-    const tLgts = (typeof totalLgtsOp === 'function') ? totalLgtsOp(op) : null;
-    if (tLgts !== null && tLgts !== undefined) totalLgts += (tLgts || 0);
-    else (op.tranches || []).forEach(t => { const l = trancheLogements(t); if (l !== null) totalLgts += l; });
-    const tBudget = totalBudget && (typeof totalBudget === 'function') ? null : null;
+    let opLgts = 0;
     (op.tranches || []).forEach(t => {
-      const b = trancheBudgetTTC(t);
-      if (b !== null) totalBudget += b;
+      const l = trancheLogements(t); if (l !== null) opLgts += l;
+      const b = trancheBudgetTTC(t); if (b !== null) totalBudget += b;
+      totalFP += (parseFloat(t.fonds_propres) || 0);
+      finSecurise += (parseFloat(t.fonds_propres) || 0);
     });
-    if (op.region) regions.add(op.region);
+    totalLgts += opLgts;
+    (op.prets || []).forEach(p => {
+      pretsTotNb++;
+      finMobilise += bestPretAmount(p);
+      if (_pretSigned(p)) { pretsSignesNb++; pretsSignesMt += bestPretAmount(p); finSecurise += bestPretAmount(p); }
+    });
+    (op.subventions || []).forEach(s => {
+      finMobilise += bestSubvAmount(s);
+      if (_subvNotif(s)) finSecurise += bestSubvAmount(s);
+    });
+    finMobilise += (op.tranches || []).reduce((s2, t) => s2 + (parseFloat(t.fonds_propres) || 0), 0);
+    const alerts = (typeof computeAlerts === 'function') ? computeAlerts(op) : [];
+    const nc = alerts.filter(a => a.level === 'expired' || a.level === 'critical').length;
+    if (nc > 0) { nCritTotal += nc; opsEnRisque++; }
+    const dl = op.date_livraison ? parseDateStr(op.date_livraison) : null;
+    if (dl && dl >= _now && dl <= _in12m) { liv12Ops++; liv12Lgts += opLgts; }
   });
+  const pctSecurise = totalBudget > 0 ? Math.round(finSecurise / totalBudget * 100) : 0;
+  const resteASecuriser = Math.max(0, totalBudget - finSecurise);
   const kpiGrid = document.getElementById('dashboardKpiGrid');
   if (kpiGrid) {
-    kpiGrid.innerHTML = `
-      <div class="kpi-card">
-        <div class="kpi-label"><i class="ti ti-building-community"></i>Opérations</div>
-        <div class="kpi-value">${ops.length}</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label"><i class="ti ti-home"></i>Logements totaux</div>
-        <div class="kpi-value">${totalLgts || '-'}</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label"><i class="ti ti-cash"></i>Budget consolidé</div>
-        <div class="kpi-value">${fmtEuros(totalBudget)}</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label"><i class="ti ti-map-pin"></i>Régions</div>
-        <div class="kpi-value">${regions.size}</div>
-      </div>
-    `;
+    const tile = (icon, label, value, sub, cls) => `
+      <div class="kpi-card${cls ? ' ' + cls : ''}">
+        <div class="kpi-label"><i class="ti ti-${icon}"></i>${label}</div>
+        <div class="kpi-value">${value}</div>
+        ${sub ? `<div class="kpi-sub">${sub}</div>` : ''}
+      </div>`;
+    kpiGrid.innerHTML =
+      tile('building-community', 'Opérations', ops.length, `${opsEnRisque ? opsEnRisque + ' avec alerte critique' : 'aucune en risque'}`)
+      + tile('home', 'Logements', totalLgts || '-', `${liv12Lgts ? liv12Lgts + ' livrés sous 12 mois' : ''}`)
+      + tile('cash', 'Prix de revient consolidé', fmtMontant(totalBudget), `${totalLgts ? fmtMontant(Math.round(totalBudget / totalLgts)) + ' / logement' : ''}`)
+      + tile('shield-check', 'Financement sécurisé', pctSecurise + ' %',
+          `<span class="kpi-bar"><span style="width:${Math.min(100, pctSecurise)}%"></span></span>Reste à sécuriser : ${fmtMontant(resteASecuriser)}`,
+          pctSecurise >= 90 ? 'kpi-good' : (pctSecurise >= 70 ? '' : 'kpi-warn'))
+      + tile('wallet', 'Fonds propres engagés', fmtMontant(totalFP), `${totalBudget ? Math.round(totalFP / totalBudget * 100) + ' % du prix de revient' : ''}`)
+      + tile('coin', 'Prêts signés', fmtMontant(pretsSignesMt), `${pretsSignesNb} / ${pretsTotNb} lignes de prêt`)
+      + tile('alert-triangle', 'Alertes critiques', nCritTotal, nCritTotal ? `sur ${opsEnRisque} opération${opsEnRisque > 1 ? 's' : ''}` : 'portefeuille à jour', nCritTotal ? 'kpi-crit' : 'kpi-good')
+      + tile('truck-delivery', 'Livraisons 12 mois', liv12Ops, liv12Lgts ? `${liv12Lgts} logements` : '');
   }
 
-  // 2) Statut bars (par phase)
-  const phaseCount = {};
+  // 2) Statut bars (par phase) - nb d'ops + logements concernés
+  const phaseCount = {}, phaseLgts = {};
   ops.forEach(op => {
     const p = op.phase_actuelle || 'Montage';
     phaseCount[p] = (phaseCount[p] || 0) + 1;
+    let l = 0; (op.tranches || []).forEach(t => { const n = trancheLogements(t); if (n !== null) l += n; });
+    phaseLgts[p] = (phaseLgts[p] || 0) + l;
   });
   const phaseOrder = ['Montage', 'Validation CA', 'Travaux', 'Livraison', 'GPA'];
   const statutBars = phaseOrder
@@ -6632,7 +6657,7 @@ function refreshDashboardKpis() {
     .map(p => ({
       label: p,
       value: phaseCount[p],
-      display: phaseCount[p],
+      display: `${phaseCount[p]} op${phaseCount[p] > 1 ? 's' : ''} · ${phaseLgts[p] || 0} logts`,
       color: (PHASE_COLORS[p] && PHASE_COLORS[p].text) || 'var(--info-accent)'
     }));
   const statutEl = document.getElementById('dashboardStatutBars');
@@ -6649,23 +6674,23 @@ function refreshDashboardKpis() {
   const regionEl = document.getElementById('dashboardRegionBars');
   if (regionEl) regionEl.innerHTML = renderBars(regionBars);
 
-  // 4) Logements par type de financement (PLAI/PLUS/PLS/PLI/Libre/Autre)
+  // 4) Logements par type de financement - modèle SFO (agréés + hors agrément,
+  //    fallback volumétrie historique via sumVolKey)
   const finTypes = { 'PLAI': 0, 'PLUS': 0, 'PLS': 0, 'PLI': 0, 'LIBRE': 0, 'AUTRE': 0 };
   ops.forEach(op => {
-    (op.tranches || []).forEach(t => {
-      ['plai', 'plus', 'pls', 'pli', 'libre', 'autre'].forEach(k => {
-        const v = (t.vol && Number(t.vol[k])) || 0;
-        if (v > 0) finTypes[k.toUpperCase()] += v;
-      });
+    ['plai', 'plus', 'pls', 'pli', 'libre', 'autre'].forEach(k => {
+      finTypes[k.toUpperCase()] += sumVolKey(op, k);
     });
+    (op.tranches || []).forEach(t => { finTypes['AUTRE'] += (Number(t.logts_lli) || 0) + (Number(t.logts_rhvs) || 0); });
   });
+  const FIN_TYPE_COLORS = { PLAI: '#1d9e75', PLUS: '#185fa5', PLS: '#9333ea', PLI: '#ba7517', LIBRE: '#64748b', AUTRE: '#94a3b8' };
   const finBars = Object.entries(finTypes)
     .filter(([_, v]) => v > 0)
-    .map(([type, v]) => ({ label: type, value: v, display: v, color: 'var(--purple-accent)' }));
+    .map(([type, v]) => ({ label: type, value: v, display: v, color: FIN_TYPE_COLORS[type] || 'var(--purple-accent)' }));
   const finEl = document.getElementById('dashboardFinancementBars');
   if (finEl) finEl.innerHTML = renderBars(finBars);
 
-  // 5) Avancement agréments (par statut)
+  // 5) Avancement agréments - ordonné selon le cycle de vie (pas par volume)
   const agrCount = {};
   ops.forEach(op => {
     (op.tranches || []).forEach(t => {
@@ -6673,9 +6698,11 @@ function refreshDashboardKpis() {
       agrCount[s] = (agrCount[s] || 0) + 1;
     });
   });
-  const agrBars = Object.entries(agrCount)
-    .sort((a, b) => b[1] - a[1])
-    .map(([s, n]) => ({ label: s, value: n, display: n, color: 'var(--success-accent)' }));
+  const AGR_ORDER = ['À déposer', 'Déposé', 'Obtenu', 'DFA signée', 'Clôturé', 'Non défini'];
+  const AGR_COLORS = { 'À déposer': '#c4423a', 'Déposé': '#ba7517', 'Obtenu': '#185fa5', 'DFA signée': '#1d9e75', 'Clôturé': '#64748b', 'Non défini': '#94a3b8' };
+  const agrBars = Object.keys(agrCount)
+    .sort((a, b) => (AGR_ORDER.indexOf(a) === -1 ? 99 : AGR_ORDER.indexOf(a)) - (AGR_ORDER.indexOf(b) === -1 ? 99 : AGR_ORDER.indexOf(b)))
+    .map(s => ({ label: s, value: agrCount[s], display: agrCount[s], color: AGR_COLORS[s] || 'var(--success-accent)' }));
   const agrEl = document.getElementById('dashboardAgrementBars');
   if (agrEl) agrEl.innerHTML = renderBars(agrBars);
 
@@ -6690,37 +6717,58 @@ function refreshDashboardKpis() {
       }
     }
   });
+  // 6b - Livraisons par année : nb d'ops + logements
+  const livLgts = {};
+  ops.forEach(op => {
+    if (!op.date_livraison) return;
+    const d = parseDateStr(op.date_livraison);
+    if (!d) return;
+    const y = d.getFullYear();
+    let l = 0; (op.tranches || []).forEach(t => { const n = trancheLogements(t); if (n !== null) l += n; });
+    livLgts[y] = (livLgts[y] || 0) + l;
+  });
   const livBars = Object.entries(livCount)
     .sort((a, b) => a[0] - b[0])
-    .map(([y, n]) => ({ label: y, value: n, display: n, color: 'var(--warning-accent)' }));
+    .map(([y, n]) => ({ label: y, value: n, display: `${n} op${n > 1 ? 's' : ''} · ${livLgts[y] || 0} logts`, color: 'var(--warning-accent)' }));
   const livEl = document.getElementById('dashboardLivraisonBars');
   if (livEl) livEl.innerHTML = renderBars(livBars);
 
-  // 7) Répartition financement global (FP / Prêts / Subv)
-  let fp = 0, prets = 0, subv = 0;
+  // 7) Sécurisation des prêts : montants par étape du cycle de vie
+  let pAdem = 0, pInstr = 0, pLO = 0, pSign = 0;
   ops.forEach(op => {
-    (op.tranches || []).forEach(t => { fp += (parseFloat(t.fonds_propres) || 0); });
-    (op.prets || []).forEach(p => { prets += bestPretAmount(p); });
-    (op.subventions || []).forEach(s => { subv += bestSubvAmount(s); });
+    (op.prets || []).forEach(p => {
+      const m = bestPretAmount(p);
+      let stage = pretStageFromStatut(p.statut);
+      if (p.date_demande) stage = Math.max(stage, 1);
+      if (p.date_comite_banque) stage = Math.max(stage, 2);
+      if (p.date_lo) stage = Math.max(stage, 3);
+      if (p.date_contrat) stage = Math.max(stage, 4);
+      if (stage >= 4) pSign += m;
+      else if (stage === 3) pLO += m;
+      else if (stage >= 1) pInstr += m;
+      else pAdem += m;
+    });
   });
-  const finFmt = (v) => fmtEuros(v);
   const finGlobalBars = [
-    { label: 'Fonds propres', value: fp, display: finFmt(fp), color: 'var(--purple-accent)' },
-    { label: 'Prêts', value: prets, display: finFmt(prets), color: 'var(--info-accent)' },
-    { label: 'Subventions', value: subv, display: finFmt(subv), color: 'var(--success-accent)' },
+    { label: 'Contrats signés', value: pSign, display: fmtMontant(pSign), color: '#1d9e75' },
+    { label: "Lettres d'offre", value: pLO, display: fmtMontant(pLO), color: '#185fa5' },
+    { label: 'En instruction', value: pInstr, display: fmtMontant(pInstr), color: '#ba7517' },
+    { label: 'À demander', value: pAdem, display: fmtMontant(pAdem), color: '#c4423a' },
   ].filter(b => b.value > 0);
   const finGlobalEl = document.getElementById('dashboardFinanceBars');
   if (finGlobalEl) finGlobalEl.innerHTML = renderBars(finGlobalBars);
 
-  // 8) Zone ABC
-  const zoneCount = {};
+  // 8) Charge par chargé de financement (nb d'ops actives suivies)
+  const chargeCount = {}, chargeBudget = {};
   ops.forEach(op => {
-    const z = op.zone_abc || 'Non définie';
-    zoneCount[z] = (zoneCount[z] || 0) + 1;
+    const c = op.charge_fin || 'Non affecté';
+    chargeCount[c] = (chargeCount[c] || 0) + 1;
+    let b = 0; (op.tranches || []).forEach(t => { const v = trancheBudgetTTC(t); if (v !== null) b += v; });
+    chargeBudget[c] = (chargeBudget[c] || 0) + b;
   });
-  const zoneBars = Object.entries(zoneCount)
+  const zoneBars = Object.entries(chargeCount)
     .sort((a, b) => b[1] - a[1])
-    .map(([z, n]) => ({ label: 'Zone ' + z, value: n, display: n, color: 'var(--coral-accent)' }));
+    .map(([c, n]) => ({ label: c, value: n, display: `${n} op${n > 1 ? 's' : ''} · ${fmtMontant(chargeBudget[c])}`, color: 'var(--info-accent)' }));
   const zoneEl = document.getElementById('dashboardZoneBars');
   if (zoneEl) zoneEl.innerHTML = renderBars(zoneBars);
 }
@@ -12780,10 +12828,11 @@ function addLogoutButton(){
     scopeBtn.textContent = _scopeLabel();
     applyScopeRerender();
   });
-  // « Mes opérations » à gauche du groupe (avant le toggle de thème), le reste à droite
+  // « Mes opérations » à gauche du switch dark mode ; € et rafraîchir après lui.
+  const userBox = document.querySelector('.topnav-user') || nav;
   const themeBtn = document.getElementById('themeToggle');
-  if (themeBtn && themeBtn.parentNode === nav) nav.insertBefore(scopeBtn, themeBtn);
-  else nav.appendChild(scopeBtn);
+  if (themeBtn && themeBtn.parentNode) themeBtn.parentNode.insertBefore(scopeBtn, themeBtn);
+  else userBox.appendChild(scopeBtn);
 
   // Bascule d'affichage des montants : k€ / € (2 décimales max)
   const moneyBtn = document.createElement('button');
@@ -12800,7 +12849,7 @@ function addLogoutButton(){
     try { if (!editMode) renderAll(); } catch (e) {}
     applyScopeRerender();
   });
-  nav.appendChild(moneyBtn);
+  userBox.appendChild(moneyBtn);
 
   // Bouton rafraîchir (icône seule)
   const rbtn = document.createElement('button');
@@ -12809,7 +12858,7 @@ function addLogoutButton(){
   rbtn.setAttribute('aria-label', 'Rafraîchir');
   rbtn.innerHTML = '<span class="sess-refresh-ico">⟳</span>';
   rbtn.addEventListener('click', () => refreshData(false));
-  nav.appendChild(rbtn);
+  userBox.appendChild(rbtn);
 
   // Chip utilisateur (display name) - tout à droite, menu déconnexion au survol
   let uname = (s && (s.name || s.email)) || 'Utilisateur';
