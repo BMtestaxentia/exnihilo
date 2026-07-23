@@ -3884,11 +3884,14 @@ function finHeadHtml(type) {
   return h ? `<div class="fin-lhead">${h.map(x => `<span>${x}</span>`).join('')}<span></span><span></span></div>` : '';
 }
 
-// Tiroir "Financements de l'opération" : toutes les tranches, contenu généré.
+// Vue "Financements de l'opération" : toutes les tranches, contenu généré.
+// Une couleur d'accent par tranche pour distinguer les regroupements.
+const FINOP_TR_COLORS = ['#185fa5', '#1d9e75', '#ba7517', '#9333ea', '#c4423a', '#0d9488'];
 function renderOpFinancementsDrawer(op) {
   const trs = op.tranches || [];
   if (!trs.length) return '<div class="subent-empty">Aucune tranche sur cette opération.</div>';
   return trs.map((t, idx) => {
+    const trColor = FINOP_TR_COLORS[idx % FINOP_TR_COLORS.length];
     const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
     const wIdx = arr => (arr || []).map((x, i2) => ({ ...x, _originalIdx: i2 })).filter(x => x.tranche === suffix);
     const prets = wIdx(op.prets), gars = wIdx(op.garanties), subvs = wIdx(op.subventions);
@@ -3900,9 +3903,9 @@ function renderOpFinancementsDrawer(op) {
       (prets.length ? `<div class="finop-sub">Prêts &amp; garanties · ${prets.length}</div>${finHeadHtml('prets')}${prets.map(p => renderPretRow(p, garStripHtml(p, gars.filter(g => g.pret_lie === p.ligne)))).join('')}` : '')
       + (orphGars.length ? `<div class="finop-sub">Garanties sans prêt rattaché · ${orphGars.length}</div>${finHeadHtml('garanties')}${orphGars.map(renderGarantieRow).join('')}` : '')
       + (subvs.length ? `<div class="finop-sub">Subventions · ${subvs.length}</div>${finHeadHtml('subventions')}${subvs.map(renderSubvRow).join('')}` : '');
-    return `<div class="finop-tr">
+    return `<div class="finop-tr" style="border-left-color:${trColor}">
       <div class="finop-tr-head">
-        <span class="ops-tpill-top">${escapeHtml(suffix)}</span>
+        <span class="ops-tpill-top" style="color:${trColor}">${escapeHtml(suffix)}</span>
         <span class="finop-tr-name">${escapeHtml(t.type_structure || '')}</span>
         <span class="oph-soft">${fmtMontant(tot)} mobilisés</span>
         <button type="button" class="ops-dn" style="margin-left:auto" onclick="selectTranche(${idx}); openOpsDomain('tranche-fin')">Ouvrir la tranche →</button>
@@ -4414,15 +4417,6 @@ function renderTrancheDetail() {
         ${(t.detail_logements || editMode) ? editableNotes(t.detail_logements, 'detail_logements', 'tranche-field', 'Ex: Dont 75 PLAI T1 prime · 22 PLAI T2 standard…') : ''}
       </div>
 
-      <div class="section" id="sec-tr-horsagr" data-grp="tr">
-        <div class="section-label vol"><i class="ti ti-home-2"></i>Hors agrément</div>
-        ${editableKV('Logements LLI (nombre)', t.logts_lli, 'logts_lli', 'number', 'tranche-field')}
-        ${editableKV('Date déclaration LLI', t.date_decl_lli, 'date_decl_lli', 'text', 'tranche-field')}
-        ${editableKV('Logements RHVS (nombre)', t.logts_rhvs, 'logts_rhvs', 'number', 'tranche-field')}
-        ${editableKV('Date arrêté préfectoral RHVS', t.date_arrete_rhvs, 'date_arrete_rhvs', 'text', 'tranche-field')}
-        ${editableKV('Logements LIBRE (nombre)', t.logts_libre, 'logts_libre', 'number', 'tranche-field')}
-        ${editableKV('Locaux LIBRE (nombre)', t.locaux_libre, 'locaux_libre', 'number', 'tranche-field')}
-      </div>
 
       ${(t.type_redevance || t.montant_redevance || editMode) ? `<div class="section" id="sec-tr-loyer" data-grp="tr">
         <div class="section-label loyer"><i class="ti ti-coin"></i>Loyer</div>
@@ -4431,12 +4425,23 @@ function renderTrancheDetail() {
         ${editableKV('Date accord redevance', t.date_accord_redev, 'date_accord_redev', 'text', 'tranche-field')}
       </div>` : ''}
 
-      <div class="section" id="sec-tr-convloc" data-grp="tr">
-        <div class="section-label conv-loc"><i class="ti ti-file-text"></i>Convention de location</div>
-        ${editableSelect('Convention signée', t.conv_loc_signee === true ? 'Oui' : (t.conv_loc_signee === false ? 'Non' : ''), 'conv_loc_signee', ['Oui', 'Non'], 'tranche-field')}
-        ${editableKV('Accord redevance', t.conv_loc_montant_loyer, 'conv_loc_montant_loyer', 'number', 'tranche-field')}
-        ${editableKV('Date valeur redevance', t.conv_loc_date_valeur, 'conv_loc_date_valeur', 'text', 'tranche-field')}
-        ${editableSelect('Grille', t.conv_loc_grille, 'conv_loc_grille', getRef('grilles_loyer'), 'tranche-field')}
+      <div class="op-anchor tr-stack6" data-grp="tr">
+        <div class="section" id="sec-tr-horsagr">
+          <div class="section-label vol"><i class="ti ti-home-2"></i>Hors agrément</div>
+          ${editableKV('Logements LLI (nombre)', t.logts_lli, 'logts_lli', 'number', 'tranche-field')}
+          ${editableKV('Date déclaration LLI', t.date_decl_lli, 'date_decl_lli', 'text', 'tranche-field')}
+          ${editableKV('Logements RHVS (nombre)', t.logts_rhvs, 'logts_rhvs', 'number', 'tranche-field')}
+          ${editableKV('Date arrêté préfectoral RHVS', t.date_arrete_rhvs, 'date_arrete_rhvs', 'text', 'tranche-field')}
+          ${editableKV('Logements LIBRE (nombre)', t.logts_libre, 'logts_libre', 'number', 'tranche-field')}
+          ${editableKV('Locaux LIBRE (nombre)', t.locaux_libre, 'locaux_libre', 'number', 'tranche-field')}
+        </div>
+        <div class="section" id="sec-tr-convloc">
+          <div class="section-label conv-loc"><i class="ti ti-file-text"></i>Convention de location</div>
+          ${editableSelect('Convention signée', t.conv_loc_signee === true ? 'Oui' : (t.conv_loc_signee === false ? 'Non' : ''), 'conv_loc_signee', ['Oui', 'Non'], 'tranche-field')}
+          ${editableKV('Accord redevance', t.conv_loc_montant_loyer, 'conv_loc_montant_loyer', 'number', 'tranche-field')}
+          ${editableKV('Date valeur redevance', t.conv_loc_date_valeur, 'conv_loc_date_valeur', 'text', 'tranche-field')}
+          ${editableSelect('Grille', t.conv_loc_grille, 'conv_loc_grille', getRef('grilles_loyer'), 'tranche-field')}
+        </div>
       </div>
 
       <div class="op-anchor" id="sec-tr-prets" data-grp="fin">${renderPretsSection(prets, op)}</div>
@@ -5405,72 +5410,73 @@ function previsionalLOFromComite(comiteDate) {
 }
 
 function renderPretCard(i) {
-  const conditions = [
-    i.taux,
-    i.duree_emprunt ? i.duree_emprunt + ' ans' : null,
-    i.duree_prefi ? 'préfi ' + i.duree_prefi + ' mois' : null,
-    i.revision,
-    i.source ? '(' + i.source + ')' : null,
-  ].filter(Boolean).join(' · ');
-
-  // Previsional LO logic: if no real date_lo but comité banque is set
+  // Détail d'un prêt (déplié sous la ligne compacte) : stepper daté + chips.
   const previsionLO = (!i.date_lo && i.date_comite_banque) ? previsionalLOFromComite(i.date_comite_banque) : null;
-
-  // Build jalons timeline (lecture mode)
-  const jalons = [
-    { label: 'Demande', date: i.date_demande, montant: null, field: 'date_demande' },
-    { label: 'Comité banque', date: i.date_comite_banque, montant: null, field: 'date_comite_banque' },
-    { label: "Lettre d'offre", date: i.date_lo || previsionLO, montant: i.montant_lo, previsional: !i.date_lo && !!previsionLO, sp_link: i.lien_sp_lo, sp_label: "Ouvrir la lettre d'offre", field: 'date_lo' },
-    { label: 'Contrat', date: i.date_contrat, montant: i.montant_contrat, n: i.n_contrat, sp_link: i.lien_sp_contrat, sp_label: 'Ouvrir le contrat', field: 'date_contrat' },
-  ];
-  const jalonsHtml = jalons.map(j => {
-    if (!j.date && !j.montant) {
-      return `<div class="jalon jalon-empty"><div class="jalon-label">${j.label}</div><div class="jalon-date">-</div></div>`;
+  const spLink = (url, label) => url
+    ? `<a class="jalon-sp-link" href="${escapeHtml(url)}" target="_blank" rel="noopener" title="${escapeHtml(label)}" onclick="event.stopPropagation();"><i class="ti ti-file-text"></i></a>`
+    : '';
+  // Puce de caducité LO (tant que le contrat n'est pas signé)
+  let caduChip = '';
+  if (i.date_caducite_lo && !i.date_contrat) {
+    const d = parseDateStr(i.date_caducite_lo);
+    if (d) {
+      const days = Math.round((d - new Date()) / 86400000);
+      const cls = days < 0 ? 'crit' : (days <= 30 ? 'crit' : (days <= 90 ? '' : ' ok'));
+      caduChip = `<span class="pd-chipwarn${days <= 30 ? ' crit' : ''}">${days < 0 ? 'LO caduque depuis ' + (-days) + 'j' : 'caducité dans ' + days + 'j'}</span>`;
+    } else {
+      caduChip = `<span class="pd-chipwarn">caducité ${escapeHtml(i.date_caducite_lo)}</span>`;
     }
-    const dateClass = j.previsional ? 'jalon-date previsional' : 'jalon-date';
-    const dateContent = j.previsional
-      ? `<i class="ti ti-clock" style="font-size:11px;"></i>${escapeHtml(j.date)} <span class="prev-tag">prév.</span>`
-      : escapeHtml(j.date || '-');
-    const spBtn = j.sp_link
-      ? `<a class="jalon-sp-link" href="${escapeHtml(j.sp_link)}" target="_blank" rel="noopener" title="${escapeHtml(j.sp_label || 'Ouvrir document')}" onclick="event.stopPropagation();"><i class="ti ti-file-text"></i></a>`
-      : '';
-    return `
-      <div class="jalon${j.previsional ? ' jalon-prev' : ''}">
-        <div class="jalon-label">${j.label}${spBtn}</div>
-        <div class="${dateClass}">${dateContent}</div>
-        ${j.montant ? `<div class="jalon-montant">${fmtMontant(j.montant)}</div>` : ''}
-        ${j.n ? `<div class="jalon-sub">N° ${escapeHtml(j.n)}</div>` : ''}
-      </div>
-    `;
-  }).join('');
+  }
+  // Étape atteinte : même logique que la mini-timeline de la ligne compacte
+  let stage = pretStageFromStatut(i.statut);
+  if (i.montant_valide_ca || i.montant_sim) stage = Math.max(stage, 0);
+  if (i.date_demande) stage = Math.max(stage, 1);
+  if (i.date_comite_banque) stage = Math.max(stage, 2);
+  if (i.date_lo) stage = Math.max(stage, 3);
+  if (i.date_contrat) stage = Math.max(stage, 4);
+  const mCA = i.montant_valide_ca, mSim = i.montant_sim;
+  const steps = [
+    { label: 'Simulation', date: '', sub: mCA ? fmtMontant(mCA) + ' validé CA' : (mSim ? fmtMontant(mSim) + ' sim.' : '') },
+    { label: 'Demande', date: i.date_demande || '' },
+    { label: 'Comité banque', date: i.date_comite_banque || '' },
+    { label: 'Lettre d\'offre', date: i.date_lo || previsionLO || '', prev: !i.date_lo && !!previsionLO,
+      sub: i.montant_lo ? fmtMontant(i.montant_lo) : '', link: spLink(i.lien_sp_lo, 'Ouvrir la lettre d\'offre'), chip: caduChip },
+    { label: 'Contrat', date: i.date_contrat || '', sub: [i.montant_contrat ? fmtMontant(i.montant_contrat) : '', i.n_contrat ? 'N° ' + i.n_contrat : ''].filter(Boolean).join(' · '),
+      link: spLink(i.lien_sp_contrat, 'Ouvrir le contrat') },
+  ];
+  const stepsHtml = steps.map((s, idx) => `
+    <div class="pd-step ${idx <= stage ? 'done' : (idx === stage + 1 ? 'next' : '')}">
+      <div class="pd-track"><span class="pd-line pd-line-l"></span><span class="pd-dot"></span><span class="pd-line pd-line-r"></span></div>
+      <div class="pd-label">${s.label}${s.link || ''}</div>
+      <div class="pd-date${s.prev ? ' prev' : ''}">${s.date ? escapeHtml(s.date) + (s.prev ? ' <span class="prev-tag">prév.</span>' : '') : '·'}</div>
+      ${s.sub ? `<div class="pd-sub">${escapeHtml(s.sub)}</div>` : ''}
+      ${s.chip || ''}
+    </div>`).join('');
 
-  // Pieces attendues display
+  const chip = (l, v) => (v !== null && v !== undefined && v !== '') ? `<span class="pd-chip"><span class="l">${l}</span><span class="v">${escapeHtml(String(v))}</span></span>` : '';
+  const chipsHtml = [
+    chip('Taux', i.taux),
+    chip('Durée', i.duree_emprunt ? i.duree_emprunt + ' ans' : ''),
+    chip('Révision', i.revision),
+    chip('Profil amort CE', i.profil_amort),
+    chip('Préfi', i.duree_prefi ? i.duree_prefi + ' mois' + (i.date_fin_prefi ? ' · fin ' + i.date_fin_prefi : '') : (i.date_fin_prefi ? 'fin ' + i.date_fin_prefi : '')),
+    chip('Avenant préfi', i.avenant_duree_prefi),
+    chip('N° dossier', i.n_dossier),
+    chip('Contact', i.contact),
+    chip('Source montant', i.source),
+    i.aap_id ? `<span class="pd-chip"><span class="l">AAP</span><span class="v">${escapeHtml(aapLabelById(i.aap_id))}</span></span>` : '',
+    i.non_garanti ? `<span class="pd-chip"><span class="l">Garantie</span><span class="v">non requise</span></span>` : '',
+  ].filter(Boolean).join('');
+
   const pieces = Array.isArray(i.pieces_attendues) ? i.pieces_attendues : (i.pieces_attendues ? String(i.pieces_attendues).split(',').map(s => s.trim()).filter(Boolean) : []);
   const piecesHtml = pieces.length > 0
-    ? `<div class="entity-card-meta" style="border-top:1px dashed var(--border-color);padding-top:6px;margin-top:8px;">
-         <div style="width:100%;">
-           <div style="font-size:10.5px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.3px;font-weight:600;margin-bottom:4px;">Pièces attendues pour émission</div>
-           <div style="display:flex;flex-wrap:wrap;gap:4px;">
-             ${pieces.map(p => `<span class="piece-pill">${escapeHtml(p)}</span>`).join('')}
-           </div>
-         </div>
-       </div>`
+    ? `<div class="pd-pieces"><span class="pd-pieces-l">Pièces attendues</span>${pieces.map(p => `<span class="piece-pill">${escapeHtml(p)}</span>`).join('')}</div>`
     : '';
 
   return `
-    <div class="entity-card${diffEntityClass('prets', i)}" data-section="prets" data-row-idx="${i._originalIdx}">
-      <div class="entity-card-head">
-        <div>
-          <div class="entity-card-title">${escapeHtml(i.ligne || '-')}${i.financeur ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.financeur)}</span>` : ''}</div>
-          <div class="entity-card-sub">Simulation : ${fmtMontant(i.montant_sim)}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${i.aap_id ? `<span class="badge-secondary"><i class="ti ti-bookmark"></i> ${escapeHtml(aapLabelById(i.aap_id))}</span>` : ''}${statusBadge(i.statut)}</div>
-      </div>
-      <div class="jalons-timeline">${jalonsHtml}</div>
-      ${conditions ? `<div class="entity-card-meta"><span><i class="ti ti-settings"></i>${escapeHtml(conditions)}</span></div>` : ''}
-      ${i.contact ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-user"></i>${escapeHtml(i.contact)}</span></div>` : ''}
-      ${i.n_dossier ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-folder"></i>N° dossier : ${escapeHtml(i.n_dossier)}</span></div>` : ''}
-      ${i.date_caducite_lo ? `<div class="entity-card-meta" style="border-top:none;padding-top:0;margin-top:4px;"><span><i class="ti ti-alert-triangle"></i>Caducité LO ${escapeHtml(i.date_caducite_lo)}</span></div>` : ''}
+    <div class="entity-card pd-card${diffEntityClass('prets', i)}" data-section="prets" data-row-idx="${i._originalIdx}">
+      <div class="pd-steps">${stepsHtml}</div>
+      ${chipsHtml ? `<div class="pd-chips">${chipsHtml}</div>` : ''}
       ${piecesHtml}
       ${i.commentaires ? `<div class="entity-card-notes">${escapeHtml(i.commentaires)}</div>` : ''}
     </div>
