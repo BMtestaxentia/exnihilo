@@ -1,4 +1,4 @@
-// ============== SUPABASE CONFIG ==============
+﻿// ============== SUPABASE CONFIG ==============
 // POC : données chargées depuis Supabase au lieu d'être en dur.
 // Les ops par défaut (en dur ci-dessous) servent de fallback si Supabase ne répond pas.
 const SUPABASE_URL = 'https://odcquhorfhlasnqahgls.supabase.co';
@@ -3480,7 +3480,7 @@ function sumSurfaceKey(op, key) { return op.tranches.reduce((s, t) => s + ((t.su
 let OPS_TAB = sessionStorage.getItem('exnihilo_ops_tab') || 'syn';
 const OPS_TABS_DEF = [
   ['syn',   'Synthèse',        'layout-dashboard'],
-  ['dos',   'Dossier',         'folder'],
+  ['dos',   'Informations',    'folder'],
   ['bilan', 'Bilan',           'report-money'],
   ['tr',    'Tranches',        'building-skyscraper'],
   ['fin',   'Financements',    'coin'],
@@ -3511,9 +3511,9 @@ function switchOpsTab(t) {
   applyOpsTab();
   document.querySelectorAll('.ops-tab').forEach(b => b.classList.toggle('active', b.dataset.tabid === t));
   if (typeof _syncOpsNav === 'function') _syncOpsNav();
-  // La mini-carte Leaflet doit se recalibrer si elle a été créée dans un onglet masqué
-  if ((t === 'syn' || t === 'home') && typeof opLocationMapInstance !== 'undefined' && opLocationMapInstance) {
-    setTimeout(() => { try { opLocationMapInstance.invalidateSize(); } catch (e) {} }, 80);
+  // Les mini-cartes Leaflet doivent se recalibrer si créées dans une vue masquée
+  if ((t === 'syn' || t === 'home' || t === 'dos') && typeof opLocationMapInstances !== 'undefined') {
+    setTimeout(() => { Object.values(opLocationMapInstances).forEach(m => { try { m.invalidateSize(); } catch (e) {} }); }, 80);
   }
 }
 
@@ -3524,7 +3524,7 @@ function switchOpsTab(t) {
 // Domaines de niveau opération, déplacés dans le tiroir depuis #opDetail.
 const OPS_DOMAINS = [
   ['syn',   'Synthèse',        'layout-dashboard'],
-  ['dos',   'Dossier',         'folder'],
+  ['dos',   'Informations',    'folder'],
   ['bilan', 'Bilan',           'report-money'],
   ['suivi', 'Comités & suivi', 'activity'],
 ];
@@ -3719,10 +3719,10 @@ function renderOpHomeDashboard(op, displayedOp) {
       <div class="oph-tsub">Surface utile ${fmtSurface(opTotalSurface(displayedOp))} · Prix / logement ${(totalLgts(displayedOp) > 0) ? fmtMontant(Math.round(totalBudget(displayedOp) / totalLgts(displayedOp))) : '-'}</div>`
     : `<div class="oph-tsub">Aucun bilan renseigné.${!editMode ? ` <button type="button" class="subent-cta" onclick="event.stopPropagation();editFromDrawer('tr')">+ Saisir en édition</button>` : ''}${_volChips ? `<div class="oph-tsub">Volumétrie : ${_volChips}</div>` : ''}`;
   return `<div class="oph-grid">
-    ${card('oph-c6', 'folder', 'Dossier', '', 'dos', dossierBody)}
-    ${finBrick}
-    ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', bilanBody)}
+    ${card('oph-c6', 'folder', 'Informations', '', 'dos', dossierBody)}
     ${locBrick}
+    ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', bilanBody)}
+    ${finBrick}
     ${card('oph-c6', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span>`, 'suivi', comLines)}
     <section class="oph-card oph-c6">
       <div class="oph-head"><span class="oph-ic"><i class="ti ti-alert-triangle"></i></span>
@@ -3757,7 +3757,7 @@ function _syncOpsNav() {
 
 // Barre de navigation des vues (consultation), sous le bandeau tranches.
 function opsViewNavHtml(op) {
-  const opNav = [['home', 'Vue d\'ensemble'], ['syn', 'Synthèse'], ['dos', 'Dossier'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
+  const opNav = [['home', 'Vue d\'ensemble'], ['syn', 'Synthèse'], ['dos', 'Informations'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
   const vBtn = ([tab, label]) =>
     `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="openOpsDomain('${Object.keys(_DOMAIN_TO_TAB).find(k => _DOMAIN_TO_TAB[k] === tab) || 'home'}')">${escapeHtml(label)}</button>`;
   // Le choix de la tranche se fait dans le bandeau au-dessus (pas de doublon ici) ;
@@ -3772,7 +3772,7 @@ function opsViewNavHtml(op) {
 function opsUnifiedBarHtml(op, displayedOp) {
   // Synthèse retirée : la Vue d'ensemble couvre tout (alertes complètes,
   // volumétrie consolidée dans la brique Bilan, localisation dans le Dossier).
-  const opNav = [['home', 'Vue d\'ensemble'], ['dos', 'Dossier'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
+  const opNav = [['home', 'Vue d\'ensemble'], ['dos', 'Informations'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
   const vBtn = ([tab, label]) =>
     `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="openOpsDomain('${tab}')">${escapeHtml(label)}</button>`;
   const trs = displayedOp.tranches || [];
@@ -3791,9 +3791,13 @@ function opsUnifiedBarHtml(op, displayedOp) {
   }).join('');
   const trNav = `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" onclick="openOpsDomain('tranche')">Détail</button>
     <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" onclick="openOpsDomain('tranche-fin')">Financements</button>`;
+  // Zone tranches visuellement distincte des vues opération (encart dédié)
   return `<div class="ops-tbar ops-unibar">
     ${opNav.map(vBtn).join('')}
-    ${trs.length ? `<span class="ops-tbar-div"></span><span class="ops-tbar-lead">Tranches</span>${pills}<span class="ops-tbar-div"></span>${trNav}` : ''}
+    ${trs.length ? `<div class="ops-tzone${(OPS_TAB === 'tr' || OPS_TAB === 'fin') ? ' active' : ''}">
+      <span class="ops-tbar-lead">Tranches</span>${pills}
+      <span class="ops-tzone-sub">${trNav}</span>
+    </div>` : ''}
   </div>`;
 }
 
@@ -4156,11 +4160,9 @@ function renderOpDetail() {
           </div>
         </div>
         <div class="loc-map-col">
-          ${effectiveEditMode
-            ? ((op.latitude != null && op.longitude != null)
-                ? `<div class="loc-map-wrap"><div id="opLocationMap" class="loc-map"></div></div>`
-                : `<div class="loc-map-empty"><i class="ti ti-map-pin"></i><p>Aucune géolocalisation</p><p class="loc-map-empty-hint">Renseignez une adresse et cliquez sur « Vérifier l'adresse via la BAN » pour afficher la carte.</p></div>`)
-            : `<div class="loc-map-empty"><i class="ti ti-map-pin"></i><p>Carte affichée sur la vue opération</p></div>`}
+          ${(op.latitude != null && op.longitude != null)
+            ? `<div class="loc-map-wrap"><div id="${effectiveEditMode ? 'opLocationMap' : 'opLocationMapDos'}" class="loc-map"></div></div>`
+            : `<div class="loc-map-empty"><i class="ti ti-map-pin"></i><p>Aucune géolocalisation</p><p class="loc-map-empty-hint">Renseignez une adresse et cliquez sur « Vérifier l'adresse via la BAN » pour afficher la carte.</p></div>`}
         </div>
       </div>
     </div>
@@ -4409,7 +4411,7 @@ function renderTrancheDetail() {
         ${editableSelect('Nature', t.nature, 'nature', (t.nature && !getRef('nature').includes(t.nature)) ? [t.nature, ...getRef('nature')] : getRef('nature'), 'tranche-field')}
         ${editableSelect('Public', t.public_cible, 'public_cible', (t.public_cible && !getRef('public').includes(t.public_cible)) ? [t.public_cible, ...getRef('public')] : getRef('public'), 'tranche-field')}
         ${(t.vol_agree && Number(t.vol_agree.plai) > 0) ? editableKV('PLAI adapté (nb logts)', t.plai_adapte, 'plai_adapte', 'number', 'tranche-field') : ''}
-        ${editableNotes(t.detail_logements, 'detail_logements', 'tranche-field', 'Ex: Dont 75 PLAI T1 prime · 22 PLAI T2 standard…')}
+        ${(t.detail_logements || editMode) ? editableNotes(t.detail_logements, 'detail_logements', 'tranche-field', 'Ex: Dont 75 PLAI T1 prime · 22 PLAI T2 standard…') : ''}
       </div>
 
       <div class="section" id="sec-tr-horsagr" data-grp="tr">
@@ -9465,54 +9467,43 @@ function renderSuivi() {
 
 // ============== END SUIVI VIEW ==============
 
-// Initialize / refresh the mini-map embed in the Localisation section of op detail
-function initOpLocationMap(op) {
-  // No coords → nothing to do (the HTML shows the empty state)
-  if (!op || op.latitude == null || op.longitude == null) {
-    // Clear existing instance if any
-    if (opLocationMapInstance) {
-      try { opLocationMapInstance.remove(); } catch (e) {}
-      opLocationMapInstance = null;
-    }
-    return;
-  }
-  // Wait for Leaflet to load
-  if (!window.L) {
-    setTimeout(() => initOpLocationMap(op), 200);
-    return;
-  }
-  const container = document.getElementById('opLocationMap');
+// Initialize / refresh the mini-maps (Vue d'ensemble #opLocationMap + vue
+// Informations #opLocationMapDos). Deux conteneurs, deux instances Leaflet.
+let opLocationMapInstances = {};
+function _initOneOpMap(op, containerId) {
+  const prev = opLocationMapInstances[containerId];
+  if (prev) { try { prev.remove(); } catch (e) {} delete opLocationMapInstances[containerId]; }
+  const container = document.getElementById(containerId);
   if (!container) return;
-
-  // Destroy previous instance (avoids "Map container is already initialized" error on re-render)
-  if (opLocationMapInstance) {
-    try { opLocationMapInstance.remove(); } catch (e) {}
-    opLocationMapInstance = null;
-  }
-
-  // Create new instance at neighborhood scale (zoom 16)
-  opLocationMapInstance = L.map(container, {
+  const m = L.map(container, {
     zoomControl: true,
     scrollWheelZoom: false, // less aggressive inside form
     attributionControl: true,
   }).setView([op.latitude, op.longitude], 15);
-
-  // Tile layer (Plan by default) + Plan/Satellite toggle
-  applyMapLayer(opLocationMapInstance, 'plan');
-  addMapLayerToggle(opLocationMapInstance, 'plan');
-
-  // Marker colored by phase
+  applyMapLayer(m, 'plan');
+  addMapLayerToggle(m, 'plan');
   const phase = op.phase_actuelle || 'Montage';
   const color = PHASE_MARKER_COLORS[phase] || '#666';
   const icon = buildMarkerIcon ? buildMarkerIcon(color) : null;
   const marker = L.marker([op.latitude, op.longitude], icon ? { icon } : {});
   marker.bindPopup(`<div class="map-popup-name">${escapeHtml(op.display_name || '')}</div>${op.adresse ? `<div class="map-popup-addr">${escapeHtml(op.adresse)}</div>` : ''}`);
-  marker.addTo(opLocationMapInstance);
-
-  // Force resize after potential DOM insertion / layout shifts
-  setTimeout(() => {
-    if (opLocationMapInstance) opLocationMapInstance.invalidateSize();
-  }, 80);
+  marker.addTo(m);
+  opLocationMapInstances[containerId] = m;
+  setTimeout(() => { try { m.invalidateSize(); } catch (e) {} }, 80);
+}
+function initOpLocationMap(op) {
+  // No coords → destroy existing instances (the HTML shows the empty state)
+  if (!op || op.latitude == null || op.longitude == null) {
+    Object.keys(opLocationMapInstances).forEach(k => { try { opLocationMapInstances[k].remove(); } catch (e) {} });
+    opLocationMapInstances = {};
+    opLocationMapInstance = null;
+    return;
+  }
+  if (!window.L) { setTimeout(() => initOpLocationMap(op), 200); return; }
+  _initOneOpMap(op, 'opLocationMap');
+  _initOneOpMap(op, 'opLocationMapDos');
+  // Compat : les invalidateSize existants pointent sur opLocationMapInstance
+  opLocationMapInstance = opLocationMapInstances['opLocationMap'] || opLocationMapInstances['opLocationMapDos'] || null;
 }
 
 function renderMap() {
@@ -12783,7 +12774,10 @@ function addLogoutButton(){
     scopeBtn.textContent = _scopeLabel();
     applyScopeRerender();
   });
-  nav.appendChild(scopeBtn);
+  // « Mes opérations » à gauche du groupe (avant le toggle de thème), le reste à droite
+  const themeBtn = document.getElementById('themeToggle');
+  if (themeBtn && themeBtn.parentNode === nav) nav.insertBefore(scopeBtn, themeBtn);
+  else nav.appendChild(scopeBtn);
 
   // Bascule d'affichage des montants : k€ / € (2 décimales max)
   const moneyBtn = document.createElement('button');
@@ -12805,7 +12799,7 @@ function addLogoutButton(){
   // Bouton rafraîchir (icône seule)
   const rbtn = document.createElement('button');
   rbtn.id = 'sessRefreshBtn'; rbtn.className = 'sess-btn sess-icon-btn';
-  rbtn.title = 'Rafraîchir les données (auto toutes les 30 s)';
+  rbtn.title = 'Rafraîchir les données depuis Supabase';
   rbtn.setAttribute('aria-label', 'Rafraîchir');
   rbtn.innerHTML = '<span class="sess-refresh-ico">⟳</span>';
   rbtn.addEventListener('click', () => refreshData(false));
@@ -12893,7 +12887,10 @@ async function refreshPresence(){
 function startSessionLoops(){
   if (_sessLoops.length) return;
   updateSyncStamp();
-  _sessLoops.push(setInterval(() => { if (_sessAutoOn) refreshData(true); }, 30000));
+  // Auto-refresh 30 s désactivé : il resetait l'état de l'UI (lignes dépliées,
+  // sections ouvertes…). Les données se chargent au chargement de la page et
+  // via le bouton Rafraîchir uniquement.
+  // _sessLoops.push(setInterval(() => { if (_sessAutoOn) refreshData(true); }, 30000));
 }
 function showLoginOverlay(){
   if (document.getElementById('authOverlay')) { document.getElementById('authOverlay').style.display='flex'; return; }

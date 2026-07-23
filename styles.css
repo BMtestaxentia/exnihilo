@@ -5600,3 +5600,43 @@
 .ops-header .op-sticky-top { position: relative; }
 .ops-header .ops-hd { padding-right: 132px; }
 .ops-header .ops-hd-actions { position: absolute; top: 6px; right: 24px; }
+
+/* ===== v61 : ergonomie (en-tete, Informations sans scroll, tranches, finop) ===== */
+
+/* En-tete : alignements et marges reguliers */
+.ops-header .op-sticky-top { padding: 6px 20px 0 24px; }
+.ops-header .ops-hd { align-items: center; padding-right: 140px; }
+.ops-header .ops-hd-actions { top: 10px; right: 20px; display: flex; gap: 6px; }
+.ops-hd-mid { align-items: center; }
+
+/* Bandeau : zone tranches visuellement distincte des vues operation */
+.ops-tzone { display: flex; align-items: center; gap: 6px; margin-left: auto;
+  background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 3px 8px; }
+.ops-tzone.active { border-color: var(--info-accent); }
+.ops-tzone .ops-tbar-lead { color: var(--info-accent); }
+.ops-tzone-sub { display: inline-flex; gap: 3px; border-left: 1px solid var(--border-color); padding-left: 8px; margin-left: 2px; }
+
+/* Vue Informations : tout tenir sans scroll (localisation 2 colonnes, carte bornee) */
+.ops-shell[data-tab="dos"] .op-detail { gap: 10px; }
+.ops-shell[data-tab="dos"] #sec-op-loc .loc-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; align-content: start; }
+.ops-shell[data-tab="dos"] #sec-op-loc .loc-map, .ops-shell[data-tab="dos"] #sec-op-loc .loc-map-wrap { height: 235px; min-height: 0; }
+.ops-shell[data-tab="dos"] #sec-op-loc .loc-map-empty { min-height: 120px; }
+.ops-shell[data-tab="dos"] .geo-panel { padding: 5px 10px; margin-top: 4px; }
+@media (min-width: 1400px) {
+  .ops-shell[data-tab="dos"] .op-detail > #sec-op-loc { grid-column: span 12; order: 0; }
+}
+
+/* Vue Detail tranche : les sections ne s'etirent plus sur la hauteur du voisin */
+.ops-shell[data-tab="tr"] .tranche-detail { align-items: start; }
+.ops-shell[data-tab="fin"] .tranche-detail { align-items: start; }
+
+/* Vue Financements op : un cadre par tranche */
+.finop-tr { border: 1px solid var(--border-color); border-left: 3px solid var(--info-accent);
+  border-radius: 11px; padding: 10px 14px 12px; background: var(--bg-primary); }
+.finop-tr-head { background: transparent; border-radius: 0; padding: 2px 0 8px;
+  border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
+
+/* Titres de colonnes alignes sur leurs valeurs (montant a droite, statut/cycle centres) */
+.fin-lhead span:nth-child(3) { text-align: right; }
+.fin-lhead span:nth-child(4), .fin-lhead span:nth-child(5) { text-align: center; }
+.fin-rmain .fin-rcell:nth-child(4) { text-align: center; }
