@@ -5594,3 +5594,9 @@
   .ops-header .detail-title { font-size: 15px; }
   .ops-unibar .ops-tpill-meta { display: none; } /* pastilles tranches sur une ligne */
 }
+
+/* v60 : boutons d'action (historique / SharePoint / editer) ancres en haut a droite,
+   alignes avec la ligne titre + stepper au lieu de passer a la ligne. */
+.ops-header .op-sticky-top { position: relative; }
+.ops-header .ops-hd { padding-right: 132px; }
+.ops-header .ops-hd-actions { position: absolute; top: 6px; right: 24px; }

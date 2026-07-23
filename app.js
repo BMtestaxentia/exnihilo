@@ -3576,7 +3576,7 @@ function opsKpiStripHtml(op, displayedOp) {
     ${kpi('Financement', couvert + ' %')}
     ${kpi('Fonds propres', fmtMontant(fp))}
     ${kpi('Livraison', escapeHtml(op.date_livraison || '-'))}
-    ${nCrit ? `<button type="button" class="ops-kpi-alert" onclick="openOpsDomain('syn')" title="Voir les alertes"><i class="ti ti-alert-triangle"></i>${nCrit} critique${nCrit > 1 ? 's' : ''}</button>` : ''}
+    ${nCrit ? `<button type="button" class="ops-kpi-alert" onclick="openOpsDomain('home')" title="Voir les alertes (Vue d'ensemble)"><i class="ti ti-alert-triangle"></i>${nCrit} critique${nCrit > 1 ? 's' : ''}</button>` : ''}
   </div>`;
 }
 
@@ -3608,11 +3608,11 @@ function renderOpHomeDashboard(op, displayedOp) {
     ['Acte authentique', op.date_acte_auth || op.date_acte],
   ].filter(([, d]) => { const dt = d ? parseDateStr(d) : null; return dt && dt >= _todayMid; })
    .sort((a, b) => parseDateStr(a[1]) - parseDateStr(b[1]));
+  // Liste complète des alertes (la vue Synthèse n'existe plus : tout est ici)
   const alertBody = alerts.length
-    ? alerts.slice(0, 6).map(a => `<div class="oph-aline oph-a-${a.level}">
+    ? alerts.map(a => `<div class="oph-aline oph-a-${a.level}">
         <span class="oph-adays">${a.days != null ? (a.days < 0 ? (-a.days) + 'j' : a.days + 'j') : '•'}</span>
         <span class="oph-amsg">${esc(a.msg)}</span></div>`).join('')
-      + (alerts.length > 6 ? `<div class="oph-tsub">+ ${alerts.length - 6} autre(s) échéance(s)</div>` : '')
     : (keyDates.length
         ? `<div class="oph-mini-h">Aucune alerte · prochaines dates clés</div>`
           + keyDates.map(([l, d]) => `<div class="oph-aline oph-a-info"><span class="oph-adays">${esc(d)}</span><span class="oph-amsg">${l}</span></div>`).join('')
@@ -3705,20 +3705,30 @@ function renderOpHomeDashboard(op, displayedOp) {
     ['Frais divers & financiers', _secSum('frais_divers') + _secSum('frais_financiers'), 'var(--border-color)'],
   ].filter(([, v]) => v > 0);
   const _postesTot = _postes.reduce((s2, [, v]) => s2 + v, 0);
+  // Volumétrie consolidée (rapatriée de l'ex-vue Synthèse)
+  const _volChips = ['plai', 'plus', 'pls', 'pli', 'libre', 'autre']
+    .map(k => [k, sumVolKey(displayedOp, k)])
+    .filter(([, n]) => n > 0)
+    .map(([k, n]) => `${k.toUpperCase()} <b>${n}</b>`).join(' · ');
   const bilanBody = _postes.length
     ? `<div class="oph-stack" role="img" aria-label="Répartition du prix de revient">
         ${_postes.map(([, v, c]) => `<span style="width:${Math.round(v / _postesTot * 100)}%;background:${c}"></span>`).join('')}
       </div>
       ${_postes.map(([l, v, c]) => `<div class="oph-line"><span class="oph-lsw" style="background:${c}"></span><span class="l">${l}</span><span class="d">${fmtMontant(v)} <span class="oph-soft">${Math.round(v / _postesTot * 100)}%</span></span></div>`).join('')}
+      ${_volChips ? `<div class="oph-tsub">Volumétrie : ${_volChips}</div>` : ''}
       <div class="oph-tsub">Surface utile ${fmtSurface(opTotalSurface(displayedOp))} · Prix / logement ${(totalLgts(displayedOp) > 0) ? fmtMontant(Math.round(totalBudget(displayedOp) / totalLgts(displayedOp))) : '-'}</div>`
-    : `<div class="oph-tsub">Aucun bilan renseigné.${!editMode ? ` <button type="button" class="subent-cta" onclick="event.stopPropagation();editFromDrawer('tr')">+ Saisir en édition</button>` : ''}</div>`;
+    : `<div class="oph-tsub">Aucun bilan renseigné.${!editMode ? ` <button type="button" class="subent-cta" onclick="event.stopPropagation();editFromDrawer('tr')">+ Saisir en édition</button>` : ''}${_volChips ? `<div class="oph-tsub">Volumétrie : ${_volChips}</div>` : ''}`;
   return `<div class="oph-grid">
     ${card('oph-c6', 'folder', 'Dossier', '', 'dos', dossierBody)}
     ${finBrick}
     ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', bilanBody)}
     ${locBrick}
     ${card('oph-c6', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span>`, 'suivi', comLines)}
-    ${card('oph-c6', 'alert-triangle', 'Synthèse &amp; échéances', alertBadge, 'syn', alertBody)}
+    <section class="oph-card oph-c6">
+      <div class="oph-head"><span class="oph-ic"><i class="ti ti-alert-triangle"></i></span>
+        <span class="oph-title">Synthèse &amp; échéances</span><span style="margin-left:auto">${alertBadge}</span></div>
+      <div class="oph-body">${alertBody}</div>
+    </section>
   </div>`;
 }
 
@@ -3760,7 +3770,9 @@ function opsViewNavHtml(op) {
 
 // Bandeau unique (consultation) : nav de vues + pastilles de tranches + sous-vues.
 function opsUnifiedBarHtml(op, displayedOp) {
-  const opNav = [['home', 'Vue d\'ensemble'], ['syn', 'Synthèse'], ['dos', 'Dossier'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
+  // Synthèse retirée : la Vue d'ensemble couvre tout (alertes complètes,
+  // volumétrie consolidée dans la brique Bilan, localisation dans le Dossier).
+  const opNav = [['home', 'Vue d\'ensemble'], ['dos', 'Dossier'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
   const vBtn = ([tab, label]) =>
     `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="openOpsDomain('${tab}')">${escapeHtml(label)}</button>`;
   const trs = displayedOp.tranches || [];
@@ -3913,7 +3925,7 @@ function renderOpDetail() {
   // consultation (accueil, financements op) basculent sur Synthèse.
   OPS_TAB = effectiveEditMode
     ? ((OPS_TAB === 'home' || OPS_TAB === 'finop') ? 'syn' : OPS_TAB)
-    : (OPS_TAB || 'home');
+    : ((OPS_TAB === 'syn' ? 'home' : OPS_TAB) || 'home'); // Synthèse n'existe plus en consultation
 
   const volCells = ['plai','plus','pls','pli','libre','autre']
     .filter(k => editMode || sumVolKey(displayedOp, k) > 0)
@@ -4112,7 +4124,7 @@ function renderOpDetail() {
       <div class="volumetrie-grid">${volCells}</div>
     </div>
 
-    <div class="section" id="sec-op-loc" data-grp="syn">
+    <div class="section" id="sec-op-loc" data-grp="dos">
       <div class="section-label loc"><i class="ti ti-map-pin"></i>Localisation</div>
       <div class="loc-grid">
         <div class="loc-left">
