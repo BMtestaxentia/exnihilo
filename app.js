@@ -3807,10 +3807,13 @@ function opsUnifiedBarHtml(op, displayedOp, editing) {
   const addPill = editing
     ? `<button type="button" class="ops-tpill ops-tpill-add" title="Ajouter une nouvelle tranche" onclick="createTranche()"><span class="ops-tpill-top"><i class="ti ti-plus"></i></span></button>`
     : '';
-  const trNav = `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" onclick="switchOpsTab('tr')">Détail</button>
-    <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" onclick="switchOpsTab('fin')">Financements</button>`;
+  const trNav = `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" title="Détail de la tranche sélectionnée" onclick="switchOpsTab('tr')">Détail</button>
+    <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" title="Financements de la tranche sélectionnée" onclick="switchOpsTab('fin')">Financements</button>`;
+  // Flèche de retour : visible (via CSS) dès qu'on a quitté la vue d'ensemble
+  const backBtn = editing ? '' : `<button type="button" class="ops-dn ops-back" onclick="closeOpsDrawer()" title="Retour à la vue d'ensemble (Échap)"><i class="ti ti-arrow-left"></i></button>`;
   // Zone tranches visuellement distincte des vues opération (encart dédié)
   return `<div class="ops-tbar ops-unibar">
+    ${backBtn}
     ${opNav.map(vBtn).join('')}
     ${(trs.length || editing) ? `<div class="ops-tzone${isTr ? ' active' : ''}">
       <span class="ops-tbar-lead">Tranches</span>${pills}${addPill}
@@ -3949,7 +3952,9 @@ function renderOpDetail() {
   // La vue courante persiste (vues en place) ; en édition, les vues purement
   // consultation (accueil, financements op) basculent sur Synthèse.
   OPS_TAB = effectiveEditMode
-    ? ((OPS_TAB === 'home' || OPS_TAB === 'finop') ? 'syn' : OPS_TAB)
+    // Édition : depuis la vue Financements op, on atterrit sur les financements
+    // de la tranche courante (cycle « je vois une erreur -> je corrige » direct).
+    ? (OPS_TAB === 'home' ? 'syn' : (OPS_TAB === 'finop' ? 'fin' : OPS_TAB))
     : ((OPS_TAB === 'syn' ? 'home' : OPS_TAB) || 'home'); // Synthèse n'existe plus en consultation
 
   const volCells = ['plai','plus','pls','pli','libre','autre']
@@ -6413,6 +6418,12 @@ function selectOp(code) {
   editSessionSnap = null;
   viewingSnapshotIdx = null;
   compareWithIdx = null;
+  // Les vues de tranche n'ont plus de sens sur la nouvelle opération : retour à
+  // la vue d'ensemble (les vues de niveau op restent conservées, pratique pour comparer).
+  if (OPS_TAB === 'tr' || OPS_TAB === 'fin') {
+    OPS_TAB = 'home';
+    try { sessionStorage.setItem('exnihilo_ops_tab', 'home'); } catch (e) {}
+  }
   storageSet('selectedOp', code || '');
   renderAll();
 }
