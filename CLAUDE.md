@@ -38,7 +38,7 @@ Le modèle est aligné sur le fichier Excel SFO du groupe (analysé en session) 
 
 Phases : nomenclature SFO **CEP > CA > CPR > CL > OS > Clôture** (`PHASES`), migration auto des anciennes valeurs via `migratePhase` (Montage->CEP, Validation CA->CA, Travaux->OS, Livraison/GPA->Clôture) + `sql/migration_phases_sfo.sql`.
 
-**En attente d'arbitrage utilisateur** : catalogue des postes de bilan type LEON (SFO partie 2).
+Bilan : lignes de prix de revient pilotées par la table `referentiels` (ref_keys `bilan_*`), catalogue aligné SFO/LEON via `sql/referentiel_bilan_sfo.sql` ; les postes hors catalogue restent affichés (garde-fou dans `renderBilanSection` / `renderBilanOpSection`).
 
 ## Sécurité / rollback
 - Snapshots de rollback `*_avant_refonte_totale.*` (app.js / styles.css / index.html) : **ne pas les supprimer**.

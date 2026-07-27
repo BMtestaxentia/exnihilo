@@ -4597,21 +4597,25 @@ function renderBilanSection(t, op, trCode) {
   const sectionsHtml = BILAN_SECTIONS.map(sec => {
     const sectionTotal = bilanSectionTotal(t, sec.key);
     const expanded = isBilanExpanded(op, trCode, sec.key);
-    const lines = getRef(sec.refKey);
     if (!t.bilan[sec.key]) t.bilan[sec.key] = {};
+    // Postes saisis mais absents du référentiel : affichés quand même (ils comptent dans les totaux)
+    const catalogue = getRef(sec.refKey);
+    const horsCat = Object.keys(t.bilan[sec.key]).filter(k => !catalogue.includes(k) && Number(t.bilan[sec.key][k]));
+    const lines = catalogue.concat(horsCat);
 
     const linesHtml = expanded ? `
       <div class="bilan-lines">
         ${lines.map(line => {
           const v = Number(t.bilan[sec.key][line]) || 0;
+          const extraMark = horsCat.includes(line) ? ' title="Poste hors catalogue SFO" style="font-style:italic"' : '';
           if (editMode) {
             return `<div class="bilan-line">
-              <span class="bilan-line-label">${escapeHtml(line)}</span>
+              <span class="bilan-line-label"${extraMark}>${escapeHtml(line)}</span>
               <input type="number" min="0" step="100" class="editable-input bilan-line-input" data-bilan-section="${sec.key}" data-bilan-line="${escapeHtml(line)}" value="${v || ''}" placeholder="€">
             </div>`;
           }
           return `<div class="bilan-line${v === 0 ? ' bilan-line-empty' : ''}">
-            <span class="bilan-line-label">${escapeHtml(line)}</span>
+            <span class="bilan-line-label"${extraMark}>${escapeHtml(line)}</span>
             <span class="bilan-line-value">${v ? fmtMontant(v) : '-'}</span>
           </div>`;
         }).join('')}
@@ -4816,14 +4820,19 @@ function renderBilanOpSection(op) {
   const sectionsHtml = BILAN_SECTIONS.map(sec => {
     const sectionTotal = opBilanSectionTotal(op, sec.key);
     const expanded = isBilanExpanded(op, '__op__', sec.key);
-    const lines = getRef(sec.refKey);
+    // Postes hors catalogue présents sur au moins une tranche : affichés aussi
+    const catalogue = getRef(sec.refKey);
+    const horsCat = [...new Set((op.tranches || []).flatMap(t => Object.keys((t.bilan || {})[sec.key] || {})))]
+      .filter(k => !catalogue.includes(k) && opBilanLineTotal(op, sec.key, k));
+    const lines = catalogue.concat(horsCat);
 
     const linesHtml = expanded ? `
       <div class="bilan-lines">
         ${lines.map(line => {
           const v = opBilanLineTotal(op, sec.key, line);
+          const extraMark = horsCat.includes(line) ? ' title="Poste hors catalogue SFO" style="font-style:italic"' : '';
           return `<div class="bilan-line${v === 0 ? ' bilan-line-empty' : ''}">
-            <span class="bilan-line-label">${escapeHtml(line)}</span>
+            <span class="bilan-line-label"${extraMark}>${escapeHtml(line)}</span>
             <span class="bilan-line-value">${v ? fmtMontant(v) : '-'}</span>
           </div>`;
         }).join('')}
