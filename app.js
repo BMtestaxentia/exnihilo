@@ -4030,6 +4030,21 @@ function opsNavClick(tab) {
   openOpsDomain(tab);
 }
 
+// Clic nav en édition : même parallèle qu'en lecture - avec une tranche active,
+// Informations ouvre son détail (cockpit) et Bilan focalise sa section Prix de
+// revient ; sinon retour aux vues de niveau opération.
+function editNavClick(tab) {
+  const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
+  if (isTr && tab === 'dos') { switchOpsTab('tr'); return; }
+  if (isTr && tab === 'bilan') {
+    switchOpsTab('tr');
+    if (typeof edFocus === 'function') edFocus('sec-tr-bilan');
+    return;
+  }
+  switchOpsTab(tab);
+  _setBandeauActive('op');
+}
+
 // Synchronise les états actifs (bandeau tranches + nav de vues) sur OPS_TAB.
 function _syncOpsNav() {
   const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
@@ -4039,7 +4054,8 @@ function _syncOpsNav() {
   document.querySelectorAll('.ops-unibar [data-view]').forEach(b => {
     const v = b.dataset.view;
     // Le détail de tranche est le parallèle d'Informations : l'onglet reste actif
-    b.classList.toggle('active', v === OPS_TAB || (!editMode && OPS_TAB === 'tr' && v === 'dos'));
+    // (dans les deux modes - parité lecture/édition)
+    b.classList.toggle('active', v === OPS_TAB || (OPS_TAB === 'tr' && v === 'dos'));
   });
 }
 
@@ -4052,7 +4068,7 @@ function opsUnifiedBarHtml(op, displayedOp, editing) {
   const opNav = editing
     ? [['syn', `Synthèse${nAlerts ? ` <span class="ops-tab-n ops-tab-alert">${nAlerts}</span>` : ''}`], ['dos', 'Informations'], ['bilan', 'Bilan'], ['suivi', 'Comités & suivi']]
     : [['home', 'Vue d\'ensemble'], ['dos', 'Informations'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
-  const navClick = (tab) => editing ? `switchOpsTab('${tab}'); _setBandeauActive('op')` : `opsNavClick('${tab}')`;
+  const navClick = (tab) => editing ? `editNavClick('${tab}')` : `opsNavClick('${tab}')`;
   const vBtn = ([tab, label]) =>
     `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="${navClick(tab)}">${label}</button>`;
   const trs = displayedOp.tranches || [];
@@ -4074,11 +4090,12 @@ function opsUnifiedBarHtml(op, displayedOp, editing) {
   const addPill = editing
     ? `<button type="button" class="ops-tpill ops-tpill-add" title="Ajouter une nouvelle tranche" onclick="createTranche()"><span class="ops-tpill-top"><i class="ti ti-plus"></i></span></button>`
     : '';
-  // Consultation : le sélecteur devient un SCOPE - « Total » = vues opération
-  // telles quelles ; une tranche = Informations/Bilan/Financements montrent la
-  // part de CETTE tranche (le détail de tranche remplace Informations).
-  const totalPill = editing ? '' : `<button type="button" class="ops-tpill ops-tpill-total${TR_SCOPE == null ? ' active' : ''}" data-tranche-pill="op"
-      title="Vue consolidée de l'opération (toutes tranches)" onclick="setTrScope(null)">
+  // Le sélecteur est un SCOPE dans les deux modes - « Total » = niveau opération ;
+  // une tranche = Informations/Bilan/Financements montrent la part de CETTE
+  // tranche (le détail de tranche remplace Informations). Parité lecture/édition.
+  const totalPill = `<button type="button" class="ops-tpill ops-tpill-total${(editing ? !isTr : TR_SCOPE == null) ? ' active' : ''}" data-tranche-pill="op"
+      title="${editing ? "Édition au niveau de l'opération" : "Vue consolidée de l'opération (toutes tranches)"}"
+      onclick="${editing ? "switchOpsTab('syn'); _setBandeauActive('op')" : 'setTrScope(null)'}">
       <span class="ops-tpill-top"><i class="ti ti-sum"></i>Total</span></button>`;
   // Édition : la sous-nav Détail / Financements reste (flux de saisie inchangé)
   const trNav = editing
