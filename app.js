@@ -4165,35 +4165,6 @@ function renderTrancheDetail() {
   // Use displayed tranches for rendering (in snapshot mode); keep original op for handlers
   const trancheSource = isViewingSnapshot ? displayedOp : op;
 
-  const selectorHtml = `
-    <div class="tranches-selector">
-      <div class="tranches-selector-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <div class="section-label" style="margin: 0;">Tranches · ${trancheSource.tranches.length}</div>
-        ${editMode ? '<span style="font-size:11px;color:var(--text-tertiary);font-style:italic;">Édition de la tranche affichée</span>' : ''}
-      </div>
-      <div class="tranches-row">
-        ${trancheSource.tranches.map((t, idx) => {
-            const isActive = idx === selectedTrancheIdx;
-            const trCode = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
-            const displayName = t.type_structure || `Tranche ${trCode || t.id}`;
-            return `
-              <div class="tranche-pill${isActive ? ' active' : ''}" data-tranche-idx="${idx}">
-                <div class="tranche-pill-eyebrow">
-                  <span>${escapeHtml(trCode || t.id)}</span>
-                </div>
-                <div class="tranche-pill-title">${escapeHtml(displayName)}</div>
-                <div class="tranche-pill-stats">${trancheLogements(t) || '-'} logts · ${fmtMontant(trancheBudgetTTC(t))}</div>
-              </div>
-            `;
-          }).join('')
-        }
-        ${editMode ? `<div class="tranche-pill tranche-pill-add" onclick="createTranche()" title="Ajouter une nouvelle tranche">
-          <i class="ti ti-plus"></i>&nbsp;Nouvelle tranche
-        </div>` : ''}
-      </div>
-    </div>
-  `;
-
   let detailHtml = '';
   if (trancheSource.tranches.length === 0 || !trancheSource.tranches[selectedTrancheIdx]) {
     detailHtml = `<div class="empty-tranches">
@@ -4285,7 +4256,6 @@ function renderTrancheDetail() {
 
       <div class="section" id="sec-tr-id" data-grp="tr">
         <div class="section-label id"><i class="ti ti-building-skyscraper"></i>Identité & simulation</div>
-        ${editableKV('Nom interne tranche', t.nom_interne, 'nom_interne', 'text', 'tranche-field')}
         ${editableKV('Gestionnaire nom', t.gestionnaire, 'gestionnaire', 'text', 'tranche-field')}
         ${editableKV('Gestionnaire statut', t.gestionnaire_statut, 'gestionnaire_statut', 'text', 'tranche-field')}
         ${editableKV('Capacité HAS / totale', t.capacite_has, 'capacite_has', 'text', 'tranche-field')}
@@ -4300,7 +4270,7 @@ function renderTrancheDetail() {
 
       <div class="op-anchor" id="sec-tr-bilan" data-grp="tr">${renderBilanSection(t, op, trCode)}</div>
 
-      <div class="op-anchor" id="sec-tr-pf" data-grp="tr">${renderPlanFinancementSection(t, op, trCode, trancheSource)}</div>
+      ${editMode ? '' : `<div class="op-anchor" id="sec-tr-pf" data-grp="tr">${renderPlanFinancementSection(t, op, trCode, trancheSource)}</div>`}
 
       <div class="section" id="sec-tr-agr" data-grp="tr">
         <div class="section-label agr"><i class="ti ti-check"></i>Agrément</div>
@@ -4350,19 +4320,22 @@ function renderTrancheDetail() {
       <div class="op-anchor" id="sec-tr-prets" data-grp="fin">${renderPretsSection(prets, op)}</div>
       <div class="op-anchor" id="sec-tr-gar" data-grp="fin">${renderGarantiesSection(garanties, op)}</div>
       <div class="op-anchor" id="sec-tr-subv" data-grp="fin">${renderSubvSection(subv, op)}</div>
+      ${editMode ? `<div class="section" id="sec-tr-fp" data-grp="fin">
+        <div class="section-label fin"><i class="ti ti-cash"></i>Fonds propres</div>
+        ${editableKV('Montant fonds propres (€)', t.fonds_propres, 'fonds_propres', 'number', 'tranche-field')}
+        ${editableSelect('Nature', t.nature_fonds_propres, 'nature_fonds_propres', ['NR-NR', 'ATR', 'NR-R'], 'tranche-field')}
+        ${editableKV('Durée reconstitution (ans)', t.duree_reconstitution_fp, 'duree_reconstitution_fp', 'number', 'tranche-field')}
+        ${editableKV('Taux rémunération (%)', t.taux_remuneration_fp, 'taux_remuneration_fp', 'number', 'tranche-field')}
+      </div>` : ''}
       <div class="op-anchor" id="sec-tr-res" data-grp="fin">${renderReservatairesSection(reservataires, op)}</div>
       <div class="op-anchor" id="sec-tr-prefi" data-grp="fin">${renderPrefinSection(prefin, op)}</div>
       <div class="op-anchor" id="sec-tr-avenants" data-grp="fin">${renderAvenantsSection(avenants, op)}</div>
     `;
   }
 
-  // En consultation, le bandeau tranches de l'en-tête fait office de sélecteur :
-  // le sélecteur interne (avec « Nouvelle tranche ») n'est gardé qu'en édition.
-  c.innerHTML = (editMode ? selectorHtml : '') + detailHtml;
+  // Sélection et création de tranche : uniquement via le bandeau unifié (pills + bouton +).
+  c.innerHTML = detailHtml;
   if (editMode && typeof initEditCockpit === 'function') initEditCockpit();
-  c.querySelectorAll('[data-tranche-idx]').forEach(el => {
-    el.addEventListener('click', (e) => { e.stopPropagation(); selectTranche(parseInt(el.dataset.trancheIdx, 10)); });
-  });
 
   // Live update logements display as user edits vol cells
   if (editMode) {

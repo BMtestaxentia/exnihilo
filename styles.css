@@ -5755,5 +5755,5 @@
 .kv-row .stp { width: 100%; }
 
 /* Champs vides attendus : lisere ambre discret (code visuel maquette) */
-.edit-cockpit .kv-row:not(.is-filled) { box-shadow: inset 2px 0 0 rgba(217, 161, 59, .55); border-radius: 4px; }
+.edit-cockpit .kv-row:not(.is-filled) { box-shadow: inset 2px 0 0 rgba(217, 161, 59, .55); border-radius: 4px; padding-left: 10px; }
 .edit-cockpit .vol-cell-edit:not(.is-filled) { border: 1px dashed rgba(217, 161, 59, .45); border-radius: 8px; }
