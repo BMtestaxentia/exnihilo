@@ -36,7 +36,9 @@ ExNihilo est un POC de **suivi du financement d'opérations immobilières** pour
 ## Alignement SFO (référence métier)
 Le modèle est aligné sur le fichier Excel SFO du groupe (analysé en session) : liste de prêts 23 colonnes, volumétrie stricte (agréé PLAI/PLUS/PLS + hors agrément LLI/RHVS/libre + surfaces SU), champs supplémentaires conservés. Fichiers SQL déjà exécutés par l'utilisateur : `sql/ajout_colonnes_tranches.sql`, `sql/ajout_colonnes_prets.sql`, `sql/alignement_sfo.sql`, `sql/ajout_colonnes_tranches_2.sql`.
 
-**En attente d'arbitrage utilisateur** : migration de la nomenclature de phases vers CEP/CA/CPR/CL/OS/Clôture (mapping depuis Montage/Validation CA/Travaux/Livraison/GPA non fourni) ; catalogue des postes de bilan type LEON (SFO partie 2).
+Phases : nomenclature SFO **CEP > CA > CPR > CL > OS > Clôture** (`PHASES`), migration auto des anciennes valeurs via `migratePhase` (Montage->CEP, Validation CA->CA, Travaux->OS, Livraison/GPA->Clôture) + `sql/migration_phases_sfo.sql`.
+
+**En attente d'arbitrage utilisateur** : catalogue des postes de bilan type LEON (SFO partie 2).
 
 ## Sécurité / rollback
 - Snapshots de rollback `*_avant_refonte_totale.*` (app.js / styles.css / index.html) : **ne pas les supprimer**.
