@@ -563,18 +563,26 @@ const PHASES = ['CEP', 'CA', 'CPR', 'CL', 'OS', 'Clôture'];
 // Migration de l'ancienne nomenclature (valeurs encore présentes en base ou en démo)
 const PHASE_MIGRATE = { 'Montage': 'CEP', 'Validation CA': 'CA', 'Travaux': 'OS', 'Livraison': 'Clôture', 'GPA': 'Clôture' };
 function migratePhase(p) { return PHASE_MIGRATE[p] || p || PHASES[0]; }
+// Couleurs par phase en variables CSS (--ph-*) : elles suivent le dark mode,
+// contrairement aux hex inline d'avant. Définies dans styles.css (:root + dark).
 const PHASE_COLORS = {
-  'CEP':     { bg: '#faeeda', text: '#854f0b', accent: '#ba7517', icon: 'tool' },
-  'CA':      { bg: '#e6f1fb', text: '#0c447c', accent: '#185fa5', icon: 'shield-check' },
-  'CPR':     { bg: '#e0f2f1', text: '#0b5e55', accent: '#159b8a', icon: 'calculator' },
-  'CL':      { bg: '#e9e8fb', text: '#3730a3', accent: '#5a54d6', icon: 'file-check' },
-  'OS':      { bg: '#faece7', text: '#993c1d', accent: '#d85a30', icon: 'building-skyscraper' },
-  'Clôture': { bg: '#e1f5ee', text: '#0f6e56', accent: '#1d9e75', icon: 'flag' },
+  'CEP':     { bg: 'var(--ph-cep-bg)', text: 'var(--ph-cep-text)', accent: 'var(--ph-cep-accent)', icon: 'tool' },
+  'CA':      { bg: 'var(--ph-ca-bg)',  text: 'var(--ph-ca-text)',  accent: 'var(--ph-ca-accent)',  icon: 'shield-check' },
+  'CPR':     { bg: 'var(--ph-cpr-bg)', text: 'var(--ph-cpr-text)', accent: 'var(--ph-cpr-accent)', icon: 'calculator' },
+  'CL':      { bg: 'var(--ph-cl-bg)',  text: 'var(--ph-cl-text)',  accent: 'var(--ph-cl-accent)',  icon: 'file-check' },
+  'OS':      { bg: 'var(--ph-os-bg)',  text: 'var(--ph-os-text)',  accent: 'var(--ph-os-accent)',  icon: 'building-skyscraper' },
+  'Clôture': { bg: 'var(--ph-clo-bg)', text: 'var(--ph-clo-text)', accent: 'var(--ph-clo-accent)', icon: 'flag' },
 };
 
 // State for snapshot consultation / comparison
 let viewingSnapshotIdx = null;  // null = current phase; otherwise index in phases_history
 let compareWithIdx = null;      // null = no comparison; otherwise index in phases_history
+let _compareOpen = false;       // sélecteur « Comparer avec » déplié (replié par défaut)
+function toggleCompareFold() {
+  _compareOpen = !_compareOpen;
+  renderOpDetail();
+  replaceTablerIcons();
+}
 
 // Initialize phase_actuelle on existing data (+ migration ancienne nomenclature)
 DATA.forEach(op => {
@@ -3822,17 +3830,17 @@ function renderOpHomeDashboard(op, displayedOp) {
     ['Honoraires', _secSum('honoraires'), 'var(--cat-3)'],
     ['Frais divers & financiers', _secSum('frais_divers') + _secSum('frais_financiers'), 'var(--border-color)'],
   ].filter(([, v]) => v > 0);
-  const _postesTot = _postes.reduce((s2, [, v]) => s2 + v, 0);
   // Volumétrie consolidée (rapatriée de l'ex-vue Synthèse)
   const _volChips = ['plai', 'plus', 'pls', 'pli', 'libre', 'autre']
     .map(k => [k, sumVolKey(displayedOp, k)])
     .filter(([, n]) => n > 0)
     .map(([k, n]) => `${k.toUpperCase()} <b>${n}</b>`).join(' · ');
+  const _postesPcts = pctParts(_postes.map(([, v]) => v)); // somme exacte à 100
   const bilanBody = _postes.length
     ? `<div class="oph-stack" role="img" aria-label="Répartition du prix de revient">
-        ${_postes.map(([, v, c]) => `<span style="width:${Math.round(v / _postesTot * 100)}%;background:${c}"></span>`).join('')}
+        ${_postes.map(([, , c], i2) => `<span style="width:${_postesPcts[i2]}%;background:${c}"></span>`).join('')}
       </div>
-      ${_postes.map(([l, v, c]) => `<div class="oph-line"><span class="oph-lsw" style="background:${c}"></span><span class="l">${l}</span><span class="d">${fmtMontant(v)} <span class="oph-soft">${Math.round(v / _postesTot * 100)}%</span></span></div>`).join('')}
+      ${_postes.map(([l, v, c], i2) => `<div class="oph-line"><span class="oph-lsw" style="background:${c}"></span><span class="l">${l}</span><span class="d">${fmtMontant(v)} <span class="oph-soft">${_postesPcts[i2]}%</span></span></div>`).join('')}
       ${_volChips ? `<div class="oph-tsub">Volumétrie : ${_volChips}</div>` : ''}
       <div class="oph-tsub">Surface utile ${fmtSurface(opTotalSurface(displayedOp))} · Prix / logement ${(totalLgts(displayedOp) > 0) ? fmtMontant(Math.round(totalBudget(displayedOp) / totalLgts(displayedOp))) : '-'}</div>`
     : `<div class="oph-tsub">Aucun bilan renseigné.${!editMode ? ` <button type="button" class="subent-cta" onclick="event.stopPropagation();editFromDrawer('tr')">+ Saisir en édition</button>` : ''}${_volChips ? `<div class="oph-tsub">Volumétrie : ${_volChips}</div>` : ''}`;
@@ -4238,8 +4246,10 @@ function renderOpDetail() {
   // Compare-with selector: always available when there are archived phases,
   // independent of which phase is currently being viewed.
   // Only archived phases are eligible (= phases anterior to op.phase_actuelle).
+  // Replié par défaut (tâche rare) : le bouton ⇄ des actions d'en-tête l'ouvre ;
+  // il reste ouvert tant qu'une comparaison est active.
   const compareSelector = (op.phases_history.length > 0)
-    ? `<div class="compare-row">
+    ? `<div class="compare-row compare-fold${(compareWithIdx != null || _compareOpen) ? ' open' : ''}">
         <label class="compare-label">Comparer avec :</label>
         <select class="compare-select" onchange="toggleCompareWith(this.value)">
           <option value="">- Aucune comparaison -</option>
@@ -4388,6 +4398,7 @@ function renderOpDetail() {
       <div class="ops-hd-mid">${compareSelector}${phaseStepperHtml}</div>
       <div class="ops-hd-actions">
         ${effectiveEditMode ? `<button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-fold-all"></i></button>` : ''}
+        ${(!effectiveEditMode && op.phases_history.length > 0) ? `<button class="icon-btn${compareWithIdx != null ? ' cmp-on' : ''}" onclick="toggleCompareFold()" title="Comparer avec une phase figée"><i class="ti ti-arrows-left-right"></i></button>` : ''}
         ${!effectiveEditMode ? `<button class="icon-btn" onclick="showOpHistory()" title="Historique des modifications"><i class="ti ti-history"></i></button>` : ''}
         ${op.lien_sharepoint && !effectiveEditMode ? `<a href="${escapeHtml(op.lien_sharepoint)}" target="_blank" class="icon-btn sharepoint-btn" title="Ouvrir dans SharePoint">
           <svg width="14" height="14" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -5730,7 +5741,6 @@ function renderPretCard(i) {
     const d = parseDateStr(i.date_caducite_lo);
     if (d) {
       const days = Math.round((d - new Date()) / 86400000);
-      const cls = days < 0 ? 'crit' : (days <= 30 ? 'crit' : (days <= 90 ? '' : ' ok'));
       caduChip = `<span class="pd-chipwarn${days <= 30 ? ' crit' : ''}">${days < 0 ? 'LO caduque depuis ' + (-days) + 'j' : 'caducité dans ' + days + 'j'}</span>`;
     } else {
       caduChip = `<span class="pd-chipwarn">caducité ${escapeHtml(i.date_caducite_lo)}</span>`;
@@ -5818,7 +5828,14 @@ function pretCycleHtml(i) {
   if (i.date_comite_banque) stage = Math.max(stage, 2);
   if (i.date_lo) stage = Math.max(stage, 3);
   if (i.date_contrat) stage = Math.max(stage, 4);
-  return `<div class="fin-cyc">${pretCycleDots(stage)}</div>`;
+  // LO caduque (contrat non signé) : signal rouge SUR la ligne compacte,
+  // sans avoir à déplier le détail.
+  let caduque = false;
+  if (!i.date_contrat && i.date_caducite_lo) {
+    const d = parseDateStr(i.date_caducite_lo);
+    caduque = !!(d && d < new Date());
+  }
+  return `<div class="fin-cyc${caduque ? ' cyc-urgent' : ''}">${pretCycleDots(stage)}${caduque ? '<span class="cyc-warn" title="Lettre d\'offre caduque - demander la reconduction">caduque</span>' : ''}</div>`;
 }
 // Recalcule et met à jour la timeline en direct (sans attendre la sauvegarde).
 function updatePretCycle(el) {
@@ -6076,19 +6093,21 @@ function onTauxIndexChange(sel) {
 
 // ============== GARANTIES (loan-centric view) ==============
 
+// Identités de garants sur la palette catégorielle : plus de vert « Région » qui
+// se lit comme un OK ni de rouge « CEGC » qui se lit comme une alerte.
 const GARANT_COLORS = {
-  'Commune': '#185fa5',
-  'Métropole': '#9333ea',
-  'EPCI': '#7c3aed',
-  'Département': '#ba7517',
-  'Région': '#1d9e75',
-  'CGLLS': '#d85a30',
-  'Hypothèque': '#888780',
-  'CEGC': '#c4423a',
-  'Caution bancaire': '#0c447c',
-  'Autre': '#444441',
+  'Commune': 'var(--cat-1)',
+  'Métropole': 'var(--cat-3)',
+  'EPCI': 'var(--cat-4)',
+  'Département': 'var(--cat-5)',
+  'Région': 'var(--cat-2)',
+  'CGLLS': 'var(--cat-6)',
+  'Hypothèque': 'var(--neutral-accent)',
+  'CEGC': 'var(--info-accent)',
+  'Caution bancaire': 'var(--purple-accent)',
+  'Autre': 'var(--neutral-text)',
 };
-function garantColor(name) { return GARANT_COLORS[name] || '#888780'; }
+function garantColor(name) { return GARANT_COLORS[name] || 'var(--neutral-accent)'; }
 
 function parseQuotite(q) {
   if (q == null || q === '') return 0;
