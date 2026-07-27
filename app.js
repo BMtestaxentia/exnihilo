@@ -745,10 +745,8 @@ function totalLgtsFromSnap(op) {
   if (compareWithIdx == null) return null;
   const snap = getCompareSnapshot(op);
   if (!snap || !snap.snapshot.tranches) return null;
-  return snap.snapshot.tranches.reduce((s, t) => {
-    if (t.vol) return s + Object.values(t.vol).reduce((sm, v) => sm + (Number(v) || 0), 0);
-    return s + (Number(t.logements) || 0);
-  }, 0);
+  // Même cascade que le live : volumétrie SFO d'abord, puis legacy t.vol, puis scalaire
+  return snap.snapshot.tranches.reduce((s, t) => s + (trancheLogements(t) || 0), 0);
 }
 function opTotalPretsFromSnap(op) {
   if (compareWithIdx == null) return null;
@@ -813,8 +811,7 @@ function trancheLogementsFromSnap(op, trancheIdx) {
   const snap = getCompareSnapshot(op);
   if (!snap || !snap.snapshot.tranches?.[trancheIdx]) return null;
   const t = snap.snapshot.tranches[trancheIdx];
-  if (t.vol) return Object.values(t.vol).reduce((sm, v) => sm + (Number(v) || 0), 0);
-  return Number(t.logements) || 0;
+  return trancheLogements(t) || 0;
 }
 
 // Entity matching for sub-section diff (matching by "signature" of stable fields)
@@ -2806,7 +2803,8 @@ function trancheLogements(t) {
   if (!t) return null;
   const sfo = trancheLogementsSFO(t);
   if (sfo !== null) return sfo;
-  if (t.vol) return sumVol(t);
+  // t.vol vide (créé à tort par d'anciennes sauvegardes) ne doit pas masquer t.logements
+  if (t.vol && Object.values(t.vol).some(v => v != null && v !== '')) return sumVol(t);
   const v = t.logements;
   if (v === null || v === undefined || v === '') return null;
   const n = Number(v);
@@ -3188,11 +3186,8 @@ function saveOpEdits() {
       }
       t[field] = val === '' ? null : val;
     });
-    if (!t.vol) t.vol = {};
-    document.querySelectorAll('[data-edit-tranche-vol]').forEach(el => {
-      const key = el.dataset.editTrancheVol;
-      t.vol[key] = el.value === '' ? null : parseInt(el.value);
-    });
+    // NB : plus d'inputs data-edit-tranche-vol (ancienne volumétrie) ; surtout ne pas
+    // créer t.vol = {} à vide, ça court-circuiterait le fallback t.logements.
     if (!t.vol_agree) t.vol_agree = {};
     document.querySelectorAll('[data-edit-tranche-volagree]').forEach(el => {
       const key = el.dataset.editTrancheVolagree;
@@ -5020,10 +5015,7 @@ function renderHistoryChart(op) {
       totalPrets: (snap.prets || []).reduce((s, p) => s + (Number(p.montant_contrat) || Number(p.montant_lo) || Number(p.montant_sim) || 0), 0),
       totalSubv: (snap.subventions || []).reduce((s, x) => s + (Number(x.montant_notifie) || Number(x.montant_demande) || 0), 0),
       totalFP: (snap.tranches || []).reduce((s, t) => s + (Number(t.fonds_propres) || 0), 0),
-      logements: (snap.tranches || []).reduce((s, t) => {
-        if (t.vol) return s + Object.values(t.vol).reduce((sm, v) => sm + (Number(v) || 0), 0);
-        return s + (Number(t.logements) || 0);
-      }, 0),
+      logements: (snap.tranches || []).reduce((s, t) => s + (trancheLogements(t) || 0), 0),
     });
   });
   // Current phase (live values)
@@ -10209,11 +10201,9 @@ function synthData(op, pretsFilter) {
   const prefin = op.prefinancements || [];
   const res = op.reservataires || [];
 
-  // Volumétrie consolidée
+  // Volumétrie consolidée - même cascade SFO que sumVolKey (fallback legacy t.vol)
   const vol = { plai: 0, plus: 0, pls: 0, pli: 0, libre: 0, autre: 0 };
-  tranches.forEach(t => {
-    if (t.vol) Object.keys(vol).forEach(k => { vol[k] += Number(t.vol[k]) || 0; });
-  });
+  Object.keys(vol).forEach(k => { vol[k] = sumVolKey(op, k) || 0; });
 
   // Subventions
   const subvDem = subv.reduce((s, x) => s + (Number(x.montant_demande) || 0), 0);
@@ -12634,14 +12624,19 @@ async function syncEntitiesToSupabase(op, operationId, beforeSnap) {
   const beforeTags = beforeSnap ? (beforeSnap.tags || []).filter(t => t) : null;
   const tagsChanged = !beforeSnap || JSON.stringify(beforeTags) !== JSON.stringify(tagNames);
   if (tagsChanged) {
-    await fetch(`${SUPABASE_URL}/rest/v1/tags?operation_id=eq.${operationId}`, {
+    const chkTag = (res, action) => {
+      if (res.ok) return;
+      if (typeof showToast === 'function') showToast(`Échec ${action} : ${res.status}`, 'error');
+      throw new Error(`${action} -> ${res.status}`);
+    };
+    chkTag(await fetch(`${SUPABASE_URL}/rest/v1/tags?operation_id=eq.${operationId}`, {
       method: 'DELETE', headers,
-    });
+    }), 'DELETE tags');
     if (tagNames.length > 0) {
-      await fetch(`${SUPABASE_URL}/rest/v1/tags`, {
+      chkTag(await fetch(`${SUPABASE_URL}/rest/v1/tags`, {
         method: 'POST', headers,
         body: JSON.stringify(tagNames.map(name => ({ operation_id: operationId, tag_name: name }))),
-      });
+      }), 'POST tags');
     }
   }
 }
