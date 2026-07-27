@@ -5716,3 +5716,44 @@
 /* v76 : bandeau unifie aussi en mode edition */
 .ops-tpill-add { padding: 2px 8px; border-style: dashed; color: var(--text-tertiary); }
 .ops-tpill-add:hover { color: var(--info-accent); border-color: var(--info-accent); }
+
+/* ===== v77 : cockpit de saisie (edition, vue Detail de tranche) - codes visuels de la maquette validee ===== */
+.ops-shell[data-tab="tr"] .tranche-detail.edit-cockpit { grid-template-columns: 240px repeat(12, minmax(0, 1fr)); }
+.ops-shell[data-tab="tr"] .tranche-detail.edit-cockpit > *:not(.edit-rail) { grid-column: 2 / -1 !important; }
+.ops-shell[data-tab="tr"] .tranche-detail.edit-cockpit > .edit-rail { grid-column: 1; grid-row: 1 / span 99; align-self: start; position: sticky; top: 8px; }
+.ops-shell:not([data-tab="tr"]) .edit-rail { display: none; }
+.cockpit-hidden { display: none !important; }
+.only-missing .is-filled { display: none !important; }
+.only-missing .all-filled { display: none !important; }
+
+.edit-rail { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; }
+.er-h { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-tertiary); padding: 4px 8px 8px; }
+.er-sec { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: 1px solid transparent; background: none; color: var(--text-secondary); font-family: inherit; font-size: 12.5px; font-weight: 600; padding: 6px 8px; border-radius: 9px; cursor: pointer; }
+.er-sec:hover { background: var(--bg-primary); color: var(--text-primary); }
+.er-sec.active { background: var(--bg-primary); border-color: var(--border-color); color: var(--text-primary); }
+.er-ring { width: 26px; height: 26px; border-radius: 50%; flex: none; display: grid; place-items: center; }
+.er-ring > span { width: 19px; height: 19px; border-radius: 50%; background: var(--bg-secondary); display: grid; place-items: center; font-size: 8.5px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.er-lab { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.er-miss { font-size: 10px; font-weight: 700; color: var(--warning-text); background: var(--warning-bg); border-radius: 999px; padding: 2px 7px; flex: none; }
+.er-miss.done { color: var(--success-text); background: var(--success-bg); }
+.er-all { margin-top: 6px; padding-top: 9px; border-top: 1px solid var(--border-color); border-radius: 0; }
+.er-missing-toggle { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 600; color: var(--warning-text); background: var(--warning-bg); border-radius: 9px; padding: 7px 9px; margin: 8px 4px 0; cursor: pointer; }
+.er-missing-toggle input { accent-color: var(--warning-accent, #d9a13b); }
+.er-total { margin: 12px 8px 2px; padding-top: 10px; border-top: 1px solid var(--border-color); }
+.er-total-l { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.er-bar { height: 7px; border-radius: 99px; background: var(--border-color); margin-top: 6px; overflow: hidden; }
+.er-bar i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--info-accent), var(--success-accent, #2fbf8f)); transition: width .3s ease; }
+.er-kbd { font-size: 10.5px; color: var(--text-tertiary); padding: 8px 8px 2px; }
+.er-kbd kbd { border: 1px solid var(--border-color); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; font-size: 10px; background: var(--bg-primary); }
+
+/* Steppers : -/+ autour d'un champ qui reste saisissable au clavier */
+.stp { display: inline-flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+.stp input { flex: 1; min-width: 0; text-align: center; }
+.stp input::-webkit-outer-spin-button, .stp input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.stp-btn { width: 24px; height: 24px; flex: none; border-radius: 7px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); font-family: inherit; font-size: 13px; font-weight: 700; line-height: 1; cursor: pointer; }
+.stp-btn:hover { color: var(--info-accent); border-color: var(--info-accent); }
+.kv-row .stp { width: 100%; }
+
+/* Champs vides attendus : lisere ambre discret (code visuel maquette) */
+.edit-cockpit .kv-row:not(.is-filled) { box-shadow: inset 2px 0 0 rgba(217, 161, 59, .55); border-radius: 4px; }
+.edit-cockpit .vol-cell-edit:not(.is-filled) { border: 1px dashed rgba(217, 161, 59, .45); border-radius: 8px; }

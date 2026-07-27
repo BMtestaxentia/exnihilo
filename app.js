@@ -3039,6 +3039,7 @@ let editSessionSnap = null;
 function toggleEditMode() {
   editMode = !editMode;
   if (editMode) {
+    if (typeof EDIT_FOCUS_ID !== 'undefined') EDIT_FOCUS_ID = '__auto__'; // cockpit : focus sur la 1re section incomplète
     const op = findOp(selectedOpCode);
     if (op) {
       // Deep clone (strip _uid etc are fine, full structure)
@@ -4327,7 +4328,7 @@ function renderTrancheDetail() {
         ${editableKV('Date accord redevance', t.date_accord_redev, 'date_accord_redev', 'text', 'tranche-field')}
       </div>` : ''}
 
-      <div class="op-anchor tr-stack6" data-grp="tr">
+      <div class="op-anchor tr-stack6" id="sec-tr-hcl" data-grp="tr">
         <div class="section" id="sec-tr-horsagr">
           <div class="section-label vol"><i class="ti ti-home-2"></i>Hors agrément</div>
           ${editableKV('Logements LLI (nombre)', t.logts_lli, 'logts_lli', 'number', 'tranche-field')}
@@ -4358,6 +4359,7 @@ function renderTrancheDetail() {
   // En consultation, le bandeau tranches de l'en-tête fait office de sélecteur :
   // le sélecteur interne (avec « Nouvelle tranche ») n'est gardé qu'en édition.
   c.innerHTML = (editMode ? selectorHtml : '') + detailHtml;
+  if (editMode && typeof initEditCockpit === 'function') initEditCockpit();
   c.querySelectorAll('[data-tranche-idx]').forEach(el => {
     el.addEventListener('click', (e) => { e.stopPropagation(); selectTranche(parseInt(el.dataset.trancheIdx, 10)); });
   });
@@ -13273,3 +13275,176 @@ window.addEventListener('beforeunload', (e) => {
     return e.returnValue;
   }
 });
+
+// ============== COCKPIT DE SAISIE (édition, vue Détail de tranche) ==============
+// Rail de complétude par section + focus une-section-à-la-fois + filtre
+// « manquants seulement » + steppers saisissables + Entrée -> champ suivant.
+// Aucune incidence sur la sauvegarde : les sections masquées restent dans le
+// DOM (display:none), la collecte par querySelectorAll les voit toujours.
+
+let EDIT_FOCUS_ID = '__auto__';   // id de la section focalisée ; null = tout afficher
+let EDIT_ONLY_MISSING = false;    // filtre champs vides uniquement
+
+const _ED_INPUT_SEL = 'input.editable-input:not([type="checkbox"]), select.editable-input, textarea.editable-input, input.card-input, select.card-input, textarea.card-input';
+// Champs de comptage entiers qui reçoivent des boutons -/+ (en plus de la saisie clavier)
+const _ED_STEP_SEL = '[data-edit-tranche-volagree], input[data-edit-tranche-field="logts_lli"], input[data-edit-tranche-field="logts_rhvs"], input[data-edit-tranche-field="logts_libre"], input[data-edit-tranche-field="locaux_libre"], input[data-edit-tranche-field="nb_chambres"]';
+
+function _edContainer() { return document.getElementById('trancheDetail'); }
+function _edEntries() {
+  const c = _edContainer();
+  if (!c) return [];
+  return [...c.querySelectorAll('[data-grp~="tr"][id^="sec-tr"]')].map(el => {
+    const lab = el.querySelector('.section-label, .subent-header .subent-title');
+    let label = lab ? osnLabelText(lab).replace(/·.*$/, '').trim() : el.id;
+    if (el.id === 'sec-tr-hcl') label = 'Hors agrément & convention';
+    return { el, id: el.id, label };
+  });
+}
+function _edStats(el) {
+  const inputs = [...el.querySelectorAll(_ED_INPUT_SEL)];
+  const empty = inputs.filter(i => String(i.value || '').trim() === '').length;
+  const total = inputs.length;
+  return { total, empty, pct: total ? Math.round((total - empty) / total * 100) : 100 };
+}
+
+function edFocus(id) {
+  EDIT_FOCUS_ID = id;
+  const entries = _edEntries();
+  entries.forEach(en => en.el.classList.toggle('cockpit-hidden', !!id && en.id !== id));
+  const rail = document.getElementById('editRail');
+  if (rail) {
+    rail.querySelectorAll('[data-ed-sec]').forEach(b => b.classList.toggle('active', b.dataset.edSec === (id || '')));
+    const all = rail.querySelector('.er-all');
+    if (all) all.classList.toggle('active', !id);
+  }
+  if (id) { const en = entries.find(e => e.id === id); if (en) en.el.scrollIntoView({ block: 'nearest' }); }
+}
+function edToggleMissing(on) {
+  EDIT_ONLY_MISSING = on;
+  const c = _edContainer();
+  if (c) c.classList.toggle('only-missing', on);
+}
+
+// Marque les enveloppes de champs remplies (pour le filtre « manquants seulement »)
+function _edWrapOf(input) { return input.closest('.kv-row, .vol-cell, .bilan-line, .card-edit-field'); }
+function _edMarkFilled(root) {
+  [...root.querySelectorAll(_ED_INPUT_SEL)].forEach(i => {
+    const w = _edWrapOf(i);
+    if (w) w.classList.toggle('is-filled', String(i.value || '').trim() !== '');
+  });
+}
+
+// Steppers : boutons -/+ autour des champs de comptage, la saisie directe reste possible
+function _edEnhanceSteppers(root) {
+  [...root.querySelectorAll(_ED_STEP_SEL)].forEach(inp => {
+    if (inp.closest('.stp')) return;
+    const wrap = document.createElement('span');
+    wrap.className = 'stp';
+    inp.parentNode.insertBefore(wrap, inp);
+    const minus = document.createElement('button');
+    minus.type = 'button'; minus.className = 'stp-btn'; minus.dataset.stp = '-1'; minus.textContent = '-';
+    const plus = document.createElement('button');
+    plus.type = 'button'; plus.className = 'stp-btn'; plus.dataset.stp = '1'; plus.textContent = '+';
+    wrap.appendChild(minus); wrap.appendChild(inp); wrap.appendChild(plus);
+  });
+}
+
+function _edRingHtml(st) {
+  const color = st.pct >= 100 ? 'var(--success-accent, #2fbf8f)' : 'var(--info-accent)';
+  return '<span class="er-ring" style="background: conic-gradient(' + color + ' ' + st.pct + '%, var(--border-color) 0);"><span>' + (st.pct >= 100 ? '✓' : st.pct) + '</span></span>';
+}
+function updateEditCockpitCounts() {
+  const rail = document.getElementById('editRail');
+  if (!rail) return;
+  let tot = 0, emp = 0;
+  _edEntries().forEach(en => {
+    const st = _edStats(en.el);
+    tot += st.total; emp += st.empty;
+    const btn = rail.querySelector('[data-ed-sec="' + en.id + '"]');
+    if (!btn) return;
+    const ring = btn.querySelector('.er-ring');
+    if (ring) ring.outerHTML = _edRingHtml(st);
+    const m = btn.querySelector('.er-miss');
+    if (m) {
+      m.textContent = st.empty ? st.empty + ' vide' + (st.empty > 1 ? 's' : '') : '✓';
+      m.classList.toggle('done', !st.empty);
+    }
+    en.el.classList.toggle('all-filled', !st.empty);
+  });
+  const pct = tot ? Math.round((tot - emp) / tot * 100) : 100;
+  const pctEl = rail.querySelector('.er-total-pct');
+  if (pctEl) pctEl.textContent = pct + ' %';
+  const bar = rail.querySelector('.er-bar i');
+  if (bar) bar.style.width = pct + '%';
+}
+
+function initEditCockpit() {
+  const c = _edContainer();
+  if (!c || !editMode) return;
+  const entries = _edEntries();
+  if (!entries.length) return;
+  c.classList.add('edit-cockpit');
+  c.classList.toggle('only-missing', EDIT_ONLY_MISSING);
+  // Focus initial : première section avec des champs vides
+  if (EDIT_FOCUS_ID === '__auto__') {
+    const first = entries.find(en => _edStats(en.el).empty > 0) || entries[0];
+    EDIT_FOCUS_ID = first.id;
+  } else if (EDIT_FOCUS_ID && !entries.some(en => en.id === EDIT_FOCUS_ID)) {
+    EDIT_FOCUS_ID = entries[0].id;
+  }
+  const secBtns = entries.map(en =>
+    '<button type="button" class="er-sec" data-ed-sec="' + en.id + '" onclick="edFocus(\'' + en.id + '\')">'
+    + _edRingHtml(_edStats(en.el)) + '<span class="er-lab">' + escapeHtml(en.label) + '</span><span class="er-miss"></span></button>'
+  ).join('');
+  const rail = document.createElement('aside');
+  rail.className = 'edit-rail';
+  rail.id = 'editRail';
+  rail.innerHTML = '<div class="er-h">Saisie de la tranche</div>'
+    + secBtns
+    + '<button type="button" class="er-all er-sec" onclick="edFocus(null)"><span class="er-lab"><i class="ti ti-layout-list"></i>&nbsp;Tout afficher</span></button>'
+    + '<label class="er-missing-toggle"><input type="checkbox"' + (EDIT_ONLY_MISSING ? ' checked' : '') + ' onchange="edToggleMissing(this.checked)"><span>Manquants seulement</span></label>'
+    + '<div class="er-total"><div class="er-total-l"><span>Complétude</span><span class="er-total-pct">·</span></div><div class="er-bar"><i></i></div></div>'
+    + '<div class="er-kbd"><kbd>Entrée</kbd> champ suivant</div>';
+  c.insertBefore(rail, c.firstChild);
+  _edMarkFilled(c);
+  _edEnhanceSteppers(c);
+  edFocus(EDIT_FOCUS_ID);
+  updateEditCockpitCounts();
+  if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
+}
+
+// Interactions globales du cockpit (délégation, enregistrées une seule fois)
+(function _edWireCockpit() {
+  let deb = null;
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.stp-btn');
+    if (!b || !editMode) return;
+    const inp = b.parentElement.querySelector('input');
+    if (!inp) return;
+    const v = Math.max(0, (parseInt(inp.value, 10) || 0) + parseInt(b.dataset.stp, 10));
+    inp.value = v;
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  document.addEventListener('input', (e) => {
+    if (!editMode) return;
+    const c = _edContainer();
+    if (!c || !c.contains(e.target)) return;
+    const w = _edWrapOf(e.target);
+    if (w) w.classList.toggle('is-filled', String(e.target.value || '').trim() !== '');
+    if (deb) clearTimeout(deb);
+    deb = setTimeout(updateEditCockpitCounts, 350);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || !editMode) return;
+    const t = e.target;
+    if (!t || t.tagName !== 'INPUT') return;
+    const c = _edContainer();
+    if (!c || !c.contains(t)) return;
+    e.preventDefault();
+    const inputs = [...c.querySelectorAll(_ED_INPUT_SEL)].filter(i => i.offsetParent !== null);
+    const idx = inputs.indexOf(t);
+    if (idx > -1 && inputs[idx + 1]) { inputs[idx + 1].focus(); if (inputs[idx + 1].select) inputs[idx + 1].select(); }
+  });
+})();
+// ============== FIN COCKPIT ==============
