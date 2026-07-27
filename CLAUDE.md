@@ -1,44 +1,49 @@
-# CLAUDE.md — ExNihilo
+# CLAUDE.md - ExNihilo
 
 Instructions pour toute session Claude Code sur ce dépôt. À lire en premier.
 
 ## Le projet
-ExNihilo est un POC de **suivi du financement d'opérations immobilières** pour AXENTIA (SA d'HLM, groupe Habitat en Région / BPCE). Public : chargés de financement (côté opérateur/emprunteur). Langue de l'interface et des commentaires : **français**.
+ExNihilo est un POC de **suivi du financement d'opérations immobilières** pour AXENTIA (SA d'HLM, groupe Habitat en Région / BPCE). Public : chargés de financement (côté opérateur/emprunteur). Langue de l'interface, des commentaires et des réponses : **français**. Ne jamais utiliser de tiret cadratin ; utiliser des tirets simples.
 
 ## Architecture (à respecter absolument)
-- **Application mono-fichier en JavaScript vanilla** : toute la logique est dans `app.js` (~13 000 lignes). Pas de framework, pas d'étape de build, pas de bundler.
+- **Application mono-fichier en JavaScript vanilla** : toute la logique est dans `app.js` (~14 000 lignes). Pas de framework, pas d'étape de build, pas de bundler.
 - Trois fichiers servis en statique : `index.html` (coquille + CDN), `app.js` (logique), `styles.css` (styles).
-- **Backend Supabase (Postgres)** appelé en **`fetch()` brut vers l'API PostgREST** — surtout **PAS** la librairie `supabase-js`. La constante `SUPABASE_URL` est en tête de `app.js`.
-- Hébergement : **GitHub Pages**, fichiers à la racine du repo, servis sur `https://bmtestaxentia.github.io/exnihilo/`.
+- **Backend Supabase (Postgres)** appelé en **`fetch()` brut vers l'API PostgREST** - surtout **PAS** la librairie `supabase-js`. `SUPABASE_URL` en tête de `app.js`.
+- Hébergement : **GitHub Pages**, fichiers à la racine, servis sur `https://bmtestaxentia.github.io/exnihilo/`.
 
-## Workflow de modification (obligatoire à chaque changement)
-1. **Lire la zone concernée** de `app.js` avant d'éditer (le fichier est énorme : édition chirurgicale, pas de réécriture globale).
-2. Valider la syntaxe : `node --check app.js`.
-3. Lancer l'outillage de pré-déploiement : `node predeploy.mjs index.html`.
-   - Il **incrémente le cache-buster** `?v=N` sur `app.js` et `styles.css` dans `index.html` (indispensable, sinon les navigateurs servent l'ancienne version).
-   - Il exécute `smoke_test.mjs` (vérifie que les fonctions critiques existent toujours).
-4. **Ne jamais pousser si `predeploy` échoue.**
-5. Après `git push`, GitHub Pages redéploie automatiquement (~1 min).
+## Environnement de travail (important)
+- **Ni Node ni Python sur la machine.** `node --check`, `predeploy.mjs`, `smoke_test.mjs` n'existent pas / ne sont pas utilisables.
+- Validation de syntaxe : vérification d'équilibre via awk. Baseline connue de `app.js` : `{}=0 ()=-8 []=0`, backticks pairs. Tout écart après édition = erreur à trouver avant commit.
+- **Cache-buster manuel obligatoire** : à chaque modif de `app.js` ou `styles.css`, incrémenter `?v=N` sur les DEUX liens dans `index.html`, sinon les navigateurs servent l'ancienne version. Après déploiement, conseiller un hard reload (Ctrl+Shift+R).
+- Workflow git : **commits directs sur `main` autorisés** (validé par l'utilisateur), messages concis en français, push déclenche le redéploiement GitHub Pages (~1 min).
+- PowerShell disponible pour les manipulations lourdes (remplacements en masse, lecture xlsx via zip/XML) ; vérifier BOM/accents/équilibre après toute réécriture PowerShell d'un fichier.
 
-## Sécurité / rollback
-- **Travailler sur une branche**, pas directement sur `main`. On ne fusionne dans `main` que ce qui est testé et validé visuellement par l'utilisateur.
-- Des snapshots de rollback existent sous la forme `*_avant_refonte_totale.*` (app.js / styles.css / index.html). Ne pas les supprimer.
-- Avant une refonte lourde d'un écran, créer un snapshot équivalent.
+## Structure de l'UI (état actuel)
+- Topnav : Accueil / Opérations / Synthèse (`dashboard`) / Suivi / Comités / Gantt, via `switchToTab`. Boutons globaux dans `.topnav-user` : scope « mes opérations », toggle k€/€ (`MONEY_FMT`, persisté), dark mode, refresh manuel (l'auto-refresh 30 s est désactivé volontairement).
+- **Vue opération = vues EN PLACE** (le système tiroir/drawer a été retiré) : bandeau unique `opsUnifiedBarHtml` (nav Vue d'ensemble / Informations / Bilan / Financements / Suivi + pastilles de tranches + Détail/Financements), strip KPI permanent, dashboard à briques (`renderOpHomeDashboard`), vue financements générée (`renderOpFinancementsDrawer`, couleurs par tranche). Routage : `switchOpsTab` + `OPS_TAB` ('home','syn','dos','bilan','suivi','tr','fin','finop') ; `openOpsDomain` est un simple routeur ; Échap revient à 'home'.
+- **Édition** : onglets legacy (`opsTabsHtml`) + bandeau d'édition ; lignes de financement compactes (`fin-emain` + détail repliable).
+- Moteur de tâches `computeTasks` (catégories `SUIVI_CATS`, dont 'Pilotage') partagé par l'onglet Suivi (cockpit) et l'Accueil.
+- Synthèse : onglets `SYNTH_TABS`, filtres avec chips actives, vues sauvegardées (snapshot complet de l'état).
 
 ## Modèle de données (tables Supabase)
 `operations`, `tranches`, `prets`, `garanties`, `subventions`, `prefinancements`, `reservataires`, `comites`, `avenants`, `aap`, `referentiels`, `tags`, `audit_log`, `comptes`, `phase_snapshots`.
 
-Conventions de dates : `prefinancements.date_debut` / `date_fin` sont de vraies colonnes `DATE` ; les autres dates d'opération sont stockées en **TEXTE au format `JJ/MM/AAAA`**. Utiliser les helpers `parseDateStr` / `fmtDateStr` / `fmtDateFR`.
+- Dates : `prefinancements.date_debut/date_fin` sont des `DATE` ; toutes les autres dates sont du **TEXTE `JJ/MM/AAAA`**. Helpers : `parseDateStr` / `fmtDateStr` / `fmtDateFR`.
+- Persistance : `saveOpToSupabase(op, beforeSnap)` avec diff par snapshot ; `syncEntitiesToSupabase` (tranches/prêts/garanties en PATCH/INSERT ciblés, entités simples via `syncSimpleEntity`). Toute réponse non-ok doit être contrôlée (pattern `checkRes`/`chk` : toast + throw).
+- **Règle d'or anti-bug** : un champ éditable doit exister à TROIS endroits - `buildXPayload` (écriture), `mapXFromSupabase` (relecture), colonne SQL (sinon PGRST204 et tout le PATCH échoue). À chaque nouveau champ : vérifier les trois + créer un fichier `sql/*.sql` idempotent (`ADD COLUMN IF NOT EXISTS`) à faire exécuter par l'utilisateur dans Supabase.
+- Journalisation : `logModification` + `flushAuditBatch`.
 
-Persistance : `saveOpToSupabase` (avec garde anti auto-refresh via `_pendingWrites`), `syncEntitiesToSupabase` (prêts/garanties/tranches en PATCH/INSERT via `buildPretPayload` / `buildTranchePayload` ; subventions/réservataires/préfis/avenants/comités en delete-all + reinsert). Journalisation via `logModification` + `flushAuditBatch`.
+## Alignement SFO (référence métier)
+Le modèle est aligné sur le fichier Excel SFO du groupe (analysé en session) : liste de prêts 23 colonnes, volumétrie stricte (agréé PLAI/PLUS/PLS + hors agrément LLI/RHVS/libre + surfaces SU), champs supplémentaires conservés. Fichiers SQL déjà exécutés par l'utilisateur : `sql/ajout_colonnes_tranches.sql`, `sql/ajout_colonnes_prets.sql`, `sql/alignement_sfo.sql`, `sql/ajout_colonnes_tranches_2.sql`.
 
-## État connu / pièges
-- **Bug prioritaire** : des champs de tranche saisissables dans l'UI ne sont **pas** inclus dans `buildTranchePayload`, donc **non persistés** (ex. `famille_agrement`, `uls_rhvs`, `date_butoir_depot`, `date_depot_agr`, `plai_adapte`, `n_leon`, `date_ref`). À corriger en priorité.
-- La fonctionnalité « workflow de validation de documents » a été **entièrement retirée** ; les comités (avec PV joint) sont conservés.
-- L'espace Opérations est organisé en **onglets** (Synthèse / Dossier / Bilan / Tranches / Financements / Comités & suivi) : en-tête permanent + vues focalisées, grilles CSS calibrées pour ~1920×950.
-- Référence métier : voir `MATCH_ExNihilo_vs_Excel_SFO.md` pour la correspondance entre le modèle POC et le fichier Excel SFO de référence (champs à ajouter, écart de nomenclature de phases CEP/CA/CPR/CL/OS/Clôture, etc.).
+**En attente d'arbitrage utilisateur** : migration de la nomenclature de phases vers CEP/CA/CPR/CL/OS/Clôture (mapping depuis Montage/Validation CA/Travaux/Livraison/GPA non fourni) ; catalogue des postes de bilan type LEON (SFO partie 2).
+
+## Sécurité / rollback
+- Snapshots de rollback `*_avant_refonte_totale.*` (app.js / styles.css / index.html) : **ne pas les supprimer**.
+- Avant une refonte lourde d'un écran, créer un snapshot équivalent.
+- Toute refonte UI significative : proposer une maquette (Artifact) et attendre validation avant d'implémenter.
 
 ## Style attendu
-- Réponses et commits **concis**, techniques, en français.
-- Édition ciblée, pas de reformatage massif de fichiers.
-- Toujours tester (`node --check` + `predeploy`) avant de proposer un commit.
+- Réponses et commits **concis**, techniques, en français, sans tiret cadratin.
+- Édition chirurgicale de `app.js` (lire la zone avant d'éditer), pas de reformatage massif.
+- Toujours vérifier (équilibre awk + bump `?v=`) avant de committer.
