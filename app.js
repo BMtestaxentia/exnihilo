@@ -9052,33 +9052,41 @@ function renderAccueil() {
 
   // Ops where user has a role
   const myOps = DATA.filter(op => !op.deleted && isMyOp(op));
-
-  // Alerts aggregated across my ops
-  const allAlerts = [];
-  myOps.forEach(op => {
-    const alerts = computeAlerts(op);
-    alerts.forEach(a => allAlerts.push({ ...a, op }));
-  });
-  allAlerts.sort((a, b) => a.days - b.days);
-  const top5Alerts = allAlerts.slice(0, 5);
-
-  // Comités à venir (date > today, ou date dans les 30 derniers jours)
   const today = new Date(); today.setHours(0, 0, 0, 0);
+  const fmtD = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+  // Même moteur que l'onglet Suivi : la page d'accueil est un raccourci du cockpit
+  const tasks = myOps.flatMap(op => computeTasks(op));
+  tasks.sort((a, b) => a.level - b.level
+    || (a.days == null) - (b.days == null)
+    || ((a.days == null ? 0 : a.days) - (b.days == null ? 0 : b.days)));
+  const overdueN = tasks.filter(t => t.overdue).length;
+  const weekN = tasks.filter(t => t.days != null && t.days >= 0 && t.days <= 7).length;
+  const topTasks = tasks.slice(0, 6);
+
+  // Comités dans la fenêtre [-7 ; +45 jours]
   const upcomingComites = [];
   myOps.forEach(op => {
-    if (!Array.isArray(op.comites)) return;
-    op.comites.forEach(com => {
+    (op.comites || []).forEach(com => {
       const d = parseDateStr(com.date);
       if (!d) return;
       const diff = Math.floor((d.getTime() - today.getTime()) / 86400000);
-      if (diff >= -30 && diff <= 60) {
-        upcomingComites.push({ comite: com, op, days: diff });
-      }
+      if (diff >= -7 && diff <= 45) upcomingComites.push({ comite: com, op, days: diff, date: d });
     });
   });
-  upcomingComites.sort((a, b) => Math.abs(a.days) - Math.abs(b.days));
 
-  // Phase counts of my ops
+  // Agenda fusionné : tâches datées + comités, triés par date
+  const agenda = [];
+  tasks.forEach(t => {
+    if (t.deadline && t.days >= -14 && t.days <= 45)
+      agenda.push({ date: t.deadline, days: t.days, overdue: t.overdue, label: t.action, op: t.op, dot: (SUIVI_CATS[t.cat] || {}).color || '#888' });
+  });
+  upcomingComites.forEach(({ comite, op, days, date }) =>
+    agenda.push({ date, days, overdue: days < 0, label: `Comité ${comite.type || ''}${comite.lieu ? ' · ' + comite.lieu : ''}`, op, dot: '#555e6d', comite: true }));
+  agenda.sort((a, b) => a.date - b.date);
+  const agendaTop = agenda.slice(0, 10);
+
+  // Phase counts + opérations à surveiller
   const phaseCounts = {};
   ['Montage','Validation CA','Travaux','Livraison','GPA'].forEach(p => phaseCounts[p] = 0);
   myOps.forEach(op => {
@@ -9086,31 +9094,52 @@ function renderAccueil() {
     if (phaseCounts[p] != null) phaseCounts[p]++;
   });
   const totalPhases = Object.values(phaseCounts).reduce((s, n) => s + n, 0);
+  const watch = myOps.map(op => {
+    const ts = tasks.filter(t => t.op._uid === op._uid);
+    return { op, n: ts.length, nLate: ts.filter(t => t.overdue).length, minL: ts.length ? Math.min(...ts.map(t => t.level)) : 9 };
+  }).filter(x => x.n > 0)
+    .sort((a, b) => b.nLate - a.nLate || a.minL - b.minL || b.n - a.n)
+    .slice(0, 5);
 
-  // Recent activity (from audit logs across my ops)
+  // Recent activity (actions des AUTRES sur mes ops)
   const recentActivity = [];
   myOps.forEach(op => {
-    if (!Array.isArray(op.audit_log)) return;
-    op.audit_log.forEach(e => {
-      if (!isCurrentUser(e.user)) { // only show actions by OTHERS
-        recentActivity.push({ entry: e, op });
-      }
+    (Array.isArray(op.audit_log) ? op.audit_log : []).forEach(e => {
+      if (!isCurrentUser(e.user)) recentActivity.push({ entry: e, op });
     });
   });
   recentActivity.sort((a, b) => (b.entry.date || '').localeCompare(a.entry.date || ''));
   const top5Activity = recentActivity.slice(0, 5);
 
-  // KPIs
+  // KPI cliquables
   const kpis = [
-    { label: 'Mes opérations', value: myOps.length, color: 'info', icon: 'building-community' },
-    { label: 'Échéances urgentes', value: allAlerts.filter(a => a.level === 'expired' || a.level === 'critical').length, color: allAlerts.some(a => a.level === 'expired' || a.level === 'critical') ? 'danger' : 'success', icon: 'alert-triangle' },
-    { label: 'Comités à venir', value: upcomingComites.filter(x => x.days >= 0).length, color: 'info', icon: 'users' },
+    { label: 'Mes opérations', value: myOps.length, color: 'info', icon: 'building-community', go: 'operations' },
+    { label: 'En retard', value: overdueN, color: overdueN ? 'danger' : 'success', icon: 'alert-triangle', go: 'suivi' },
+    { label: 'Sous 7 jours', value: weekN, color: weekN ? 'warning' : 'success', icon: 'clock', go: 'suivi' },
+    { label: 'Comités à venir', value: upcomingComites.filter(x => x.days >= 0).length, color: 'info', icon: 'users', go: 'comites' },
   ];
 
+  // Ligne de tâche (mêmes classes que le Suivi, cohérence visuelle)
+  const taskRow = (t) => {
+    const ech = t.days == null ? 'sans échéance' : (t.overdue ? `en retard de ${-t.days} j` : (t.days === 0 ? "aujourd'hui" : `dans ${t.days} j`));
+    const col = (SUIVI_CATS[t.cat] || {}).color || '#888';
+    return `<div class="suivi-task suivi-task-l${t.level}${t.overdue ? ' suivi-task-overdue' : ''}" data-go-op="${escapeHtml(t.op._uid)}">
+      <span class="suivi-task-bar"></span>
+      <div class="suivi-task-main">
+        <div class="suivi-task-action">${escapeHtml(t.action)}</div>
+        <div class="suivi-task-sub">
+          <span class="suivi-task-cat" style="color:${col};border-color:${col}55;background:${col}14;">${escapeHtml(t.cat)}</span>
+          <span class="suivi-task-op">${escapeHtml(t.op.code || '')} · ${escapeHtml(t.op.display_name || '')}</span>
+        </div>
+      </div>
+      <div class="suivi-task-ech">${escapeHtml(ech)}${t.deadline ? `<span class="suivi-task-date">${escapeHtml(fmtD(t.deadline))}</span>` : ''}</div>
+    </div>`;
+  };
+
   c.innerHTML = `
-    <div class="accueil-kpis">
+    <div class="accueil-kpis acc2-kpis">
       ${kpis.map(k => `
-        <div class="accueil-kpi accueil-kpi-${k.color}">
+        <div class="accueil-kpi accueil-kpi-${k.color} acc2-kpi" data-go-tab="${k.go}" title="Ouvrir">
           <i class="ti ti-${k.icon} accueil-kpi-icon"></i>
           <div class="accueil-kpi-content">
             <div class="accueil-kpi-num">${k.value}</div>
@@ -9120,121 +9149,80 @@ function renderAccueil() {
       `).join('')}
     </div>
 
-    <div class="accueil-grid">
-      <!-- Échéances urgentes -->
-      <div class="accueil-card accueil-card-wide">
-        <div class="accueil-card-head">
-          <i class="ti ti-alert-triangle"></i>
-          <span>Tes échéances les plus urgentes</span>
-          ${top5Alerts.length > 0 ? `<a href="#" class="accueil-card-link" data-go-tab="suivi">Voir le suivi complet →</a>` : ''}
+    ${myOps.length === 0 ? `
+      <div class="accueil-empty" style="margin-top:20px;">
+        <i class="ti ti-user-search"></i>
+        <p>Aucune opération ne t'est attribuée dans ce périmètre.</p>
+        <p style="font-size:11.5px;color:var(--text-tertiary);">Bascule sur « Tout le portefeuille » en haut à droite, ou fais-toi affecter comme chargé de financement sur tes opérations.</p>
+      </div>` : `
+    <div class="acc2-layout">
+      <div class="acc2-main">
+        <div class="suivi-panel">
+          <div class="suivi-panel-title"><i class="ti ti-target-arrow"></i>À traiter en premier
+            <a href="#" class="accueil-card-link" style="margin-left:auto;" data-go-tab="suivi">Mon suivi complet (${tasks.length}) →</a></div>
+          ${topTasks.length ? topTasks.map(taskRow).join('')
+            : '<div class="suivi-empty-mini"><i class="ti ti-circle-check"></i> Rien d\'urgent - tout est à jour.</div>'}
         </div>
-        ${top5Alerts.length === 0 ? `
-          <div class="accueil-empty">
-            <i class="ti ti-check"></i>
-            <p>Aucune échéance critique. Tout est sous contrôle.</p>
-          </div>
-        ` : `
-          <ul class="accueil-alerts">
-            ${top5Alerts.map(a => `
-              <li class="alert-item alert-${a.level}" data-go-op="${escapeHtml(a.op._uid)}">
-                <span class="alert-days">${a.days < 0 ? `${-a.days}j ⚠` : `${a.days}j`}</span>
-                <div class="accueil-alert-body">
-                  <div class="accueil-alert-op"><strong>${escapeHtml(a.op.code || '?')}</strong> · ${escapeHtml(a.op.display_name || '')}</div>
-                  <div class="accueil-alert-msg">${escapeHtml(a.msg)}</div>
-                </div>
-              </li>
-            `).join('')}
-          </ul>
-        `}
-      </div>
-
-      <!-- Comités à venir -->
-      <div class="accueil-card">
-        <div class="accueil-card-head">
-          <i class="ti ti-users"></i>
-          <span>Comités proches</span>
-          ${upcomingComites.length > 0 ? `<a href="#" class="accueil-card-link" data-go-tab="comites">Tous →</a>` : ''}
-        </div>
-        ${upcomingComites.length === 0 ? `
-          <div class="accueil-empty">
-            <i class="ti ti-calendar"></i>
-            <p>Aucun comité prévu.</p>
-          </div>
-        ` : `
-          <ul class="accueil-com-list">
-            ${upcomingComites.slice(0, 6).map(({comite, op, days}) => {
-              const conf = comiteTypeConfig(comite.type);
-              const label = days === 0 ? "aujourd'hui" : (days > 0 ? `dans ${days}j` : `il y a ${-days}j`);
-              const cls = days < 0 ? 'accueil-com-past' : (days <= 7 ? 'accueil-com-soon' : '');
-              return `
-                <li class="accueil-com-item ${cls}" data-go-op="${escapeHtml(op._uid)}">
-                  <span class="comite-type-pill" style="background:${conf.bg};color:${conf.txt};border-color:${conf.accent};">${escapeHtml(conf.label)}</span>
-                  <div class="accueil-com-body">
-                    <div class="accueil-com-op"><strong>${escapeHtml(op.code || '?')}</strong> · ${escapeHtml(op.display_name || '')}</div>
-                    <div class="accueil-com-meta">${escapeHtml(comite.date || '?')} · ${escapeHtml(label)}</div>
-                  </div>
-                </li>
-              `;
-            }).join('')}
-          </ul>
-        `}
-      </div>
-
-      <!-- Répartition par phase -->
-      <div class="accueil-card">
-        <div class="accueil-card-head">
-          <i class="ti ti-chart-bar"></i>
-          <span>Mes opérations par phase</span>
-        </div>
-        ${totalPhases === 0 ? `<div class="accueil-empty"><p>Aucune opération attribuée.</p></div>` : `
-          <div class="accueil-phases">
-            ${Object.entries(phaseCounts).map(([phase, n]) => {
-              const conf = PHASE_COLORS[phase];
-              const pct = totalPhases > 0 ? (n / totalPhases * 100) : 0;
-              return `
-                <div class="accueil-phase-row">
-                  <span class="accueil-phase-label" style="color:${conf.text};">${escapeHtml(phase)}</span>
-                  <div class="accueil-phase-bar">
-                    <div class="accueil-phase-bar-fill" style="width:${pct}%;background:${conf.bg};border-right:2px solid ${conf.text};"></div>
-                  </div>
-                  <span class="accueil-phase-num">${n}</span>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        `}
-      </div>
-
-      <!-- Activité récente -->
-      <div class="accueil-card accueil-card-wide">
-        <div class="accueil-card-head">
-          <i class="ti ti-history"></i>
-          <span>Activité récente sur tes opérations</span>
-        </div>
-        ${top5Activity.length === 0 ? `
-          <div class="accueil-empty">
-            <i class="ti ti-history"></i>
-            <p>Pas d'activité récente d'autres collaborateurs.</p>
-            <p style="font-size:11.5px;color:var(--text-tertiary);font-style:italic;">L'activité s'affichera ici quand d'autres personnes modifieront tes opérations.</p>
-          </div>
-        ` : `
-          <ul class="accueil-activity">
-            ${top5Activity.map(({entry, op}) => {
-              const d = new Date(entry.date);
-              const dateStr = isNaN(d) ? entry.date : d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-              return `
-                <li class="accueil-activity-item" data-go-op="${escapeHtml(op._uid)}">
+        <div class="suivi-panel">
+          <div class="suivi-panel-title"><i class="ti ti-history"></i>Activité récente sur mes opérations</div>
+          ${top5Activity.length === 0
+            ? '<div class="suivi-empty-mini">Pas d\'activité récente d\'autres collaborateurs.</div>'
+            : `<ul class="accueil-activity">
+              ${top5Activity.map(({ entry, op }) => {
+                const d = new Date(entry.date);
+                const dateStr = isNaN(d) ? entry.date : d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                return `<li class="accueil-activity-item" data-go-op="${escapeHtml(op._uid)}">
                   <span class="accueil-activity-date">${escapeHtml(dateStr)}</span>
                   <span class="accueil-activity-user"><strong>${escapeHtml(entry.user || '?')}</strong></span>
                   <span class="accueil-activity-action">a modifié <em>${escapeHtml(entry.field || '?')}</em></span>
                   <span class="accueil-activity-op">sur ${escapeHtml(op.code || op.display_name || '?')}</span>
-                </li>
-              `;
-            }).join('')}
-          </ul>
-        `}
+                </li>`;
+              }).join('')}
+            </ul>`}
+        </div>
       </div>
-    </div>
+      <aside class="acc2-side">
+        <div class="suivi-panel">
+          <div class="suivi-panel-title"><i class="ti ti-calendar-due"></i>Agenda des 45 prochains jours</div>
+          ${agendaTop.length ? agendaTop.map(a => `
+            <div class="suivi-ag${a.overdue ? ' overdue' : ''}" data-go-op="${escapeHtml(a.op._uid)}">
+              <span class="suivi-ag-date">${escapeHtml(fmtD(a.date))}</span>
+              <span class="suivi-ag-days">${a.days < 0 ? 'J+' + (-a.days) : 'J-' + a.days}</span>
+              <span class="suivi-ag-body"><span class="suivi-ag-action"><span class="suivi-cat-dot" style="background:${a.dot}"></span> ${escapeHtml(a.label)}</span>
+              <span class="suivi-ag-op">${escapeHtml(a.op.code || '')}</span></span>
+            </div>`).join('')
+            : '<div class="suivi-empty-mini">Aucune échéance datée sur la période.</div>'}
+        </div>
+        <div class="suivi-panel">
+          <div class="suivi-panel-title"><i class="ti ti-chart-bar"></i>Mon portefeuille par phase</div>
+          ${totalPhases === 0 ? '<div class="suivi-empty-mini">Aucune opération attribuée.</div>' : `
+          <div class="accueil-phases">
+            ${Object.entries(phaseCounts).filter(([, n]) => n > 0).map(([phase, n]) => {
+              const conf = PHASE_COLORS[phase];
+              const pct = totalPhases > 0 ? (n / totalPhases * 100) : 0;
+              return `<div class="accueil-phase-row">
+                <span class="accueil-phase-label" style="color:${conf.text};">${escapeHtml(phase)}</span>
+                <div class="accueil-phase-bar"><div class="accueil-phase-bar-fill" style="width:${pct}%;background:${conf.bg};border-right:2px solid ${conf.text};"></div></div>
+                <span class="accueil-phase-num">${n}</span>
+              </div>`;
+            }).join('')}
+          </div>`}
+        </div>
+        <div class="suivi-panel">
+          <div class="suivi-panel-title"><i class="ti ti-eye-exclamation"></i>À surveiller <span class="suivi-panel-hint">retards · tâches</span></div>
+          ${watch.length ? watch.map(({ op, n, nLate }) => {
+            const ph = op.phase_actuelle || 'Montage';
+            const conf = PHASE_COLORS[ph] || {};
+            return `<div class="suivi-pf" data-go-op="${escapeHtml(op._uid)}">
+              <span class="suivi-pf-dot" style="background:${conf.dot || conf.text || 'var(--text-tertiary)'}"></span>
+              <span class="suivi-pf-name">${escapeHtml(op.display_name || op.code || '')}</span>
+              ${nLate ? `<span class="suivi-pf-late">${nLate}</span>` : ''}
+              <span class="suivi-pf-count">${n}</span>
+            </div>`;
+          }).join('') : '<div class="suivi-empty-mini">Rien à surveiller.</div>'}
+        </div>
+      </aside>
+    </div>`}
   `;
 
   // Wire navigation links

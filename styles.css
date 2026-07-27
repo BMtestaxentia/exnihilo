@@ -5743,3 +5743,14 @@
 .suivi-opgroup-count { margin-left: auto; font-size: 11px; color: var(--text-secondary); flex: none; }
 .suivi-opgroup-open { font-size: 11px; font-weight: 600; color: var(--info-accent); opacity: 0; transition: opacity .12s; flex: none; }
 .suivi-opgroup-body { padding: 6px 10px 10px; }
+
+/* ===== v68 : Accueil reworke ("ma journee") ===== */
+.acc2-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 900px) { .acc2-kpis { grid-template-columns: 1fr 1fr; } }
+.acc2-kpi { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
+.acc2-kpi:hover { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(0,0,0,.10); }
+.acc2-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 16px; align-items: start; margin-top: 18px; }
+@media (max-width: 1100px) { .acc2-layout { grid-template-columns: 1fr; } }
+.acc2-main .suivi-task { cursor: pointer; }
+.accueil-kpi-warning { border-color: var(--warning-accent); }
+.accueil-kpi-warning .accueil-kpi-num, .accueil-kpi-warning .accueil-kpi-icon { color: var(--warning-text); }
