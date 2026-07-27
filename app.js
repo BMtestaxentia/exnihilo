@@ -5264,39 +5264,46 @@ function renderSubvSection(items, op) {
 }
 
 function renderSubvCard(i) {
-  // Build jalons timeline (3 étapes : Simulation → Demande → Notification)
-  const jalons = [
-    { label: 'Simulation', date: i.date_simule, montant: i.montant_simule },
-    { label: 'Demande', date: i.date_demande, montant: i.montant_demande },
-    { label: 'Notification', date: i.date_notification || i.date_notif, montant: i.montant_notifie || i.montant_notif, sp_link: i.lien_sp_notif || i.lien_sharepoint, sp_label: 'Ouvrir la notification' },
+  // Détail d'une subvention (déplié sous la ligne compacte) : même présentation
+  // que les prêts (stepper daté pd-* + chips), l'en-tête reste sur la ligne compacte.
+  const spLink = (url, label) => url
+    ? `<a class="jalon-sp-link" href="${escapeHtml(url)}" target="_blank" rel="noopener" title="${escapeHtml(label)}" onclick="event.stopPropagation();"><i class="ti ti-file-text"></i></a>`
+    : '';
+  const stage = subvStage(i);
+  const mNotif = i.montant_notifie || i.montant_notif;
+  const steps = [
+    { label: 'Simulation', date: i.date_simule || '',
+      sub: i.montant_simule ? fmtMontant(i.montant_simule) + ' sim.' : '' },
+    { label: 'Demande', date: i.date_demande || '',
+      sub: i.montant_demande ? fmtMontant(i.montant_demande) : '' },
+    { label: 'Notification', date: i.date_notification || i.date_notif || '',
+      sub: [mNotif ? fmtMontant(mNotif) : '', i.n_arrete ? 'Réf. ' + i.n_arrete : ''].filter(Boolean).join(' · '),
+      link: spLink(i.lien_sp_notif || i.lien_sharepoint, 'Ouvrir la notification') },
+    { label: 'Convention', date: i.date_conv_signature || '',
+      sub: i.montant_verse ? fmtMontant(i.montant_verse) + ' versé' : (i.date_versement_prevue ? 'versement prévu ' + i.date_versement_prevue : ''),
+      link: spLink(i.lien_sp_conv, 'Ouvrir la convention') },
   ];
-  const jalonsHtml = jalons.map(j => {
-    if (!j.date && !j.montant) {
-      return `<div class="jalon jalon-empty"><div class="jalon-label">${j.label}</div><div class="jalon-date">-</div></div>`;
-    }
-    const spBtn = j.sp_link
-      ? `<a class="jalon-sp-link" href="${escapeHtml(j.sp_link)}" target="_blank" rel="noopener" title="${escapeHtml(j.sp_label || 'Ouvrir document')}" onclick="event.stopPropagation();"><i class="ti ti-file-text"></i></a>`
-      : '';
-    return `
-      <div class="jalon">
-        <div class="jalon-label">${j.label}${spBtn}</div>
-        <div class="jalon-date">${escapeHtml(j.date || '-')}</div>
-        ${j.montant ? `<div class="jalon-montant">${fmtMontant(j.montant)}</div>` : ''}
-      </div>
-    `;
-  }).join('');
+  const stepsHtml = steps.map((s, idx) => `
+    <div class="pd-step ${idx <= stage ? 'done' : (idx === stage + 1 ? 'next' : '')}">
+      <div class="pd-track"><span class="pd-line pd-line-l"></span><span class="pd-dot"></span><span class="pd-line pd-line-r"></span></div>
+      <div class="pd-label">${s.label}${s.link || ''}</div>
+      <div class="pd-date">${s.date ? escapeHtml(s.date) : '·'}</div>
+      ${s.sub ? `<div class="pd-sub">${escapeHtml(s.sub)}</div>` : ''}
+    </div>`).join('');
+
+  const chip = (l, v) => (v !== null && v !== undefined && v !== '') ? `<span class="pd-chip"><span class="l">${l}</span><span class="v">${escapeHtml(String(v))}</span></span>` : '';
+  const chipsHtml = [
+    chip('Validé CA', i.montant_valide_ca ? fmtMontant(i.montant_valide_ca) : ''),
+    chip('Versement prévu', i.date_versement_prevue),
+    chip('Droits réservés', i.nb_droits_reserves),
+    chip('Contact', i.contact),
+    i.aap_id ? `<span class="pd-chip"><span class="l">AAP</span><span class="v">${escapeHtml(aapLabelById(i.aap_id))}</span></span>` : '',
+  ].filter(Boolean).join('');
 
   return `
-    <div class="entity-card${diffEntityClass('subventions', i)}" data-section="subventions" data-row-idx="${i._originalIdx}">
-      <div class="entity-card-head">
-        <div>
-          <div class="entity-card-title">${escapeHtml(i.financeur || '-')}${i.financement ? ` <span style="color:var(--text-tertiary);font-weight:400;">· ${escapeHtml(i.financement)}</span>` : ''}</div>
-          ${i.type ? `<div class="entity-card-sub">${escapeHtml(i.type)}</div>` : ''}
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${i.aap_id ? `<span class="badge-secondary"><i class="ti ti-bookmark"></i> ${escapeHtml(aapLabelById(i.aap_id))}</span>` : ''}${statusBadge(i.statut)}</div>
-      </div>
-      <div class="jalons-timeline">${jalonsHtml}</div>
-      ${i.contact ? `<div class="entity-card-meta"><span><i class="ti ti-user"></i>${escapeHtml(i.contact)}</span></div>` : ''}
+    <div class="entity-card pd-card${diffEntityClass('subventions', i)}" data-section="subventions" data-row-idx="${i._originalIdx}">
+      <div class="pd-steps">${stepsHtml}</div>
+      ${chipsHtml ? `<div class="pd-chips">${chipsHtml}</div>` : ''}
       ${i.commentaires || i.notes ? `<div class="entity-card-notes">${escapeHtml(i.commentaires || i.notes)}</div>` : ''}
     </div>
   `;
