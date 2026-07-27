@@ -2710,41 +2710,6 @@ function editableNotes(value, field, scope, placeholder) {
   }
   return `<div class="notes-block">${escapeHtml(value)}</div>`;
 }
-function editableVolCell(key, value, t) {
-  const label = key.toUpperCase();
-  // Get surface from t.surfaces[key] if available
-  const surface = (t && t.surfaces && t.surfaces[key]) || null;
-  if (editMode) {
-    return `<div class="vol-cell vol-cell-edit"><div class="vol-cell-label">${label}</div>
-      <div class="vol-cell-edit-row">
-        <input type="number" min="0" class="editable-input vol-cell-input" data-edit-tranche-vol="${key}" value="${value || ''}" placeholder="lgts" title="Nombre de logements">
-        <span class="vol-cell-edit-unit">lgts</span>
-      </div>
-      <div class="vol-cell-edit-row">
-        <input type="number" min="0" step="0.01" class="editable-input vol-cell-input" data-edit-tranche-surface="${key}" value="${surface || ''}" placeholder="m²" title="Surface utile m²">
-        <span class="vol-cell-edit-unit">m²</span>
-      </div>
-    </div>`;
-  }
-  // Diff: compare with snapshot tranche vol[key]
-  let refValue = null;
-  if (compareWithIdx != null) {
-    const op = findOp(selectedOpCode);
-    if (op) {
-      const snap = getCompareSnapshot(op);
-      if (snap && snap.snapshot.tranches && snap.snapshot.tranches[selectedTrancheIdx]) {
-        refValue = snap.snapshot.tranches[selectedTrancheIdx].vol?.[key];
-      }
-    }
-  }
-  const isDifferent = refValue != null && Number(refValue) !== Number(value || 0);
-  const displayedVal = value || '-';
-  const surfaceLine = surface ? `<div class="vol-cell-surface">${fmtSurface(surface)}</div>` : (value ? '<div class="vol-cell-surface vol-cell-surface-empty">- m²</div>' : '');
-  if (isDifferent) {
-    return `<div class="vol-cell${value ? '' : ' vol-cell-empty'}"><div class="vol-cell-label">${label}</div><div class="vol-cell-value diff-changed" title="Avant : ${refValue}">${displayedVal}<span class="diff-mark">${Number(value || 0) > Number(refValue) ? '↑' : '↓'}</span></div>${surfaceLine}</div>`;
-  }
-  return `<div class="vol-cell${value ? '' : ' vol-cell-empty'}"><div class="vol-cell-label">${label}</div><div class="vol-cell-value">${displayedVal}</div>${surfaceLine}</div>`;
-}
 
 // JS formatters (mirror Python ones, used at render time)
 // Mode d'affichage des montants : 'k' (k€) ou 'eur' (€, 2 décimales max)
@@ -2763,6 +2728,11 @@ function fmtEuros(v) {
   if (v === null || v === undefined || v === '') return '-';
   const n = Number(v);
   if (isNaN(n)) return '-';
+  // Respecte le toggle global k€/€ (cohérence avec fmtMontant)
+  if (MONEY_FMT === 'k') {
+    const k = Math.round(n / 1000);
+    return k.toLocaleString('fr-FR').replace(/,/g, ' ') + ' k€';
+  }
   const rounded = Math.round(n);
   return rounded.toLocaleString('fr-FR').replace(/ /g, ' ').replace(/,/g, ' ') + ' €';
 }
@@ -3521,14 +3491,6 @@ function switchOpsTab(t) {
 // tableau de bord + tiroir de détail (drill-in). L'édition garde l'ancien
 // layout inline par onglet (flux de saisie éprouvé). =====
 
-// Domaines de niveau opération, déplacés dans le tiroir depuis #opDetail.
-const OPS_DOMAINS = [
-  ['syn',   'Synthèse',        'layout-dashboard'],
-  ['dos',   'Informations',    'folder'],
-  ['bilan', 'Bilan',           'report-money'],
-  ['suivi', 'Comités & suivi', 'activity'],
-];
-
 // Bandeau permanent « Vue opération + pastille par tranche », rendu dans
 // l'en-tête (zone haute non défilante) → toujours visible, au-dessus du tiroir.
 function opsTrancheBandeauHtml(op, displayedOp, editing) {
@@ -3751,21 +3713,8 @@ function closeOpsDrawer() { switchOpsTab('home'); } // compat : « fermer » = r
 function _syncOpsNav() {
   const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
   _setBandeauActive(isTr ? String(selectedTrancheIdx) : 'op');
-  document.querySelectorAll('.ops-vn [data-view], .ops-unibar [data-view]').forEach(b =>
+  document.querySelectorAll('.ops-unibar [data-view]').forEach(b =>
     b.classList.toggle('active', b.dataset.view === OPS_TAB));
-}
-
-// Barre de navigation des vues (consultation), sous le bandeau tranches.
-function opsViewNavHtml(op) {
-  const opNav = [['home', 'Vue d\'ensemble'], ['syn', 'Synthèse'], ['dos', 'Informations'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
-  const vBtn = ([tab, label]) =>
-    `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="openOpsDomain('${Object.keys(_DOMAIN_TO_TAB).find(k => _DOMAIN_TO_TAB[k] === tab) || 'home'}')">${escapeHtml(label)}</button>`;
-  // Le choix de la tranche se fait dans le bandeau au-dessus (pas de doublon ici) ;
-  // on ne garde que les deux sous-vues de la tranche sélectionnée.
-  const trNav = `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" onclick="openOpsDomain('tranche')">Détail</button>
-    <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" onclick="openOpsDomain('tranche-fin')">Financements</button>`;
-  return `<nav class="ops-vn">${opNav.map(vBtn).join('')}
-    ${(op.tranches || []).length ? `<span class="ops-dn-sep"></span><span class="ops-dn-grp">Tranche</span>${trNav}` : ''}</nav>`;
 }
 
 // Bandeau unique (consultation) : nav de vues + pastilles de tranches + sous-vues.
@@ -6374,147 +6323,6 @@ function renderReservataireCardEdit(i, op) {
   `;
 }
 
-// ============== LEGACY: kept for backward compat (no longer called) ==============
-
-function renderSubvTable(items) {
-  if (!items || items.length === 0) return '';
-  const total_demande = items.reduce((s, i) => s + (i.montant_demande || 0), 0);
-  const total_notif = items.reduce((s, i) => s + (i.montant_notifie || 0), 0);
-  return `
-    <div class="section">
-      <div class="subent-header">
-        <div class="subent-title subv"><i class="ti ti-receipt"></i>Subventions · ${items.length}</div>
-        <div class="subent-aggr">${fmtMontant(total_demande)} dem · ${fmtMontant(total_notif)} notif</div>
-      </div>
-      <table class="subent-table">
-        <thead><tr><th>Financeur</th><th>Financement</th><th class="num">Demandé</th><th class="num">Notifié</th><th>Statut</th><th>Date notif</th><th></th></tr></thead>
-        <tbody>
-          ${items.map(i => `
-            <tr>
-              <td>${dash(i.financeur)}</td>
-              <td class="muted">${dash(i.financement)}</td>
-              <td class="num">${dashNum(fmtMontant(i.montant_demande))}</td>
-              <td class="num">${dashNum(fmtMontant(i.montant_notifie))}</td>
-              <td><span class="status-text-${i.sc}">${dash(i.statut)}</span></td>
-              <td class="muted">${dash(i.date_notification)}</td>
-              <td>${commentIcon(i.commentaires)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function renderPretsTable(items) {
-  if (!items || items.length === 0) return '';
-  const total_sim = items.reduce((s, i) => s + (i.montant_sim || 0), 0);
-  const total_contrat = items.reduce((s, i) => s + (i.montant_contrat || 0), 0);
-  return `
-    <div class="section">
-      <div class="subent-header">
-        <div class="subent-title prets"><i class="ti ti-coin"></i>Prêts · ${items.length}</div>
-        <div class="subent-aggr">${fmtMontant(total_sim)} sim · ${fmtMontant(total_contrat)} signé</div>
-      </div>
-      <table class="subent-table">
-        <thead><tr><th>Ligne</th><th>Financeur</th><th class="num">Sim</th><th class="num">Contrat</th><th>Taux</th><th class="num">Durée</th><th>Statut</th><th></th></tr></thead>
-        <tbody>
-          ${items.map(i => `
-            <tr>
-              <td>${dash(i.ligne)}</td>
-              <td>${dash(i.financeur)}</td>
-              <td class="num">${dashNum(fmtMontant(i.montant_sim))}</td>
-              <td class="num">${dashNum(fmtMontant(i.montant_contrat))}</td>
-              <td class="muted">${dash(i.taux)}</td>
-              <td class="num muted">${i.duree_emprunt ? i.duree_emprunt + ' ans' : '-'}</td>
-              <td><span class="status-text-${i.sc}">${dash(i.statut)}</span></td>
-              <td>${commentIcon(i.commentaires)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function renderGarantiesTable(items) {
-  if (!items || items.length === 0) return '';
-  return `
-    <div class="section">
-      <div class="subent-header">
-        <div class="subent-title gar"><i class="ti ti-shield-check"></i>Garanties · ${items.length}</div>
-      </div>
-      <table class="subent-table">
-        <thead><tr><th>Garant</th><th>Prêt lié</th><th class="num">Quotité</th><th>Date AP</th><th>Statut</th><th></th></tr></thead>
-        <tbody>
-          ${items.map(i => `
-            <tr>
-              <td>${dash(i.garant)}</td>
-              <td class="muted">${dash(i.pret_lie)}</td>
-              <td class="num">${i.fmt_quotite}</td>
-              <td class="muted">${dash(i.date_ap)}</td>
-              <td><span class="status-text-${i.sc}">${dash(i.statut)}</span></td>
-              <td>${commentIcon(i.commentaires)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function renderPrefinTable(items) {
-  if (!items || items.length === 0) return '';
-  return `
-    <div class="section">
-      <div class="subent-header">
-        <div class="subent-title prefin"><i class="ti ti-clock"></i>Préfinancements · ${items.length}</div>
-      </div>
-      <table class="subent-table">
-        <thead><tr><th>Banque</th><th class="num">Couvert</th><th class="num">Tiré</th><th class="num">% tiré</th><th>Statut</th></tr></thead>
-        <tbody>
-          ${items.map(i => `
-            <tr>
-              <td>${dash(i.banque)}</td>
-              <td class="num">${dashNum(fmtMontant(i.montant_couvert))}</td>
-              <td class="num">${dashNum(fmtMontant(i.montant_tire))}</td>
-              <td class="num">${i.fmt_pct_tire}</td>
-              <td><span class="status-text-${i.sc}">${dash(i.statut)}</span></td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function renderReservatairesTable(items) {
-  if (!items || items.length === 0) return '';
-  return `
-    <div class="section">
-      <div class="subent-header">
-        <div class="subent-title res"><i class="ti ti-users"></i>Réservataires · ${items.length}</div>
-      </div>
-      <table class="subent-table">
-        <thead><tr><th>Réservataire</th><th>Financement</th><th class="num">Logts</th><th class="num">%</th><th>Étape</th><th></th></tr></thead>
-        <tbody>
-          ${items.map(i => `
-            <tr>
-              <td>${dash(i.reservataire)}</td>
-              <td class="muted">${dash(i.financement)}</td>
-              <td class="num">${i.nb_logements || '-'}</td>
-              <td class="num">${i.fmt_pct_reserve}</td>
-              <td><span class="status-text-${i.sc}">${dash(i.etape)}</span></td>
-              <td>${commentIcon(i.commentaires)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-// Formatters: see fmtMontant defined at top of script
 
 function selectOp(code) {
   // Garde-fou : si des modifs sont en cours, demander confirmation
@@ -13175,7 +12983,6 @@ function addLogoutButton(){
 
 // ============== SESSIONS : rafraîchissement live + présence ==============
 let _sessClientId = 'c' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-let _sessAutoOn = true;
 let _sessLoops = [];
 
 function _two(n){ return String(n).padStart(2,'0'); }
@@ -13236,7 +13043,6 @@ function startSessionLoops(){
   // Auto-refresh 30 s désactivé : il resetait l'état de l'UI (lignes dépliées,
   // sections ouvertes…). Les données se chargent au chargement de la page et
   // via le bouton Rafraîchir uniquement.
-  // _sessLoops.push(setInterval(() => { if (_sessAutoOn) refreshData(true); }, 30000));
 }
 function showLoginOverlay(){
   if (document.getElementById('authOverlay')) { document.getElementById('authOverlay').style.display='flex'; return; }

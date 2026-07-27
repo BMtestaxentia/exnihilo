@@ -5401,30 +5401,11 @@
 .oph-line .l { flex: 1; color: var(--text-primary); }
 .oph-line .d { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
 
-/* Tiroir */
-.ops-scrim { position: fixed; inset: 0; background: rgba(16,22,30,.42); opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 65; }
-.ops-scrim.open { opacity: 1; pointer-events: auto; }
-.ops-drawer { position: fixed; top: 0; right: 0; width: min(96vw, 1240px); background: var(--bg-primary); border-left: 1px solid var(--border-color);
-  box-shadow: -8px 0 34px rgba(0,0,0,.20); transform: translateX(100%); transition: transform .26s cubic-bezier(.4,0,.2,1); z-index: 66; display: flex; flex-direction: column; }
-.ops-drawer.open { transform: translateX(0); }
-.ops-drawer-head { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border-color); flex: none; }
-.ops-drawer-title { flex: 1; font-size: 16px; font-weight: 650; color: var(--text-primary); }
-.ops-drawer-x { appearance: none; border: 1px solid var(--border-color); background: var(--bg-primary); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; color: var(--text-secondary); display: grid; place-items: center; flex: none; }
-.ops-drawer-x:hover { background: var(--bg-secondary); color: var(--text-primary); }
-.ops-drawer-nav { display: flex; gap: 4px; padding: 8px 14px; border-bottom: 1px solid var(--border-color); overflow-x: auto; background: var(--bg-secondary); flex: none; }
+/* Boutons de nav du bandeau opération (.ops-dn) */
 .ops-dn { appearance: none; border: 1px solid transparent; background: transparent; font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text-secondary); padding: 5px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
 .ops-dn:hover { background: var(--bg-primary); color: var(--text-primary); }
 .ops-dn.active { background: var(--bg-primary); color: var(--info-accent); border-color: var(--border-color); }
-.ops-drawer-body { padding: 16px 20px 44px; overflow-y: auto; flex: 1; }
-.ops-drawer-body { display: flex; flex-wrap: wrap; gap: 14px; align-content: flex-start; }
-.ops-drawer-body > [data-grp] { flex: 1 1 100%; margin: 0; max-width: none; min-width: 0; }
-/* Prix de revient + Plan de financement cote a cote (adjacents dans le DOM). */
-@media (min-width: 900px) {
-  .ops-drawer-body > #sec-tr-bilan, .ops-drawer-body > #sec-tr-pf { flex: 1 1 calc(50% - 7px); min-width: 340px; }
-}
 
-/* Onglet Financements mis en avant dans le tiroir d'une tranche */
-.ops-dn.ops-dn-accent:not(.active) { color: var(--info-accent); background: var(--info-bg); border-color: transparent; }
 
 /* ===== Edition financements : lignes compactes depliables (refonte) ===== */
 .entity-card.editing.fin-erow { padding: 0; overflow: hidden; }
@@ -5546,9 +5527,6 @@
 .ops-shell[data-tab="finop"] .op-detail { grid-column: 2 / 4; }
 .ops-shell[data-tab="finop"] .op-detail > [data-grp]:not([data-grp~="finop"]) { display: none !important; }
 .op-finop { padding: 16px 0 48px; max-width: 1400px; }
-/* Nav de vues sous le bandeau tranches (reutilise les boutons .ops-dn) */
-.ops-vn { display: flex; align-items: center; gap: 4px; padding: 7px 24px; border-top: 1px solid var(--border-color);
-  background: var(--bg-primary); overflow-x: auto; scrollbar-width: thin; }
 
 /* v54 : garanties integrees sous chaque pret dans la vue Financements op */
 .finop-garstrip { padding: 6px 12px 10px; border-top: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 7px; }
