@@ -3137,13 +3137,30 @@ function replaceTablerIcons(root) {
   });
 }
 
+// Toasts empilés : les messages ne se superposent plus. Erreurs (icônes alert-*)
+// persistantes avec bouton de fermeture + aria assertive ; succès 3 s. Un même
+// message déjà affiché n'est pas dupliqué.
 function showToast(msg, icon = 'check') {
+  let stack = document.getElementById('toastStack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toastStack';
+    stack.setAttribute('aria-live', 'polite');
+    document.body.appendChild(stack);
+  }
+  const existing = [...stack.children].find(c => c.dataset.msg === msg);
+  if (existing) { existing.classList.remove('toast-repop'); void existing.offsetWidth; existing.classList.add('toast-repop'); return; }
+  const isError = /^alert-/.test(icon);
   const t = document.createElement('div');
-  t.className = 'toast';
-  t.innerHTML = `<i class="ti ti-${icon}"></i>${escapeHtml(msg)}`;
-  document.body.appendChild(t);
+  t.className = 'toast' + (isError ? ' toast-error' : '');
+  t.dataset.msg = msg;
+  t.setAttribute('role', isError ? 'alert' : 'status');
+  t.innerHTML = `<i class="ti ti-${icon}"></i><span>${escapeHtml(msg)}</span>`
+    + (isError ? `<button type="button" class="toast-x" aria-label="Fermer" onclick="this.parentElement.remove()">×</button>` : '');
+  stack.appendChild(t);
   replaceTablerIcons(t);
-  setTimeout(() => t.remove(), 3000);
+  if (!isError) setTimeout(() => t.remove(), 3000);
+  else setTimeout(() => t.remove(), 15000); // filet : même une erreur finit par partir
 }
 
 // Session snapshot for highlighting modified fields during current edit session

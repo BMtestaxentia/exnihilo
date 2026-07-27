@@ -4858,16 +4858,25 @@
     min-width: 140px;
   }
 
-  .toast {
+  #toastStack {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column-reverse; align-items: center; gap: 8px;
+    z-index: 1000; pointer-events: none;
+  }
+  .toast {
     background: var(--success-text); color: white;
     padding: 10px 16px; border-radius: var(--radius-md);
-    font-size: 13px; font-weight: 500; z-index: 1000;
+    font-size: 13px; font-weight: 500;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     display: flex; align-items: center; gap: 6px;
-    animation: toastIn 0.2s ease-out;
+    animation: toastIn 0.2s ease-out; pointer-events: auto;
   }
-  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  .toast-error { background: var(--danger-accent); }
+  .toast-x { appearance: none; border: none; background: none; color: white; font-size: 16px; line-height: 1; cursor: pointer; padding: 0 0 0 6px; opacity: .8; }
+  .toast-x:hover { opacity: 1; }
+  .toast-repop { animation: toastRepop 0.3s ease-out; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes toastRepop { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
 
   @media (max-width: 1024px) { .dashboard-grid, .kpi-grid { grid-template-columns: 1fr 1fr; } }
   /* ============== SECTIONS REPLIABLES + CHRONOLOGIE (refonte onglet Opérations) ============== */
