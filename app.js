@@ -3973,6 +3973,23 @@ function openOpsDomain(id) {
 }
 function closeOpsDrawer() { switchOpsTab('home'); } // compat : « fermer » = retour vue d'ensemble
 
+// Clic sur une pill de tranche : en consultation dans la vue Financements
+// fusionnée, la pill navigue vers la carte de SA tranche (scroll + flash) ;
+// sinon elle ouvre le détail de la tranche (ou sa saisie financements en édition).
+function opsPillClick(i) {
+  selectTranche(i);
+  if (!editMode && OPS_TAB === 'finop') {
+    const el = document.getElementById('finop-tr-' + i);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.classList.add('oph-flash');
+      setTimeout(() => el.classList.remove('oph-flash'), 1400);
+    }
+    return;
+  }
+  switchOpsTab(OPS_TAB === 'fin' ? 'fin' : 'tr');
+}
+
 // Synchronise les états actifs (bandeau tranches + nav de vues) sur OPS_TAB.
 function _syncOpsNav() {
   const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
@@ -4001,7 +4018,7 @@ function opsUnifiedBarHtml(op, displayedOp, editing) {
     const dot = /sign|obtenu|acquis|dfa/i.test(agr) ? 'good' : (agr ? 'warn' : 'neutral');
     return `<button type="button" class="ops-tpill${(isTr && i === selectedTrancheIdx) ? ' active' : ''}" data-tranche-pill="${i}"
         title="${escapeHtml((t.type_structure || 'Tranche ' + suffix) + ' - Agrément : ' + (agr || 'non renseigné'))}"
-        onclick="selectTranche(${i}); switchOpsTab(OPS_TAB === 'fin' ? 'fin' : 'tr')">
+        onclick="opsPillClick(${i})">
         <span class="ops-tpill-dot ${dot}"></span>
         <span class="ops-tpill-top">${escapeHtml(suffix)}</span>
         <span class="ops-tpill-meta">${trancheLogements(t) || '-'} logts · ${fmtMontant(trancheBudgetTTC(t))}</span>
@@ -4010,8 +4027,10 @@ function opsUnifiedBarHtml(op, displayedOp, editing) {
   const addPill = editing
     ? `<button type="button" class="ops-tpill ops-tpill-add" title="Ajouter une nouvelle tranche" onclick="createTranche()"><span class="ops-tpill-top"><i class="ti ti-plus"></i></span></button>`
     : '';
-  const trNav = `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" title="Détail de la tranche sélectionnée" onclick="switchOpsTab('tr')">Détail</button>
-    <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" title="Financements de la tranche sélectionnée" onclick="switchOpsTab('fin')">Financements</button>`;
+  // Consultation : un SEUL onglet Financements (niveau op, fusionné) - la sous-nav
+  // de tranche ne garde que Détail ; en édition les deux vues de saisie restent.
+  const trNav = `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" title="Détail de la tranche sélectionnée" onclick="switchOpsTab('tr')">Détail</button>`
+    + (editing ? `<button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" title="Financements de la tranche sélectionnée" onclick="switchOpsTab('fin')">Financements</button>` : '');
   // Flèche de retour : visible (via CSS) dès qu'on a quitté la vue d'ensemble
   const backBtn = editing ? '' : `<button type="button" class="ops-dn ops-back" onclick="closeOpsDrawer()" title="Retour à la vue d'ensemble (Échap)"><i class="ti ti-arrow-left"></i></button>`;
   // Zone tranches visuellement distincte des vues opération (encart dédié)
@@ -4151,12 +4170,12 @@ function renderOpFinancementsDrawer(op) {
       (prets.length ? `<div class="finop-sub">Prêts &amp; garanties · ${prets.length}</div>${finHeadHtml('prets')}${prets.map(p => renderPretRow(p, garStripHtml(p, gars.filter(g => g.pret_lie === p.ligne)))).join('')}` : '')
       + (orphGars.length ? `<div class="finop-sub">Garanties sans prêt rattaché · ${orphGars.length}</div>${finHeadHtml('garanties')}${orphGars.map(renderGarantieRow).join('')}` : '')
       + (subvs.length ? `<div class="finop-sub">Subventions · ${subvs.length}</div>${finHeadHtml('subventions')}${subvs.map(renderSubvRow).join('')}` : '');
-    return `<div class="finop-tr" style="border-left-color:${trColor}">
+    return `<div class="finop-tr" id="finop-tr-${idx}" style="border-left-color:${trColor}">
       <div class="finop-tr-head">
         <span class="ops-tpill-top" style="color:${trColor}">${escapeHtml(suffix)}</span>
         <span class="finop-tr-name">${escapeHtml(t.type_structure || '')}</span>
         <span class="oph-soft">${fmtMontant(tot)} mobilisés</span>
-        <button type="button" class="ops-dn" style="margin-left:auto" onclick="selectTranche(${idx}); openOpsDomain('tranche-fin')">Ouvrir la tranche →</button>
+        <button type="button" class="ops-dn" style="margin-left:auto" onclick="selectTranche(${idx}); openOpsDomain('tranche')">Détail de la tranche →</button>
       </div>
       ${rows || '<div class="subent-empty">Aucun financement sur cette tranche.</div>'}
     </div>`;
@@ -4182,7 +4201,9 @@ function renderOpDetail() {
     // Édition : depuis la vue Financements op, on atterrit sur les financements
     // de la tranche courante (cycle « je vois une erreur -> je corrige » direct).
     ? (OPS_TAB === 'home' ? 'syn' : (OPS_TAB === 'finop' ? 'fin' : OPS_TAB))
-    : ((OPS_TAB === 'syn' ? 'home' : OPS_TAB) || 'home'); // Synthèse n'existe plus en consultation
+    // Consultation : Synthèse n'existe plus, et les financements de tranche sont
+    // fusionnés dans la vue Financements op.
+    : ((OPS_TAB === 'syn' ? 'home' : (OPS_TAB === 'fin' ? 'finop' : OPS_TAB)) || 'home');
 
   const volCells = ['plai','plus','pls','pli','libre','autre']
     .filter(k => editMode || sumVolKey(displayedOp, k) > 0)
@@ -4291,7 +4312,28 @@ function renderOpDetail() {
       </button>`
     : '';
 
-  const phaseStepperHtml = `
+  // Consultation : stepper COMPACT (pastilles + phase courante seule, détail en
+  // tooltip) - plus de scale CSS qui rendait noms et dates illisibles. Le
+  // stepper complet reste pour l'édition et la consultation de snapshots.
+  const useCompactStepper = !effectiveEditMode && !isViewingSnapshot && compareWithIdx == null;
+  const confCur = PHASE_COLORS[op.phase_actuelle] || {};
+  const compactDots = PHASES.map((phase, idx) => {
+    const snap = op.phases_history.find(h => h.name === phase);
+    const state = idx === phaseIdx ? 'current' : ((idx < phaseIdx || snap) ? 'past' : 'future');
+    const tip = `${phase}${snap ? ' · figée le ' + (snap.date_fige || '?') + ' (cliquer pour consulter)' : (state === 'current' ? ' · en cours' : '')}`;
+    const clickable = !!snap && idx !== phaseIdx;
+    const conf = PHASE_COLORS[phase] || {};
+    return `<span class="psc-dot psc-${state}${clickable ? ' stepper-clickable' : ''}"
+      ${clickable ? `data-stepper-action="viewSnap" data-stepper-arg="${op.phases_history.indexOf(snap)}"` : ''}
+      title="${escapeHtml(tip)}" style="${state === 'current' ? `--phase-accent:${conf.accent};` : ''}">${state === 'past' ? '<i class="ti ti-check"></i>' : ''}</span>`;
+  }).join('<span class="psc-line"></span>');
+  const phaseStepperHtml = useCompactStepper
+    ? `<div class="phase-stepper-wrap psc-wrap">
+        <div class="phase-stepper-compact">${compactDots}
+          <span class="psc-cur" style="background:${confCur.bg || 'var(--bg-secondary)'};color:${confCur.text || 'var(--text-primary)'}">${escapeHtml(op.phase_actuelle || PHASES[0])}<i>en cours</i></span>
+        </div>
+      </div>`
+    : `
     <div class="phase-stepper-wrap">
       <div class="phase-stepper">${stepperItems}</div>
       ${nextPhaseBtn}
@@ -4337,7 +4379,6 @@ function renderOpDetail() {
           </div>`
           : `<h1 class="detail-title">${escapeHtml(displayedOp.display_name || op.display_name)}</h1>`}
         <div class="detail-badges">
-          <span class="phase-badge" style="background:${PHASE_COLORS[op.phase_actuelle]?.bg};color:${PHASE_COLORS[op.phase_actuelle]?.text};">${escapeHtml(op.phase_actuelle || PHASES[0])}</span>
           ${displayedOp.zone_abc && !effectiveEditMode ? `<span class="badge-secondary">Zone ${escapeHtml(displayedOp.zone_abc)}</span>` : ''}
           ${displayedOp.vefa_mod && !effectiveEditMode ? `<span class="badge-secondary">${escapeHtml(displayedOp.vefa_mod)}</span>` : ''}
           ${displayedOp.type_travaux && !effectiveEditMode ? `<span class="badge-secondary">${escapeHtml(displayedOp.type_travaux)}</span>` : ''}
