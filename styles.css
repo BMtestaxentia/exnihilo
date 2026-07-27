@@ -5383,7 +5383,7 @@
 .oph-open { font-size: 11.5px; font-weight: 600; color: var(--info-accent); opacity: 0; transition: opacity .13s ease; white-space: nowrap; }
 .oph-card.drill:hover .oph-open, .oph-card.drill:focus-visible .oph-open { opacity: 1; }
 .oph-body { padding: 13px 15px 15px; display: flex; flex-direction: column; gap: 11px; flex: 1; }
-.oph-c12 { grid-column: span 12; } .oph-c6 { grid-column: span 6; }
+.oph-c6 { grid-column: span 6; }
 @media (max-width: 1100px) { .oph-c6 { grid-column: span 12; } }
 @media (max-width: 640px) { .oph-grid { grid-template-columns: 1fr; } .op-home { padding: 14px; } }
 .oph-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
@@ -5504,9 +5504,6 @@
   font-family: inherit; font-size: 11.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; cursor: pointer; margin-left: 6px; }
 .subent-cta:hover { background: var(--info-accent); color: #fff; }
 
-/* Navigation unifiee du tiroir */
-.ops-dn-sep { width: 1px; align-self: stretch; background: var(--border-color); margin: 2px 6px; flex: none; }
-.ops-dn-grp { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-tertiary); align-self: center; flex: none; }
 
 /* Tiroir Financements de l'operation */
 .finop-tr { margin-bottom: 22px; }
@@ -5516,10 +5513,8 @@
 .finop-sub { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); margin: 12px 0 4px; }
 .finop-tr .entity-card { margin-bottom: 7px; }
 
-/* v52 : swatch legende bilan + pastilles tranches dans la nav du tiroir */
+/* Swatch legende bilan (dashboard operation) */
 .oph-lsw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
-.ops-dn-trpill { border: 1px solid var(--border-color); font-variant-numeric: tabular-nums; }
-.ops-dn-trpill.active { background: var(--info-bg); color: var(--info-text); border-color: var(--info-accent); }
 
 /* ===== v53 : vues EN PLACE (tiroir retire) ===== */
 /* Vue "Financements de l'operation" (contenu genere, pleine zone centrale) */
@@ -5562,7 +5557,6 @@
 .ops-tpill-top { font-size: 12px; gap: 5px; }
 .ops-tpill-meta { font-size: 10px; }
 .ops-dn { font-size: 11.5px; padding: 3px 9px; }
-.ops-dn-grp { font-size: 10px; }
 .op-home { padding-top: 10px; }
 
 /* Ecrans encore plus bas (petits portables) : on resserre davantage */

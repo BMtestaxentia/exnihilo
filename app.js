@@ -5418,6 +5418,9 @@ function renderPretCard(i) {
     chip('Profil amort CE', i.profil_amort),
     chip('Préfi', i.duree_prefi ? i.duree_prefi + ' mois' + (i.date_fin_prefi ? ' · fin ' + i.date_fin_prefi : '') : (i.date_fin_prefi ? 'fin ' + i.date_fin_prefi : '')),
     chip('Avenant préfi', i.avenant_duree_prefi),
+    chip('Échéancier reçu', i.echeancier_recu),
+    chip('Échéances', (i.date_premiere_echeance || i.date_derniere_echeance) ? `${i.date_premiere_echeance || '?'} → ${i.date_derniere_echeance || '?'}` : ''),
+    chip('Fenêtre tirage', i.fenetre_tirage),
     chip('N° dossier', i.n_dossier),
     chip('Contact', i.contact),
     chip('Source montant', i.source),
@@ -5640,6 +5643,22 @@ function renderPretCardEdit(i, op) {
           <div class="card-edit-field"><label>Durée préfi (mois)</label><input type="number" min="0" class="card-input" data-field="duree_prefi" value="${i.duree_prefi || ''}"></div>
           <div class="card-edit-field"><label>Date fin préfi</label><input class="card-input" data-field="date_fin_prefi" value="${escapeHtml(i.date_fin_prefi || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>Avenant durée préfi</label><input class="card-input" data-field="avenant_duree_prefi" value="${escapeHtml(i.avenant_duree_prefi || '')}"></div>
+        </div>
+      </div>
+
+      <!-- Échéancier & tirage -->
+      <div class="card-edit-subgroup">
+        <div class="card-edit-subgroup-title">Échéancier &amp; tirage</div>
+        <div class="card-edit-grid">
+          <div class="card-edit-field"><label>Échéancier reçu</label>
+            <select class="card-input" data-field="echeancier_recu">
+              <option value=""></option>
+              ${['Oui', 'Non'].map(o => `<option value="${o}"${i.echeancier_recu===o?' selected':''}>${o}</option>`).join('')}
+            </select>
+          </div>
+          <div class="card-edit-field"><label>1re échéance</label><input class="card-input" data-field="date_premiere_echeance" value="${escapeHtml(i.date_premiere_echeance || '')}" placeholder="JJ/MM/AAAA"></div>
+          <div class="card-edit-field"><label>Dernière échéance</label><input class="card-input" data-field="date_derniere_echeance" value="${escapeHtml(i.date_derniere_echeance || '')}" placeholder="JJ/MM/AAAA"></div>
+          <div class="card-edit-field"><label>Fenêtre de tirage</label><input class="card-input" data-field="fenetre_tirage" value="${escapeHtml(i.fenetre_tirage || '')}" placeholder="Ex: 15/01 - 30/06"></div>
         </div>
       </div>
 
