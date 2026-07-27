@@ -5764,3 +5764,20 @@
   border-radius: 10px; font-size: 13px; font-weight: 600; }
 .save-error-banner span { flex: 1; }
 .save-error-banner .btn-edit { flex: none; }
+
+/* ===== v80 : dashboard operation - lecture metier d'abord ===== */
+/* Reste a financer : segment hachure, jamais une barre pleine trompeuse */
+.oph-stack .rest { background: repeating-linear-gradient(135deg, var(--danger-bg), var(--danger-bg) 5px, transparent 5px, transparent 9px); border-left: 1px dashed var(--danger-accent); }
+.oph-lsw-rest { background: repeating-linear-gradient(135deg, var(--danger-bg), var(--danger-bg) 3px, transparent 3px, transparent 6px); border: 1px dashed var(--danger-accent); }
+.oph-fl { display: inline-flex; align-items: center; gap: 6px; }
+.oph-famdone { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--success-text); background: var(--success-bg); border-radius: 8px; padding: 6px 10px; }
+.oph-famdone i { font-size: 14px; }
+/* Prochaines actions : lignes cliquables */
+.oph-task { cursor: pointer; border-radius: 7px; }
+.oph-task:hover { background: var(--bg-secondary); }
+.oph-task .oph-amsg b { font-weight: 650; color: var(--text-primary); }
+/* Flash de la brique cible quand on clique le badge critique */
+@keyframes ophFlash { 0% { box-shadow: 0 0 0 3px var(--danger-accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.oph-flash { animation: ophFlash 1.3s ease-out; }
+/* Le strip KPI redevient le niveau de lecture n.1 */
+.ops-kpi .v { font-size: 17px; }

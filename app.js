@@ -2722,6 +2722,19 @@ function editableNotes(value, field, scope, placeholder) {
   return `<div class="notes-block">${escapeHtml(value)}</div>`;
 }
 
+// Pourcentages entiers dont la somme tombe juste (arrondi au plus fort reste) :
+// évite les « 83 + 11 + 5 = 99 % » sous un badge « 100 % couvert ».
+function pctParts(values, total) {
+  const tot = (total != null && total > 0) ? total : values.reduce((s, v) => s + (Number(v) || 0), 0);
+  if (!tot) return values.map(() => 0);
+  const raw = values.map(v => (Number(v) || 0) / tot * 100);
+  const base = raw.map(Math.floor);
+  let rest = Math.round(raw.reduce((s, v) => s + v, 0)) - base.reduce((s, v) => s + v, 0);
+  const order = raw.map((v, i) => [v - base[i], i]).sort((a, b) => b[0] - a[0]);
+  for (let k = 0; k < order.length && rest > 0; k++, rest--) base[order[k][1]]++;
+  return base;
+}
+
 // JS formatters (mirror Python ones, used at render time)
 // Mode d'affichage des montants : 'k' (k€) ou 'eur' (€, 2 décimales max)
 let MONEY_FMT = (function () { try { return storageGet('moneyFmt') || 'k'; } catch (e) { return 'k'; } })();
@@ -3532,14 +3545,15 @@ function opsKpiStripHtml(op, displayedOp) {
   const alerts = (typeof computeAlerts === 'function') ? computeAlerts(displayedOp) : [];
   const nCrit = alerts.filter(a => a.level === 'expired' || a.level === 'critical').length;
   const kpi = (l, v) => `<div class="ops-kpi"><span class="l">${l}</span><span class="v">${v}</span></div>`;
+  // Volontairement sans « Tranches » (pastilles du bandeau juste dessous) ni
+  // « Fonds propres » (détaillés dans la brique Financements) : chaque KPI du
+  // strip est unique à l'écran, en niveau de lecture n°1.
   return `<div class="ops-kpis">
     ${kpi('Prix de revient', fmtMontant(budget))}
     ${kpi('Logements', lgts || '-')}
-    ${kpi('Tranches', (displayedOp.tranches || []).length)}
     ${kpi('Financement', couvert + ' %')}
-    ${kpi('Fonds propres', fmtMontant(fp))}
     ${kpi('Livraison', escapeHtml(op.date_livraison || '-'))}
-    ${nCrit ? `<button type="button" class="ops-kpi-alert" onclick="openOpsDomain('home')" title="Voir les alertes (Vue d'ensemble)"><i class="ti ti-alert-triangle"></i>${nCrit} critique${nCrit > 1 ? 's' : ''}</button>` : ''}
+    ${nCrit ? `<button type="button" class="ops-kpi-alert" onclick="gotoOpAlerts()" title="Voir la brique À faire &amp; échéances"><i class="ti ti-alert-triangle"></i>${nCrit} critique${nCrit > 1 ? 's' : ''}</button>` : ''}
   </div>`;
 }
 
@@ -3585,9 +3599,13 @@ function renderOpHomeDashboard(op, displayedOp) {
   const nP = (op.prets || []).length, nG = (op.garanties || []).length, nS = (op.subventions || []).length;
   const tPrets = opTotalPrets(displayedOp), tSubv = opTotalSubv(displayedOp);
   const budget = totalBudget(displayedOp);
-  const couvert = budget > 0 ? Math.round((tPrets + tSubv + fp) / budget * 100) : 0;
   const totFin = tPrets + tSubv + fp;
-  const pctf = x => totFin > 0 ? Math.round(x / totFin * 100) : 0;
+  const couvert = budget > 0 ? Math.round(totFin / budget * 100) : 0;
+  // Barre normalisée sur le PRIX DE REVIENT (pas sur le total financé) : une op
+  // couverte à 60 % montre 40 % de « reste à financer », plus jamais une barre pleine.
+  const [pP, pS, pF] = pctParts([tPrets, tSubv, fp], Math.max(budget, totFin));
+  const resteAFin = Math.max(0, budget - totFin);
+  const pReste = resteAFin ? Math.max(0, 100 - pP - pS - pF) : 0;
   // Rappels de statut par famille de financement
   const opPrets = op.prets || [], opSubvs = op.subventions || [], opGars = op.garanties || [];
   const _isSigned = p => !!(p.date_contrat || /contrat|sign/i.test(p.statut || ''));
@@ -3597,35 +3615,47 @@ function renderOpHomeDashboard(op, displayedOp) {
   const pOther = Math.max(0, nP - pSigned - pLO);
   const sNotif = opSubvs.filter(s => s.montant_notifie || /notif|convention|vers/i.test(s.statut || '')).length;
   const gConv = opGars.filter(g => g.date_conv || /convention|sign/i.test(g.statut || '')).length;
+  // LO caduques (non signées, date de caducité dépassée) : signal rouge dans la jauge
+  const _todayFin = new Date(); _todayFin.setHours(0, 0, 0, 0);
+  const pCaduc = opPrets.filter(p => { if (_isSigned(p) || !p.date_caducite_lo) return false;
+    const d = parseDateStr(p.date_caducite_lo); return d && d < _todayFin; }).length;
   const statusBar = (segs, label) => {
     const tot = segs.reduce((s, [n]) => s + n, 0);
     if (!tot) return '';
     return `<div class="oph-sbrow"><span class="oph-sblabel">${label}</span>
       <span class="oph-sbbar">${segs.map(([n, color]) => n ? `<span style="width:${Math.round(n / tot * 100)}%;background:${color}"></span>` : '').join('')}</span></div>`;
   };
+  // Famille complète = une simple ligne cochée ; incomplète = jauge détaillée.
+  const famDone = [], sbRows = [];
+  if (nP) {
+    if (pSigned === nP) famDone.push(`Prêts ${pSigned}/${nP}`);
+    else sbRows.push(statusBar([[pSigned, 'var(--success-accent)'], [pCaduc, 'var(--danger-accent)'], [Math.max(0, pLO - pCaduc), 'var(--warning-accent)'], [pOther, 'var(--border-color)']],
+      `Prêts signés ${pSigned}/${nP}${pCaduc ? ` · ${pCaduc} LO caduque${pCaduc > 1 ? 's' : ''}` : ''}`));
+  }
+  if (nS) {
+    if (sNotif === nS) famDone.push(`Subv. ${sNotif}/${nS}`);
+    else sbRows.push(statusBar([[sNotif, 'var(--success-accent)'], [Math.max(0, nS - sNotif), 'var(--border-color)']], `Subv. notifiées ${sNotif}/${nS}`));
+  }
+  if (nG) {
+    if (gConv === nG) famDone.push(`Garanties ${gConv}/${nG}`);
+    else sbRows.push(statusBar([[gConv, 'var(--success-accent)'], [Math.max(0, nG - gConv), 'var(--border-color)']], `Garanties conv. ${gConv}/${nG}`));
+  }
   const finBody = `
-      <div class="oph-stack" role="img" aria-label="Répartition du financement">
-        <span style="width:${pctf(tPrets)}%;background:var(--info-accent)"></span>
-        <span style="width:${pctf(tSubv)}%;background:var(--success-accent)"></span>
-        <span style="width:${pctf(fp)}%;background:var(--warning-accent)"></span>
+      <div class="oph-stack" role="img" aria-label="Financement rapporté au prix de revient">
+        <span style="width:${pP}%;background:var(--info-accent)"></span>
+        <span style="width:${pS}%;background:var(--success-accent)"></span>
+        <span style="width:${pF}%;background:var(--warning-accent)"></span>
+        ${pReste ? `<span class="rest" style="width:${pReste}%"></span>` : ''}
       </div>
       <div class="oph-figrow">
-        <div class="oph-fig"><span class="oph-fl">Prêts · ${nP}</span><span class="oph-fv">${fmtMontant(tPrets)} <span class="oph-soft">${pctf(tPrets)}%</span></span></div>
-        <div class="oph-fig"><span class="oph-fl">Subventions · ${nS}</span><span class="oph-fv">${fmtMontant(tSubv)} <span class="oph-soft">${pctf(tSubv)}%</span></span></div>
-        <div class="oph-fig"><span class="oph-fl">Fonds propres</span><span class="oph-fv">${fmtMontant(fp)} <span class="oph-soft">${pctf(fp)}%</span></span></div>
-        <div class="oph-fig"><span class="oph-fl">Prix de revient</span><span class="oph-fv">${fmtMontant(budget)}</span></div>
+        <div class="oph-fig"><span class="oph-fl"><span class="oph-lsw" style="background:var(--info-accent)"></span>Prêts · ${nP}</span><span class="oph-fv">${fmtMontant(tPrets)} <span class="oph-soft">${pP}%</span></span></div>
+        <div class="oph-fig"><span class="oph-fl"><span class="oph-lsw" style="background:var(--success-accent)"></span>Subventions · ${nS}</span><span class="oph-fv">${fmtMontant(tSubv)} <span class="oph-soft">${pS}%</span></span></div>
+        <div class="oph-fig"><span class="oph-fl"><span class="oph-lsw" style="background:var(--warning-accent)"></span>Fonds propres</span><span class="oph-fv">${fmtMontant(fp)} <span class="oph-soft">${pF}%</span></span></div>
+        ${resteAFin ? `<div class="oph-fig"><span class="oph-fl"><span class="oph-lsw oph-lsw-rest"></span>Reste à financer</span><span class="oph-fv" style="color:var(--danger-text)">${fmtMontant(resteAFin)} <span class="oph-soft">${pReste}%</span></span></div>` : ''}
       </div>
-      <div class="oph-sb">
-        ${statusBar([[pSigned, 'var(--success-accent)'], [pLO, 'var(--warning-accent)'], [pOther, 'var(--border-color)']], `Prêts signés ${pSigned}/${nP}`)}
-        ${statusBar([[sNotif, 'var(--success-accent)'], [Math.max(0, nS - sNotif), 'var(--border-color)']], `Subv. notifiées ${sNotif}/${nS}`)}
-        ${statusBar([[gConv, 'var(--success-accent)'], [Math.max(0, nG - gConv), 'var(--border-color)']], `Garanties conv. ${gConv}/${nG}`)}
-      </div>
-      <div class="oph-pillrow">
-        ${pSigned ? `<span class="oph-pill good">${pSigned} signé${pSigned > 1 ? 's' : ''}</span>` : ''}
-        ${pLO ? `<span class="oph-pill warn">${pLO} en LO</span>` : ''}
-        ${pOther ? `<span class="oph-pill neutral">${pOther} en montage</span>` : ''}
-        ${(nS - sNotif) > 0 ? `<span class="oph-pill warn">${nS - sNotif} subv. en attente</span>` : ''}
-      </div>`;
+      <div class="oph-tsub">sur un prix de revient de ${fmtMontant(budget)}</div>
+      ${sbRows.length ? `<div class="oph-sb">${sbRows.join('')}</div>` : ''}
+      ${famDone.length ? `<div class="oph-famdone"><i class="ti ti-circle-check"></i>${famDone.join(' · ')}</div>` : ''}`;
   const finBrick = card('oph-c6', 'coin', 'Financements',
     `<span class="oph-pill ${couvert >= 100 ? 'good' : (couvert >= 80 ? 'warn' : 'neutral')}">${couvert} % couvert</span>`,
     'finop', finBody);
@@ -3681,18 +3711,48 @@ function renderOpHomeDashboard(op, displayedOp) {
       ${_volChips ? `<div class="oph-tsub">Volumétrie : ${_volChips}</div>` : ''}
       <div class="oph-tsub">Surface utile ${fmtSurface(opTotalSurface(displayedOp))} · Prix / logement ${(totalLgts(displayedOp) > 0) ? fmtMontant(Math.round(totalBudget(displayedOp) / totalLgts(displayedOp))) : '-'}</div>`
     : `<div class="oph-tsub">Aucun bilan renseigné.${!editMode ? ` <button type="button" class="subent-cta" onclick="event.stopPropagation();editFromDrawer('tr')">+ Saisir en édition</button>` : ''}${_volChips ? `<div class="oph-tsub">Volumétrie : ${_volChips}</div>` : ''}`;
+  // Prochaines actions : le moteur computeTasks (Suivi/Accueil) enfin visible
+  // là où l'on travaille - top 3 des tâches de CETTE opération, cliquables.
+  const _opTasks = (typeof computeTasks === 'function')
+    ? computeTasks(op).sort((a, b) => (a.level - b.level) || ((a.days == null ? 9999 : a.days) - (b.days == null ? 9999 : b.days))).slice(0, 3)
+    : [];
+  const taskLines = _opTasks.map(t => {
+    const dom = /financ|garant|préfi|prefi/i.test(t.cat) ? 'finop' : (/agr|convention/i.test(t.cat) ? 'tranche' : 'suivi');
+    const ech = t.days == null ? '<span class="oph-adays">·</span>'
+      : (t.overdue ? `<span class="oph-adays" style="color:var(--danger-text)">${-t.days}j retard</span>` : `<span class="oph-adays">${t.days}j</span>`);
+    return `<div class="oph-aline oph-task" onclick="event.stopPropagation();openOpsDomain('${dom}')" title="${esc(t.cat)} - ouvrir la vue concernée">
+      ${ech}<span class="oph-amsg"><b>${esc(t.action)}</b>${t.detail ? ` <span class="oph-soft">${esc(t.detail)}</span>` : ''}</span></div>`;
+  }).join('');
+  const todoBody = (taskLines ? `<div class="oph-mini-h">Prochaines actions</div>${taskLines}` : '')
+    + ((taskLines && alerts.length) ? `<div class="oph-mini-h" style="margin-top:10px">Échéances &amp; alertes</div>` : '')
+    + alertBody;
+  // Rangée 1 = pilotage (financements + à faire), rangée 2 = argent + comités,
+  // rangée 3 = le statique (informations + carte). Le métier d'abord.
   return `<div class="oph-grid">
+    ${finBrick}
+    <section class="oph-card oph-c6" id="ophAlerts">
+      <div class="oph-head"><span class="oph-ic"><i class="ti ti-checklist"></i></span>
+        <span class="oph-title">À faire &amp; échéances</span><span style="margin-left:auto">${alertBadge}</span></div>
+      <div class="oph-body">${todoBody}</div>
+    </section>
+    ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', bilanBody)}
+    ${card('oph-c6', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span>`, 'suivi', comLines)}
     ${card('oph-c6', 'folder', 'Informations', '', 'dos', dossierBody)}
     ${locBrick}
-    ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', bilanBody)}
-    ${finBrick}
-    ${card('oph-c6', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span>`, 'suivi', comLines)}
-    <section class="oph-card oph-c6">
-      <div class="oph-head"><span class="oph-ic"><i class="ti ti-alert-triangle"></i></span>
-        <span class="oph-title">Synthèse &amp; échéances</span><span style="margin-left:auto">${alertBadge}</span></div>
-      <div class="oph-body">${alertBody}</div>
-    </section>
   </div>`;
+}
+
+// Amène l'utilisateur SUR la brique « À faire & échéances » (au lieu d'un simple
+// retour en haut de page) avec un flash de surbrillance.
+function gotoOpAlerts() {
+  openOpsDomain('home');
+  setTimeout(() => {
+    const el = document.getElementById('ophAlerts');
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('oph-flash');
+    setTimeout(() => el.classList.remove('oph-flash'), 1400);
+  }, 80);
 }
 
 function _setBandeauActive(key) {
