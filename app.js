@@ -9290,6 +9290,7 @@ const SUIVI_CATS = {
   'Conventionnement': { color: '#b3437f' },
   'Comité':           { color: '#555e6d' },
   'AAP':              { color: '#d4730a' },
+  'Pilotage':         { color: '#4a7a8c' },
 };
 
 function computeTasks(op) {
@@ -9310,14 +9311,39 @@ function computeTasks(op) {
   };
 
   // FINANCEMENT
+  // Préalables à l'édition du contrat (process constaté : LO + convention de
+  // location signée + garantie couverte, avant demande d'édition à la banque)
+  const clSigned = (t) => t && (t.conv_loc_signee === true || t.conv_loc_signee === 'Oui');
+  const anyCLSigned = (op.tranches || []).some(clSigned);
+  const pretCoverage = (p) => {
+    if (p.non_garanti || /^\s*als\b/i.test(p.ligne || '')) return 100;
+    const gars = (op.garanties || []).filter(g => (g.pret_lie || '') === (p.ligne || ''));
+    return gars.reduce((s, g) => s + (typeof parseQuotite === 'function' ? parseQuotite(g.quotite) : (Number(g.quotite) || 0)), 0);
+  };
   if (!isDelivered) (op.prets || []).forEach(p => {
     const lib = `${p.ligne || 'prêt'}${p.financeur ? ' · ' + p.financeur : ''}`;
     const st = p.statut || '';
     if (!st || st === 'À demander') add('Financement', `Déposer la demande de prêt ${lib}`, null);
     else if (['Demandé', 'En instruction', 'Dossier transmis'].includes(st)) add('Financement', `Relancer l'instruction du prêt ${lib}`, null, { level: Math.min(phaseLevel + 1, 4) });
     else if (st === "Lettre d'offre" || (p.date_lo && !p.date_contrat)) {
-      const d = parseDateStr(p.date_lo); const dl = d ? addMonths(d, 4) : null;
-      add('Financement', `Faire signer le contrat de prêt ${lib}`, dl, { detail: dl ? `lettre d'offre valable jusqu'au ${fmt(dl)}` : '' });
+      // Caducité : date réelle si saisie, sinon LO + 4 mois (usage CDC)
+      const dCadu = parseDateStr(p.date_caducite_lo) || (parseDateStr(p.date_lo) ? addMonths(parseDateStr(p.date_lo), 4) : null);
+      if (dCadu && dAfter(dCadu) < 0) {
+        add('Financement', `Demander la reconduction de la lettre d'offre ${lib}`, dCadu,
+          { detail: `LO caduque depuis le ${fmt(dCadu)} - à demander idéalement 2 mois avant` });
+      } else {
+        const cover = pretCoverage(p);
+        const blockers = [];
+        if (!anyCLSigned) blockers.push('convention de location non signée');
+        if (cover < 99.5) blockers.push(`garantie couverte à ${Math.round(cover)} %`);
+        if (blockers.length === 0) {
+          add('Financement', `Demander l'édition du contrat de prêt ${lib}`, dCadu,
+            { detail: `préalables réunis (CL signée, garantie couverte)${dCadu ? ` · LO valable jusqu'au ${fmt(dCadu)}` : ''}` });
+        } else {
+          add('Financement', `Lever les préalables à l'édition du contrat ${lib}`, dCadu,
+            { detail: `manque : ${blockers.join(' · ')}${dCadu ? ` · LO valable jusqu'au ${fmt(dCadu)}` : ''}` });
+        }
+      }
     }
   });
 
@@ -9337,6 +9363,16 @@ function computeTasks(op) {
       } else if (['Délibération votée', 'Délibération exécutoire'].includes(st) && !g.date_conv)
         add('Garanties', `Faire signer la convention de garantie ${lib}`, null);
     });
+    // Couverture incomplète : des garanties existent mais la somme des quotités < 100 %
+    garantissables.forEach(p => {
+      const gars = (op.garanties || []).filter(g => (g.pret_lie || '') === (p.ligne || ''));
+      if (gars.length > 0) {
+        const cover = gars.reduce((s, g) => s + (typeof parseQuotite === 'function' ? parseQuotite(g.quotite) : (Number(g.quotite) || 0)), 0);
+        if (cover > 0 && cover < 99.5)
+          add('Garanties', `Compléter la couverture de garantie de ${p.ligne || 'prêt'}`, null,
+            { detail: `${Math.round(cover)} % couvert - ${Math.round(100 - cover)} % à trouver` });
+      }
+    });
   }
 
   // SUBVENTIONS
@@ -9345,6 +9381,22 @@ function computeTasks(op) {
     const st = s.statut || '';
     if (!st || st === 'À déposer') add('Subventions', `Déposer la demande de subvention ${lib}`, null);
     else if (['En instruction', 'Déposée'].includes(st)) add('Subventions', `Relancer la subvention ${lib}`, null, { level: Math.min(phaseLevel + 1, 4) });
+    else if (st === 'Notifiée' && !s.date_conv && !s.date_conv_signature) {
+      // Notification reçue : la convention suit généralement sous 1 à 3 mois
+      const d = parseDateStr(s.date_notification || s.date_notif); const dl = d ? addMonths(d, 3) : null;
+      add('Subventions', `Faire signer la convention de subvention ${lib}`, dl,
+        { detail: dl ? `notifiée le ${fmt(d)} - convention attendue sous 3 mois` : '' });
+    }
+  });
+  // Versements : convention signée, chantier lancé, rien de versé → demander un acompte
+  if (op.date_os && !isDelivered) (op.subventions || []).forEach(s => {
+    const lib = `${s.financement || 'subvention'}${s.financeur ? ' · ' + s.financeur : ''}`;
+    const st = s.statut || '';
+    if (['Convention signée', 'Notifiée'].includes(st) && !s.montant_verse && (s.date_conv || s.date_conv_signature)) {
+      const dl = parseDateStr(s.date_versement_prevue);
+      add('Subventions', `Demander un acompte / versement de ${lib}`, dl || null,
+        { level: 3, detail: dl ? `versement prévu le ${fmt(dl)}` : 'chantier lancé, aucun versement enregistré' });
+    }
   });
 
   // AGRÉMENT
@@ -9359,8 +9411,20 @@ function computeTasks(op) {
       if (dl) add('Agrément', `Lancer l'OS avant caducité d'agrément${trc ? ' ' + trc : ''}`, dl, { detail: `caducité le ${fmt(dl)}` });
     }
     if (t.date_cloture_agrement && !op.date_os) {
+      // Le courrier de dérogation part ~6 mois avant la clôture : l'échéance
+      // de la tâche est avancée d'autant.
       const dc = parseDateStr(t.date_cloture_agrement);
-      if (dc) add('Agrément', `Clôturer l'agrément avant la date butoir${trc ? ' ' + trc : ''}`, dc, { detail: `clôture le ${fmt(dc)}` });
+      if (dc) add('Agrément', `Préparer la clôture d'agrément (ou demander une dérogation)${trc ? ' ' + trc : ''}`, addMonths(dc, -6),
+        { detail: `clôture le ${fmt(dc)} - courrier de dérogation à envoyer ~6 mois avant` });
+    }
+    // Campagne de programmation : dépôt SIAP avant le 30/09 de l'année de programmation
+    if (!isDelivered && t.annee_prog && (!st || /à déposer/i.test(st))) {
+      const y = parseInt(t.annee_prog, 10);
+      if (!isNaN(y)) {
+        const dl = new Date(y, 8, 30); // 30 septembre
+        if (dAfter(dl) > -120) add('Agrément', `Déposer la demande d'agrément SIAP${trc ? ' ' + trc : ''}`, dl,
+          { detail: `clôture de la programmation ${y} le ${fmt(dl)}` });
+      }
     }
   });
 
@@ -9378,16 +9442,45 @@ function computeTasks(op) {
   (op.prefinancements || []).forEach(pf => {
     if (pf.date_fin && pf.statut !== 'Soldé') {
       const d = parseDateStr(pf.date_fin);
-      if (d) add('Préfinancement', `Mobiliser le prêt définitif - préfi ${pf.banque || ''}${pf.pret_lie ? ' ' + pf.pret_lie : ''}`, d, { detail: `préfinancement se termine le ${fmt(d)}` });
+      if (!d) return;
+      const dLiv = parseDateStr(op.date_livraison);
+      if (dLiv && d < dLiv) {
+        // Fin de préfi AVANT la livraison : reprendre l'attache de la banque ~6 mois avant
+        add('Préfinancement', `Prolonger le préfinancement ${pf.banque || ''}${pf.pret_lie ? ' ' + pf.pret_lie : ''} (se termine avant la livraison)`, addMonths(d, -6),
+          { detail: `fin de préfi le ${fmt(d)}, livraison prévue le ${fmt(dLiv)}` });
+      } else {
+        add('Préfinancement', `Mobiliser le prêt définitif - préfi ${pf.banque || ''}${pf.pret_lie ? ' ' + pf.pret_lie : ''}`, d, { detail: `préfinancement se termine le ${fmt(d)}` });
+      }
     }
   });
 
   // CONVENTIONNEMENT / RÉSERVATAIRES
+  // Convention de location non signée alors qu'une LO attend son contrat :
+  // c'est LE préalable bloquant à l'édition (process constaté).
+  if (!isDelivered && !anyCLSigned
+      && (op.prets || []).some(p => p.date_lo && !p.date_contrat)
+      && (op.tranches || []).length > 0) {
+    add('Conventionnement', `Faire signer la convention de location`, null,
+      { level: Math.max(1, phaseLevel - 1), detail: `préalable bloquant à l'édition des contrats de prêt` });
+  }
   if (!isDelivered) (op.reservataires || []).forEach(r => {
     const et = r.etape || r.statut || '';
     if (['À demander', 'En négociation'].includes(et))
       add('Conventionnement', `Conventionner le réservataire ${r.reservataire || r.entite || ''}`, null, { level: Math.min(phaseLevel + 1, 4) });
   });
+
+  // PILOTAGE - revue d'opération : à replanifier quand la dernière date de plus
+  // de 6 mois (le plan de financement bouge en permanence sur une op active)
+  if (!isDelivered) {
+    const dRevue = parseDateStr(op.date_revue_op);
+    if (!dRevue) {
+      add('Pilotage', `Planifier une revue d'opération`, null, { level: 3, detail: 'aucune revue enregistrée' });
+    } else {
+      const due = addMonths(dRevue, 6);
+      if (dAfter(due) <= 31) add('Pilotage', `Planifier une revue d'opération`, due,
+        { detail: `dernière revue le ${fmt(dRevue)} - rythme conseillé : 6 mois` });
+    }
+  }
 
   // COMITÉS
   (op.comites || []).forEach(c => {
