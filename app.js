@@ -3908,10 +3908,34 @@ function finHeadHtml(type) {
 // Vue "Financements de l'opération" : toutes les tranches, contenu généré.
 // Une couleur d'accent par tranche pour distinguer les regroupements.
 const FINOP_TR_COLORS = ['var(--cat-1)', 'var(--cat-2)', 'var(--cat-3)', 'var(--cat-4)', 'var(--cat-5)', 'var(--cat-6)'];
+// Copie la liste des prêts de l'op au format SFO (23 colonnes, TSV) : collable
+// tel quel dans le fichier Excel groupe - zéro re-saisie du reporting.
+function copyPretsSFO() {
+  const op = findOp(selectedOpCode);
+  if (!op || !(op.prets || []).length) { showToast('Aucun prêt à copier', 'alert-circle'); return; }
+  const heads = ['Tranche (suffixe)', 'Ligne / Produit', 'Banque / financeur', 'N° dossier', 'Montant validé CA',
+    'Date demande LO', 'Date comité banque LO', 'Montant LO (€)', 'Date LO', 'Date caducité LO', 'Lien Sharepoint LO',
+    'Montant contrat (€)', 'Date contrat', 'N° contrat', 'Lien sharepoint contrat', 'Durée emprunt (ans)',
+    'Indice', 'Marge', 'Révision', "Profil amort Caisse d'epargne", 'Durée préfi (mois)', 'Date fin préfi', 'Avenant durée préfi'];
+  const cell = v => String(v == null ? '' : v).replace(/[\t\n\r]+/g, ' ');
+  const rows = op.prets.map(p => {
+    const tx = (typeof parseTaux === 'function') ? (parseTaux(p.taux) || {}) : {};
+    return [p.tranche, p.ligne, p.financeur, p.n_dossier, p.montant_valide_ca,
+      p.date_demande, p.date_comite_banque, p.montant_lo, p.date_lo, p.date_caducite_lo, p.lien_sp_lo,
+      p.montant_contrat, p.date_contrat, p.n_contrat, p.lien_sp_contrat, p.duree_emprunt,
+      tx.index || '', tx.spread != null ? tx.spread : (tx.libre || ''), p.revision, p.profil_amort,
+      p.duree_prefi, p.date_fin_prefi, p.avenant_duree_prefi].map(cell).join('\t');
+  });
+  navigator.clipboard.writeText([heads.join('\t'), ...rows].join('\n')).then(
+    () => showToast(`${rows.length} prêt${rows.length > 1 ? 's' : ''} copié${rows.length > 1 ? 's' : ''} au format SFO - collez dans Excel`, 'clipboard-check'),
+    () => showToast('Copie impossible (autorisation presse-papiers refusée)', 'alert-triangle'));
+}
+
 function renderOpFinancementsDrawer(op) {
   const trs = op.tranches || [];
   if (!trs.length) return '<div class="subent-empty">Aucune tranche sur cette opération.</div>';
-  return trs.map((t, idx) => {
+  const sfoBtn = `<div class="finop-toolbar"><button type="button" class="subent-cta" onclick="copyPretsSFO()" title="Copier la liste des prêts (23 colonnes SFO) pour la coller dans le fichier Excel groupe"><i class="ti ti-clipboard-copy"></i>&nbsp;Copier pour SFO</button></div>`;
+  return sfoBtn + trs.map((t, idx) => {
     const trColor = FINOP_TR_COLORS[idx % FINOP_TR_COLORS.length];
     const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
     const wIdx = arr => (arr || []).map((x, i2) => ({ ...x, _originalIdx: i2 })).filter(x => x.tranche === suffix);

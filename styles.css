@@ -5793,3 +5793,6 @@
 .ops-back { padding: 3px 7px; }
 .ops-back i { font-size: 14px; }
 .ops-shell[data-tab="home"] .ops-back { display: none; }
+
+/* ===== v83 : export SFO one-click dans la vue Financements op ===== */
+.finop-toolbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
