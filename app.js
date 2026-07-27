@@ -12113,6 +12113,11 @@ function mapTrancheFromSupabase(t) {
     nb_chambres: t.nb_chambres,
     notes: t.notes || '',
     accord_redevance: t.accord_redevance,
+    // Loyer / redevance + détail logements (jamais relus jusqu'ici : perdus au refresh)
+    type_redevance: t.type_redevance || '',
+    montant_redevance: t.montant_redevance,
+    date_accord_redev: t.date_accord_redev || '',
+    detail_logements: t.detail_logements || '',
     // Convention de location (Batch 2)
     conv_loc_signee: t.conv_loc_signee,
     conv_loc_montant_loyer: t.conv_loc_montant_loyer,
@@ -12817,6 +12822,14 @@ async function syncEntitiesToSupabase(op, operationId, beforeSnap) {
 
 // Helper générique pour synchroniser une entité simple (1 table, pas de sous-relations)
 async function syncSimpleEntity({ op, operationId, headers, tableName, localItems, buildPayload, beforeItems }) {
+  // Toute écriture non-ok doit remonter (toast + throw), sinon perte silencieuse
+  const chk = async (res, action) => {
+    if (res.ok) return res;
+    let msg = `${res.status}`;
+    try { const b = await res.json(); msg = b.message || b.hint || b.details || msg; } catch (e) { /* corps non JSON */ }
+    if (typeof showToast === 'function') showToast(`Échec ${action} : ${msg}`, 'error');
+    throw new Error(`${action} -> ${msg}`);
+  };
   // Récupérer les remote ids
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?operation_id=eq.${operationId}&select=id`, {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}` }
@@ -12837,22 +12850,21 @@ async function syncSimpleEntity({ op, operationId, headers, tableName, localItem
       const snapItem = snapMap.get(item._supabase_id);
       const isUnchanged = !!(beforeItems && snapItem && JSON.stringify(buildPayload(snapItem)) === JSON.stringify(payload));
       if (!isUnchanged) {
-        await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?id=eq.${item._supabase_id}`, {
+        await chk(await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?id=eq.${item._supabase_id}`, {
           method: 'PATCH', headers, body: JSON.stringify(payload),
-        });
+        }), `PATCH ${tableName}`);
       }
       localIds.add(item._supabase_id);
     } else {
       const ins = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}`, {
         method: 'POST', headers, body: JSON.stringify(payload),
       });
-      if (ins.ok) {
-        const created = await ins.json();
-        const newId = Array.isArray(created) ? created[0]?.id : created.id;
-        if (newId) {
-          item._supabase_id = newId;
-          localIds.add(newId);
-        }
+      await chk(ins, `POST ${tableName}`);
+      const created = await ins.json();
+      const newId = Array.isArray(created) ? created[0]?.id : created.id;
+      if (newId) {
+        item._supabase_id = newId;
+        localIds.add(newId);
       }
     }
   }
@@ -12860,9 +12872,9 @@ async function syncSimpleEntity({ op, operationId, headers, tableName, localItem
   // DELETE remote items absent en local
   for (const remoteId of remoteIds) {
     if (!localIds.has(remoteId)) {
-      await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?id=eq.${remoteId}`, {
+      await chk(await fetch(`${SUPABASE_URL}/rest/v1/${tableName}?id=eq.${remoteId}`, {
         method: 'DELETE', headers,
-      });
+      }), `DELETE ${tableName}`);
     }
   }
 }
@@ -12929,6 +12941,17 @@ function buildTranchePayload(t, operationId) {
     frais_financiers: t.frais_financiers || {},
     honoraires: t.honoraires || {},
     accord_redevance: t.accord_redevance,
+    // Convention de location + loyer/redevance + détail logements : édités dans
+    // l'UI mais absents du payload jusqu'ici (2e vague du bug n_leon).
+    conv_loc_signee: (t.conv_loc_signee === true || t.conv_loc_signee === 'Oui') ? true
+      : ((t.conv_loc_signee === false || t.conv_loc_signee === 'Non') ? false : null),
+    conv_loc_montant_loyer: (t.conv_loc_montant_loyer === '' || t.conv_loc_montant_loyer == null) ? null : Number(t.conv_loc_montant_loyer),
+    conv_loc_date_valeur: t.conv_loc_date_valeur || null,
+    conv_loc_grille: t.conv_loc_grille || '',
+    type_redevance: t.type_redevance || '',
+    montant_redevance: (t.montant_redevance === '' || t.montant_redevance == null) ? null : Number(t.montant_redevance),
+    date_accord_redev: t.date_accord_redev || null,
+    detail_logements: t.detail_logements || '',
   };
 }
 
