@@ -145,18 +145,18 @@ function bilanSectionTotal(t, sectionKey) {
 // Each: { level: 'warning'|'error', scope: 'op'|'tranche'|'card', cardSection?, cardIdx?, msg }
 function validateOp(op) {
   const issues = [];
-  const phaseIdx = PHASES.indexOf(op.phase_actuelle || 'Montage');
+  const phaseIdx = PHASES.indexOf(op.phase_actuelle || PHASES[0]);
 
   // Rule 1: if phase >= Travaux, PC must be obtained
-  if (phaseIdx >= PHASES.indexOf('Travaux')) {
+  if (phaseIdx >= PHASES.indexOf('OS')) {
     if (!op.date_obt_pc) {
-      issues.push({ level: 'warning', scope: 'op', msg: "Phase Travaux atteinte mais date d'obtention du PC manquante" });
+      issues.push({ level: 'warning', scope: 'op', msg: "Phase OS atteinte mais date d'obtention du PC manquante" });
     }
   }
   // Rule 2: if phase >= Livraison, OS and livraison must be set
-  if (phaseIdx >= PHASES.indexOf('Livraison')) {
-    if (!op.date_os) issues.push({ level: 'warning', scope: 'op', msg: "Phase Livraison atteinte mais date d'OS manquante" });
-    if (!op.date_livraison) issues.push({ level: 'warning', scope: 'op', msg: "Phase Livraison atteinte mais date de livraison manquante" });
+  if (phaseIdx >= PHASES.indexOf('Clôture')) {
+    if (!op.date_os) issues.push({ level: 'warning', scope: 'op', msg: "Phase Clôture atteinte mais date d'OS manquante" });
+    if (!op.date_livraison) issues.push({ level: 'warning', scope: 'op', msg: "Phase Clôture atteinte mais date de livraison manquante" });
   }
 
   // Rule 3: for each subvention with statut "Convention signée", date_conv (or date_notification) should be set
@@ -216,9 +216,9 @@ function computeAlerts(op) {
   const alerts = [];
 
   // Phase context : certaines alertes ne s'appliquent pas si l'op est livrée
-  const phaseIdx = PHASES.indexOf(op.phase_actuelle || 'Montage');
-  const isDelivered = phaseIdx >= PHASES.indexOf('Livraison'); // Livraison ou GPA
-  const isGpa = (op.phase_actuelle === 'GPA');
+  const phaseIdx = PHASES.indexOf(op.phase_actuelle || PHASES[0]);
+  const isDelivered = phaseIdx >= PHASES.indexOf('Clôture'); // phase Clôture (op livrée)
+  const isGpa = (op.phase_actuelle === 'Clôture');
 
   const addMonths = (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + n); return r; };
   const daysBetween = (a, b) => Math.floor((b.getTime() - a.getTime()) / 86400000);
@@ -558,23 +558,29 @@ let chargeRole = 'resp_op';
 let searchQuery = '';
 
 // ============== PHASES SYSTEM ==============
-const PHASES = ['Montage', 'Validation CA', 'Travaux', 'Livraison', 'GPA'];
+// Nomenclature SFO : CEP > CA > CPR > CL > OS > Clôture
+const PHASES = ['CEP', 'CA', 'CPR', 'CL', 'OS', 'Clôture'];
+// Migration de l'ancienne nomenclature (valeurs encore présentes en base ou en démo)
+const PHASE_MIGRATE = { 'Montage': 'CEP', 'Validation CA': 'CA', 'Travaux': 'OS', 'Livraison': 'Clôture', 'GPA': 'Clôture' };
+function migratePhase(p) { return PHASE_MIGRATE[p] || p || PHASES[0]; }
 const PHASE_COLORS = {
-  'Montage':       { bg: '#faeeda', text: '#854f0b', accent: '#ba7517', icon: 'tool' },
-  'Validation CA': { bg: '#e6f1fb', text: '#0c447c', accent: '#185fa5', icon: 'shield-check' },
-  'Travaux':       { bg: '#faece7', text: '#993c1d', accent: '#d85a30', icon: 'building-skyscraper' },
-  'Livraison':     { bg: '#e1f5ee', text: '#0f6e56', accent: '#1d9e75', icon: 'home' },
-  'GPA':           { bg: '#f3e8ff', text: '#6b21a8', accent: '#9333ea', icon: 'check' },
+  'CEP':     { bg: '#faeeda', text: '#854f0b', accent: '#ba7517', icon: 'tool' },
+  'CA':      { bg: '#e6f1fb', text: '#0c447c', accent: '#185fa5', icon: 'shield-check' },
+  'CPR':     { bg: '#e0f2f1', text: '#0b5e55', accent: '#159b8a', icon: 'calculator' },
+  'CL':      { bg: '#e9e8fb', text: '#3730a3', accent: '#5a54d6', icon: 'file-check' },
+  'OS':      { bg: '#faece7', text: '#993c1d', accent: '#d85a30', icon: 'building-skyscraper' },
+  'Clôture': { bg: '#e1f5ee', text: '#0f6e56', accent: '#1d9e75', icon: 'flag' },
 };
 
 // State for snapshot consultation / comparison
 let viewingSnapshotIdx = null;  // null = current phase; otherwise index in phases_history
 let compareWithIdx = null;      // null = no comparison; otherwise index in phases_history
 
-// Initialize phase_actuelle on existing data
+// Initialize phase_actuelle on existing data (+ migration ancienne nomenclature)
 DATA.forEach(op => {
-  if (!op.phase_actuelle) op.phase_actuelle = 'Montage';
+  op.phase_actuelle = migratePhase(op.phase_actuelle);
   if (!Array.isArray(op.phases_history)) op.phases_history = [];
+  op.phases_history.forEach(h => { if (h && h.name) h.name = migratePhase(h.name); });
 });
 
 // Deep clone helper (excludes phases_history itself to avoid recursion)
@@ -595,9 +601,9 @@ function getDisplayedOp(op) {
 function advanceToNextPhase() {
   const op = findOp(selectedOpCode);
   if (!op) return;
-  const currentIdx = PHASES.indexOf(op.phase_actuelle || 'Montage');
+  const currentIdx = PHASES.indexOf(op.phase_actuelle || PHASES[0]);
   if (currentIdx === -1 || currentIdx >= PHASES.length - 1) {
-    showToast('Cette opération est déjà à la phase finale (GPA)', 'alert-circle');
+    showToast('Cette opération est déjà à la phase finale (Clôture)', 'alert-circle');
     return;
   }
   const nextPhase = PHASES[currentIdx + 1];
@@ -1942,7 +1948,7 @@ function renderTrash() {
           ${deleted.map(op => `<tr>
             <td><strong>${escapeHtml(op.code || op.sheet || '-')}</strong></td>
             <td>${escapeHtml(op.display_name || '')}</td>
-            <td>${escapeHtml(op.phase_actuelle || 'Montage')}</td>
+            <td>${escapeHtml(op.phase_actuelle || PHASES[0])}</td>
             <td>${escapeHtml(formatDate(op.deleted_at))}</td>
             <td>${escapeHtml(op.deleted_by || '-')}</td>
             <td class="trash-actions">
@@ -2049,8 +2055,8 @@ function makeNewOp() {
     code: code,
     sheet: code,
     display_name: 'Nouvelle opération',
-    statut: 'Montage',
-    phase_actuelle: 'Montage',
+    statut: 'CEP',
+    phase_actuelle: 'CEP',
     phases_history: [],
     badge_bg: '#faeeda',
     badge_text: '#854f0b',
@@ -2912,6 +2918,7 @@ const STATUS_MAP = {
   'À demander':'neutral','À déposer':'neutral','En attente':'neutral','Soldé':'neutral','Soldée':'neutral','Sans objet':'neutral',
   'Refusé':'danger','Garantie refusée':'danger',
   'Travaux':'coral','Montage':'warning','GPA':'info','Livré / Clôturé':'success','Abandonné':'neutral',
+  'CEP':'warning','CA':'info','CPR':'info','CL':'info','OS':'coral','Clôture':'success',
 };
 function getStatusClass(statut) { return STATUS_MAP[statut] || 'neutral'; }
 function statusBadge(text) {
@@ -3928,7 +3935,7 @@ function renderOpDetail() {
     : '';
 
   // Phase stepper
-  const phaseIdx = PHASES.indexOf(op.phase_actuelle || 'Montage');
+  const phaseIdx = PHASES.indexOf(op.phase_actuelle || PHASES[0]);
   const stepperItems = PHASES.map((phase, idx) => {
     const archivedSnap = op.phases_history.find(h => h.name === phase);
     const archivedIdx = archivedSnap ? op.phases_history.indexOf(archivedSnap) : -1;
@@ -4036,7 +4043,7 @@ function renderOpDetail() {
           </div>`
           : `<h1 class="detail-title">${escapeHtml(displayedOp.display_name || op.display_name)}</h1>`}
         <div class="detail-badges">
-          <span class="phase-badge" style="background:${PHASE_COLORS[op.phase_actuelle]?.bg};color:${PHASE_COLORS[op.phase_actuelle]?.text};">${escapeHtml(op.phase_actuelle || 'Montage')}</span>
+          <span class="phase-badge" style="background:${PHASE_COLORS[op.phase_actuelle]?.bg};color:${PHASE_COLORS[op.phase_actuelle]?.text};">${escapeHtml(op.phase_actuelle || PHASES[0])}</span>
           ${displayedOp.zone_abc && !effectiveEditMode ? `<span class="badge-secondary">Zone ${escapeHtml(displayedOp.zone_abc)}</span>` : ''}
           ${displayedOp.vefa_mod && !effectiveEditMode ? `<span class="badge-secondary">${escapeHtml(displayedOp.vefa_mod)}</span>` : ''}
           ${displayedOp.type_travaux && !effectiveEditMode ? `<span class="badge-secondary">${escapeHtml(displayedOp.type_travaux)}</span>` : ''}
@@ -5012,7 +5019,7 @@ function renderHistoryChart(op) {
   });
   // Current phase (live values)
   points.push({
-    name: op.phase_actuelle || 'Montage',
+    name: op.phase_actuelle || PHASES[0],
     date: 'en cours',
     isCurrent: true,
     prixRevient: opBilanTotal(op),
@@ -6454,12 +6461,12 @@ function refreshDashboardKpis() {
   // 2) Statut bars (par phase) - nb d'ops + logements concernés
   const phaseCount = {}, phaseLgts = {};
   ops.forEach(op => {
-    const p = op.phase_actuelle || 'Montage';
+    const p = op.phase_actuelle || PHASES[0];
     phaseCount[p] = (phaseCount[p] || 0) + 1;
     let l = 0; (op.tranches || []).forEach(t => { const n = trancheLogements(t); if (n !== null) l += n; });
     phaseLgts[p] = (phaseLgts[p] || 0) + l;
   });
-  const phaseOrder = ['Montage', 'Validation CA', 'Travaux', 'Livraison', 'GPA'];
+  const phaseOrder = PHASES;
   const statutBars = phaseOrder
     .filter(p => phaseCount[p])
     .map(p => ({
@@ -6827,11 +6834,12 @@ function addMapLayerToggle(map, defaultType) {
 let mapMarkers = [];
 let mapFilters = { search: '', phase: '', region: '', person: '' };
 const PHASE_MARKER_COLORS = {
-  'Montage': '#d85a30',
-  'Validation CA': '#185fa5',
-  'Travaux': '#ba7517',
-  'Livraison': '#1d9e75',
-  'GPA': '#888780',
+  'CEP': '#ba7517',
+  'CA': '#185fa5',
+  'CPR': '#159b8a',
+  'CL': '#5a54d6',
+  'OS': '#d85a30',
+  'Clôture': '#1d9e75',
 };
 
 // Geocode an address using BAN (api-adresse.data.gouv.fr)
@@ -7191,7 +7199,7 @@ function openPlanComiteModal(existingPlanningId) {
         <input type="checkbox" data-op-uid="${escapeHtml(o._uid)}" ${selectedSet.has(o._uid) ? 'checked' : ''} />
         <span class="plan-op-code">${escapeHtml(o.code || '?')}</span>
         <span class="plan-op-name">${escapeHtml(o.display_name || '')}</span>
-        <span class="plan-op-phase" style="background:${PHASE_COLORS[o.phase_actuelle || 'Montage'].bg};color:${PHASE_COLORS[o.phase_actuelle || 'Montage'].text};">${escapeHtml(o.phase_actuelle || 'Montage')}</span>
+        <span class="plan-op-phase" style="background:${PHASE_COLORS[o.phase_actuelle || PHASES[0]].bg};color:${PHASE_COLORS[o.phase_actuelle || PHASES[0]].text};">${escapeHtml(o.phase_actuelle || PHASES[0])}</span>
       </label>
     `).join('');
     countEl.textContent = `${selectedSet.size} sélectionnée${selectedSet.size > 1 ? 's' : ''}`;
@@ -8025,7 +8033,7 @@ function renderFinances() {
   const opsFinancement = [];
 
   ops.forEach(op => {
-    const phase = op.phase_actuelle || 'Montage';
+    const phase = op.phase_actuelle || PHASES[0];
     opsByPhase[phase] = (opsByPhase[phase] || 0) + 1;
 
     let opBudget = 0;
@@ -8896,9 +8904,9 @@ function renderAccueil() {
 
   // Phase counts + opérations à surveiller
   const phaseCounts = {};
-  ['Montage','Validation CA','Travaux','Livraison','GPA'].forEach(p => phaseCounts[p] = 0);
+  PHASES.forEach(p => phaseCounts[p] = 0);
   myOps.forEach(op => {
-    const p = op.phase_actuelle || 'Montage';
+    const p = op.phase_actuelle || PHASES[0];
     if (phaseCounts[p] != null) phaseCounts[p]++;
   });
   const totalPhases = Object.values(phaseCounts).reduce((s, n) => s + n, 0);
@@ -9019,7 +9027,7 @@ function renderAccueil() {
         <div class="suivi-panel">
           <div class="suivi-panel-title"><i class="ti ti-eye-exclamation"></i>À surveiller <span class="suivi-panel-hint">retards · tâches</span></div>
           ${watch.length ? watch.map(({ op, n, nLate }) => {
-            const ph = op.phase_actuelle || 'Montage';
+            const ph = op.phase_actuelle || PHASES[0];
             const conf = PHASE_COLORS[ph] || {};
             return `<div class="suivi-pf" data-go-op="${escapeHtml(op._uid)}">
               <span class="suivi-pf-dot" style="background:${conf.dot || conf.text || 'var(--text-tertiary)'}"></span>
@@ -9094,9 +9102,9 @@ function computeTasks(op) {
   const addMonths = (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + n); return r; };
   const dAfter = (d) => Math.floor((d.getTime() - today.getTime()) / 86400000);
   const fmt = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-  const phaseIdx = PHASES.indexOf(op.phase_actuelle || 'Montage');
-  const isDelivered = phaseIdx >= PHASES.indexOf('Livraison');
-  const phaseLevel = phaseIdx >= PHASES.indexOf('Travaux') ? 1 : (phaseIdx >= PHASES.indexOf('Validation CA') ? 2 : 3);
+  const phaseIdx = PHASES.indexOf(op.phase_actuelle || PHASES[0]);
+  const isDelivered = phaseIdx >= PHASES.indexOf('Clôture');
+  const phaseLevel = phaseIdx >= PHASES.indexOf('OS') ? 1 : (phaseIdx >= PHASES.indexOf('CA') ? 2 : 3);
   const tasks = [];
   const add = (cat, action, deadline, opts = {}) => {
     const days = deadline ? dAfter(deadline) : null;
@@ -9422,7 +9430,7 @@ function renderSuivi() {
   });
   opGroups.sort((a, b) => b.nOverdue - a.nOverdue || a.minLevel - b.minLevel || String(a.op.code || '').localeCompare(String(b.op.code || '')));
   const operationHtml = opGroups.map(g => {
-    const ph = g.op.phase_actuelle || 'Montage';
+    const ph = g.op.phase_actuelle || PHASES[0];
     const conf = PHASE_COLORS[ph] || {};
     return `<div class="suivi-opgroup${g.nOverdue ? ' has-overdue' : ''}">
       <div class="suivi-opgroup-head" data-suivi-open="${escapeHtml(g.op._uid)}">
@@ -9460,7 +9468,7 @@ function renderSuivi() {
     })
     .sort((a, b) => b.nLate - a.nLate || b.n - a.n)
     .map(({ op, n, nLate }) => {
-      const ph = op.phase_actuelle || 'Montage';
+      const ph = op.phase_actuelle || PHASES[0];
       const conf = PHASE_COLORS[ph] || {};
       return `<div class="suivi-pf" data-suivi-open="${escapeHtml(op._uid)}">
         <span class="suivi-pf-dot" style="background:${conf.dot || conf.text || 'var(--text-tertiary)'}"></span>
@@ -9521,7 +9529,7 @@ function _initOneOpMap(op, containerId) {
   }).setView([op.latitude, op.longitude], 15);
   applyMapLayer(m, 'plan');
   addMapLayerToggle(m, 'plan');
-  const phase = op.phase_actuelle || 'Montage';
+  const phase = op.phase_actuelle || PHASES[0];
   const color = PHASE_MARKER_COLORS[phase] || '#666';
   const icon = buildMarkerIcon ? buildMarkerIcon(color) : null;
   const marker = L.marker([op.latitude, op.longitude], icon ? { icon } : {});
@@ -9573,7 +9581,7 @@ function renderMap() {
       const hay = [op.display_name, op.code, op.commune, op.adresse].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
-    if (mapFilters.phase && (op.phase_actuelle || 'Montage') !== mapFilters.phase) return false;
+    if (mapFilters.phase && (op.phase_actuelle || PHASES[0]) !== mapFilters.phase) return false;
     if (mapFilters.region && op.region !== mapFilters.region) return false;
     if (mapFilters.person && op.developpeur !== mapFilters.person && op.resp_op !== mapFilters.person && op.charge_fin !== mapFilters.person) return false;
     return true;
@@ -9617,7 +9625,7 @@ function renderMap() {
       return;
     }
     withCoords++;
-    const phase = op.phase_actuelle || 'Montage';
+    const phase = op.phase_actuelle || PHASES[0];
     const color = PHASE_MARKER_COLORS[phase] || '#666';
     const icon = buildMarkerIcon(color);
     const marker = L.marker([op.latitude, op.longitude], icon ? { icon } : {});
@@ -9851,7 +9859,7 @@ function renderGantt() {
         .filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
-    if (ganttFilters.phase && (op.phase_actuelle || 'Montage') !== ganttFilters.phase) return false;
+    if (ganttFilters.phase && (op.phase_actuelle || PHASES[0]) !== ganttFilters.phase) return false;
     if (ganttFilters.region && op.region !== ganttFilters.region) return false;
     if (ganttFilters.equipe) {
       const team = [op.developpeur, op.resp_op, op.charge_fin].filter(Boolean);
@@ -9910,8 +9918,8 @@ function renderGantt() {
     }).join('');
 
     // Phase badge
-    const phaseConf = PHASE_COLORS[op.phase_actuelle || 'Montage'] || PHASE_COLORS['Montage'];
-    const phaseBadge = `<span class="gantt-side-phase" style="background:${phaseConf.bg};color:${phaseConf.text};">${escapeHtml(op.phase_actuelle || 'Montage')}</span>`;
+    const phaseConf = PHASE_COLORS[op.phase_actuelle || PHASES[0]] || PHASE_COLORS[PHASES[0]];
+    const phaseBadge = `<span class="gantt-side-phase" style="background:${phaseConf.bg};color:${phaseConf.text};">${escapeHtml(op.phase_actuelle || PHASES[0])}</span>`;
 
     // Number of tranches indicator
     const trCount = (op.tranches || []).length;
@@ -9949,7 +9957,7 @@ function renderGantt() {
       <input type="text" class="synth-filter-input" id="ganttSearchInput" placeholder="Recherche : nom, code, commune, équipe…" value="${escapeHtml(ganttFilters.search || '')}">
       <select class="synth-filter-select" id="ganttPhaseFilter">
         <option value="">Toutes les phases</option>
-        ${['Montage','Validation CA','Travaux','Livraison','GPA'].map(p => `<option value="${p}"${ganttFilters.phase===p?' selected':''}>${p}</option>`).join('')}
+        ${PHASES.map(p => `<option value="${p}"${ganttFilters.phase===p?' selected':''}>${p}</option>`).join('')}
       </select>
       <select class="synth-filter-select" id="ganttRegionFilter">
         <option value="">Toutes les régions</option>
@@ -10512,7 +10520,7 @@ function renderSynthTable() {
       if (!hay.includes(q)) return false;
     }
     // Common dropdown filters
-    if (synthFilters.phase && (op.phase_actuelle || 'Montage') !== synthFilters.phase) return false;
+    if (synthFilters.phase && (op.phase_actuelle || PHASES[0]) !== synthFilters.phase) return false;
     if (synthFilters.region && op.region !== synthFilters.region) return false;
     if (synthFilters.equipe) {
       const team = [op.developpeur, op.resp_op, op.charge_fin].filter(Boolean);
@@ -11426,11 +11434,11 @@ function showTagLinkedPopover(anchorEl, tagValue) {
       ? '<div class="tag-linked-empty">Aucune autre opération ne porte ce tag.</div>'
       : `<ul class="tag-linked-list">
           ${linked.map(o => {
-            const phaseConf = PHASE_COLORS[o.phase_actuelle || 'Montage'] || PHASE_COLORS['Montage'];
+            const phaseConf = PHASE_COLORS[o.phase_actuelle || PHASES[0]] || PHASE_COLORS[PHASES[0]];
             return `<li data-linked-op-uid="${escapeHtml(o._uid)}">
               <span class="tag-linked-code">${escapeHtml(o.code || o.sheet || '-')}</span>
               <span class="tag-linked-name">${escapeHtml(o.display_name || '')}</span>
-              <span class="tag-linked-phase" style="background:${phaseConf.bg};color:${phaseConf.text};">${escapeHtml(o.phase_actuelle || 'Montage')}</span>
+              <span class="tag-linked-phase" style="background:${phaseConf.bg};color:${phaseConf.text};">${escapeHtml(o.phase_actuelle || PHASES[0])}</span>
             </li>`;
           }).join('')}
         </ul>`}
@@ -11650,8 +11658,8 @@ async function loadFromSupabase(opts) {
       code: '',
       sheet: '',
       display_name: '',
-      phase_actuelle: 'Montage',
-      statut: 'Montage',
+      phase_actuelle: 'CEP',
+      statut: 'CEP',
       commune: '',
       code_postal: '',
       region: '',
@@ -11746,7 +11754,7 @@ async function loadFromSupabase(opts) {
         .sort((a, b) => (a.id || 0) - (b.id || 0)) // ordre chronologique de création
         .map(s => ({
           _supabase_id: s.id,
-          name: s.phase || '',
+          name: s.phase ? migratePhase(s.phase) : '',
           date_fige: s.date_figeage || '',
           figee_par: s.figee_par || '',
           snapshot: s.snapshot || {},
@@ -11759,8 +11767,8 @@ async function loadFromSupabase(opts) {
         code: row.code || '?',
         sheet: row.code || '?',
         display_name: row.display_name || 'Opération sans nom',
-        phase_actuelle: row.phase_actuelle || 'Montage',
-        statut: row.phase_actuelle || 'Montage',
+        phase_actuelle: migratePhase(row.phase_actuelle),
+        statut: migratePhase(row.phase_actuelle),
         badge_dot: phaseBadgeColor(row.phase_actuelle),
         commune: row.commune || '',
         code_postal: row.code_postal || '',
@@ -11880,13 +11888,14 @@ async function loadFromSupabase(opts) {
 
 function phaseBadgeColor(phase) {
   const colors = {
-    'Montage': '#94a3b8',
-    'Validation CA': '#facc15',
-    'Travaux': '#fb923c',
-    'Livraison': '#22c55e',
-    'GPA': '#3b82f6',
+    'CEP': '#94a3b8',
+    'CA': '#facc15',
+    'CPR': '#14b8a6',
+    'CL': '#6366f1',
+    'OS': '#fb923c',
+    'Clôture': '#22c55e',
   };
-  return colors[phase] || '#94a3b8';
+  return colors[migratePhase(phase)] || '#94a3b8';
 }
 
 // ----- Mapping fonctions Supabase → format mockup -----
