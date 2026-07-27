@@ -2143,6 +2143,10 @@ function createTranche() {
   const nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
   op.tranches.push(makeNewTranche(op.code, String(nextId)));
   selectedTrancheIdx = op.tranches.length - 1;
+  // La nouvelle tranche devient le scope courant, ouverte sur son détail
+  if (typeof TR_SCOPE !== 'undefined') TR_SCOPE = selectedTrancheIdx;
+  OPS_TAB = 'tr';
+  try { sessionStorage.setItem('exnihilo_ops_tab', 'tr'); } catch (e) {}
   renderAll();
   showToast('Tranche créée', 'plus');
 }
@@ -3989,19 +3993,34 @@ function closeOpsDrawer() { switchOpsTab('home'); } // compat : « fermer » = r
 let TR_SCOPE = null; // null = Total ; sinon index de tranche
 
 function setTrScope(i) {
+  // En édition : moissonner la saisie en cours AVANT le re-render, sinon perte
+  if (editMode && typeof collectEditsFromDom === 'function') {
+    const _op = findOp(selectedOpCode);
+    if (_op) collectEditsFromDom(_op);
+  }
   TR_SCOPE = i;
   if (i != null) selectedTrancheIdx = i;
+  let focusBilan = false;
   if (i == null) {
-    // Retour au consolidé : le détail de tranche redevient l'onglet Informations
-    if (OPS_TAB === 'tr') { OPS_TAB = 'dos'; try { sessionStorage.setItem('exnihilo_ops_tab', 'dos'); } catch (e) {} }
-  } else if (OPS_TAB === 'home' || OPS_TAB === 'suivi' || OPS_TAB === 'dos') {
-    // Sur ces vues, choisir une tranche ouvre son détail (parallèle d'Informations)
-    OPS_TAB = 'tr';
-    try { sessionStorage.setItem('exnihilo_ops_tab', 'tr'); } catch (e) {}
+    // Retour au Total : le détail de tranche redevient l'onglet Informations ;
+    // 'fin' reste 'fin' (en édition il affiche alors toutes les tranches).
+    if (OPS_TAB === 'tr') OPS_TAB = 'dos';
+  } else {
+    if (OPS_TAB === 'home' || OPS_TAB === 'suivi' || OPS_TAB === 'dos' || OPS_TAB === 'syn') {
+      // Choisir une tranche ouvre son détail (parallèle d'Informations)
+      OPS_TAB = 'tr';
+    } else if (OPS_TAB === 'bilan' && editMode) {
+      // Bilan d'une tranche en édition = cockpit focalisé sur son prix de revient
+      OPS_TAB = 'tr';
+      focusBilan = true;
+    }
+    // consultation : bilan / finop restent (contenu re-scopé au render) ; tr / fin restent
   }
+  try { sessionStorage.setItem('exnihilo_ops_tab', OPS_TAB); } catch (e) {}
   renderAll(); // re-scope bilan / financements / détail
   applyOpsTab();
   _syncOpsNav();
+  if (focusBilan && typeof edFocus === 'function') edFocus('sec-tr-bilan');
 }
 
 // Ouvre directement le détail d'une tranche (bouton des cartes Financements)
@@ -4015,14 +4034,8 @@ function openTrancheDetail(i) {
   _syncOpsNav();
 }
 
-function opsPillClick(i) {
-  if (editMode) {
-    selectTranche(i);
-    switchOpsTab(OPS_TAB === 'fin' ? 'fin' : 'tr');
-    return;
-  }
-  setTrScope(i);
-}
+// Pill de tranche : même geste dans les deux modes = changer le scope.
+function opsPillClick(i) { setTrScope(i); }
 
 // Clic nav en consultation : Informations avec un scope tranche = détail de la tranche
 function opsNavClick(tab) {
@@ -4032,29 +4045,26 @@ function opsNavClick(tab) {
 
 // Clic nav en édition : même parallèle qu'en lecture - avec une tranche active,
 // Informations ouvre son détail (cockpit) et Bilan focalise sa section Prix de
-// revient ; sinon retour aux vues de niveau opération.
+// revient ; en Total, les onglets montrent le niveau opération ('fin' = toutes tranches).
 function editNavClick(tab) {
-  const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
-  if (isTr && tab === 'dos') { switchOpsTab('tr'); return; }
-  if (isTr && tab === 'bilan') {
-    switchOpsTab('tr');
-    if (typeof edFocus === 'function') edFocus('sec-tr-bilan');
-    return;
+  if (TR_SCOPE != null) {
+    if (tab === 'dos') { switchOpsTab('tr'); return; }
+    if (tab === 'bilan') {
+      switchOpsTab('tr');
+      if (typeof edFocus === 'function') edFocus('sec-tr-bilan');
+      return;
+    }
   }
   switchOpsTab(tab);
-  _setBandeauActive('op');
 }
 
 // Synchronise les états actifs (bandeau tranches + nav de vues) sur OPS_TAB.
 function _syncOpsNav() {
-  const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
-  // Consultation : la pill active reflète le SCOPE (Total ou tranche), pas la vue
-  if (editMode) _setBandeauActive(isTr ? String(selectedTrancheIdx) : 'op');
-  else _setBandeauActive(TR_SCOPE != null ? String(TR_SCOPE) : 'op');
+  // La pill active reflète le SCOPE (Total ou tranche), identique dans les deux modes
+  _setBandeauActive(TR_SCOPE != null ? String(TR_SCOPE) : 'op');
   document.querySelectorAll('.ops-unibar [data-view]').forEach(b => {
     const v = b.dataset.view;
     // Le détail de tranche est le parallèle d'Informations : l'onglet reste actif
-    // (dans les deux modes - parité lecture/édition)
     b.classList.toggle('active', v === OPS_TAB || (OPS_TAB === 'tr' && v === 'dos'));
   });
 }
@@ -4066,14 +4076,13 @@ function opsUnifiedBarHtml(op, displayedOp, editing) {
   const nAlerts = (editing && typeof computeAlerts === 'function')
     ? computeAlerts(op).filter(al => al.level === 'expired' || al.level === 'critical').length : 0;
   const opNav = editing
-    ? [['syn', `Synthèse${nAlerts ? ` <span class="ops-tab-n ops-tab-alert">${nAlerts}</span>` : ''}`], ['dos', 'Informations'], ['bilan', 'Bilan'], ['suivi', 'Comités & suivi']]
+    ? [['syn', `Synthèse${nAlerts ? ` <span class="ops-tab-n ops-tab-alert">${nAlerts}</span>` : ''}`], ['dos', 'Informations'], ['bilan', 'Bilan'], ['fin', 'Financements'], ['suivi', 'Comités & suivi']]
     : [['home', 'Vue d\'ensemble'], ['dos', 'Informations'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
   const navClick = (tab) => editing ? `editNavClick('${tab}')` : `opsNavClick('${tab}')`;
   const vBtn = ([tab, label]) =>
     `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="${navClick(tab)}">${label}</button>`;
   const trs = displayedOp.tranches || [];
-  const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
-  const pillActive = editing ? (isTr ? selectedTrancheIdx : -1) : (TR_SCOPE != null ? TR_SCOPE : -1);
+  const pillActive = TR_SCOPE != null ? TR_SCOPE : -1; // même scope dans les deux modes
   const pills = trs.map((t, i) => {
     const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : (t.id || ('T' + (i + 1)));
     const agr = t.statut_agrement || '';
@@ -4090,24 +4099,18 @@ function opsUnifiedBarHtml(op, displayedOp, editing) {
   const addPill = editing
     ? `<button type="button" class="ops-tpill ops-tpill-add" title="Ajouter une nouvelle tranche" onclick="createTranche()"><span class="ops-tpill-top"><i class="ti ti-plus"></i></span></button>`
     : '';
-  // Le sélecteur est un SCOPE dans les deux modes - « Total » = niveau opération ;
-  // une tranche = Informations/Bilan/Financements montrent la part de CETTE
-  // tranche (le détail de tranche remplace Informations). Parité lecture/édition.
-  const totalPill = `<button type="button" class="ops-tpill ops-tpill-total${(editing ? !isTr : TR_SCOPE == null) ? ' active' : ''}" data-tranche-pill="op"
-      title="${editing ? "Édition au niveau de l'opération" : "Vue consolidée de l'opération (toutes tranches)"}"
-      onclick="${editing ? "switchOpsTab('syn'); _setBandeauActive('op')" : 'setTrScope(null)'}">
+  // Le sélecteur est un SCOPE identique dans les deux modes - « Total » = niveau
+  // opération ; une tranche = Informations/Bilan/Financements montrent la part
+  // de CETTE tranche (le détail de tranche remplace Informations).
+  const totalPill = `<button type="button" class="ops-tpill ops-tpill-total${TR_SCOPE == null ? ' active' : ''}" data-tranche-pill="op"
+      title="${editing ? "Édition au niveau de l'opération (toutes tranches)" : "Vue consolidée de l'opération (toutes tranches)"}"
+      onclick="setTrScope(null)">
       <span class="ops-tpill-top"><i class="ti ti-sum"></i>Total</span></button>`;
-  // Édition : la sous-nav Détail / Financements reste (flux de saisie inchangé)
-  const trNav = editing
-    ? `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" title="Détail de la tranche sélectionnée" onclick="switchOpsTab('tr')">Détail</button>
-       <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" title="Financements de la tranche sélectionnée" onclick="switchOpsTab('fin')">Financements</button>`
-    : '';
   // Zone tranches visuellement distincte des vues opération (encart dédié)
   return `<div class="ops-tbar ops-unibar">
     ${opNav.map(vBtn).join('')}
-    ${(trs.length || editing) ? `<div class="ops-tzone${(editing ? isTr : TR_SCOPE != null) ? ' active' : ''}">
+    ${(trs.length || editing) ? `<div class="ops-tzone${TR_SCOPE != null ? ' active' : ''}">
       <span class="ops-tbar-lead">Tranches</span>${totalPill}${pills}${addPill}
-      ${(editing && trs.length) ? `<span class="ops-tzone-sub">${trNav}</span>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -4198,6 +4201,34 @@ function finHeadHtml(type) {
 // Vue "Financements de l'opération" : toutes les tranches, contenu généré.
 // Une couleur d'accent par tranche pour distinguer les regroupements.
 const FINOP_TR_COLORS = ['var(--cat-1)', 'var(--cat-2)', 'var(--cat-3)', 'var(--cat-4)', 'var(--cat-5)', 'var(--cat-6)'];
+// Édition « Total » de l'onglet Financements : toutes les tranches, groupées
+// comme en consultation (mêmes cadres colorés), avec les cartes de saisie.
+// Le mousedown sur un groupe cale selectedTrancheIdx pour que les boutons
+// « Ajouter ... » créent la ligne dans la bonne tranche.
+function renderAllTranchesFinEdit(op, src) {
+  const trs = ((src || op).tranches) || [];
+  if (!trs.length) return '<div class="subent-empty">Aucune tranche sur cette opération.</div>';
+  return trs.map((tt, ti) => {
+    const code = tt.code_full ? tt.code_full.split('-').slice(1).join('-') : tt.id;
+    const w = arr => (arr || []).map((x, i2) => ({ ...x, _originalIdx: i2 })).filter(x => x.tranche === code);
+    const col = FINOP_TR_COLORS[ti % FINOP_TR_COLORS.length];
+    return `<div class="finop-tr" style="border-left-color:${col}" onmousedown="selectedTrancheIdx=${ti}">
+      <div class="finop-tr-head">
+        <span class="ops-tpill-top" style="color:${col}">${escapeHtml(code)}</span>
+        <span class="finop-tr-name">${escapeHtml(tt.type_structure || '')}</span>
+        <button type="button" class="ops-dn" style="margin-left:auto" onclick="setTrScope(${ti})">Cette tranche seule →</button>
+      </div>
+      ${renderPretsSection(w(op.prets), op)}
+      ${renderGarantiesSection(w(op.garanties), op)}
+      ${renderSubvSection(w(op.subventions), op)}
+      ${renderReservatairesSection(w(op.reservataires), op)}
+      ${renderPrefinSection(w(op.prefinancements), op)}
+      ${renderAvenantsSection(w(op.avenants), op)}
+    </div>`;
+  }).join('')
+  + `<div class="oph-tsub" style="margin-top:6px">Fonds propres : sélectionnez une tranche dans le bandeau pour les saisir.</div>`;
+}
+
 // Copie la liste des prêts de l'op au format SFO (23 colonnes, TSV) : collable
 // tel quel dans le fichier Excel groupe - zéro re-saisie du reporting.
 function copyPretsSFO() {
@@ -4268,16 +4299,18 @@ function renderOpDetail() {
   // Édition = ancien layout inline par onglet (on n'y touche pas).
   // La vue courante persiste (vues en place) ; en édition, les vues purement
   // consultation (accueil, financements op) basculent sur Synthèse.
+  // Garde-fou : scope pointant sur une tranche disparue -> retour au Total
+  if (TR_SCOPE != null && !(displayedOp.tranches || [])[TR_SCOPE]) TR_SCOPE = null;
   OPS_TAB = effectiveEditMode
-    // Édition : depuis la vue Financements op, on atterrit sur les financements
-    // de la tranche courante (cycle « je vois une erreur -> je corrige » direct).
-    ? (OPS_TAB === 'home' ? 'syn' : (OPS_TAB === 'finop' ? 'fin' : OPS_TAB))
+    // Édition : mêmes vues qu'en lecture (le scope Total/tranche s'applique
+    // pareil) ; seule la Vue d'ensemble devient Synthèse.
+    ? (OPS_TAB === 'home' ? 'syn' : (OPS_TAB === 'finop' ? 'fin' : ((OPS_TAB === 'bilan' && TR_SCOPE != null) ? 'tr' : OPS_TAB)))
     // Consultation : Synthèse n'existe plus, et les financements de tranche sont
     // fusionnés dans la vue Financements op.
     : ((OPS_TAB === 'syn' ? 'home' : (OPS_TAB === 'fin' ? 'finop' : OPS_TAB)) || 'home');
-  // Cohérence scope/vue : si on affiche un détail de tranche sans scope (sortie
-  // d'édition, session restaurée), le scope adopte la tranche courante.
-  if (!effectiveEditMode && OPS_TAB === 'tr' && TR_SCOPE == null) TR_SCOPE = selectedTrancheIdx;
+  // Cohérence scope/vue : si on affiche un détail de tranche sans scope (session
+  // restaurée), le scope adopte la tranche courante - dans les deux modes.
+  if (OPS_TAB === 'tr' && TR_SCOPE == null) TR_SCOPE = selectedTrancheIdx;
 
   const volCells = ['plai','plus','pls','pli','libre','autre']
     .filter(k => editMode || sumVolKey(displayedOp, k) > 0)
@@ -4783,6 +4816,9 @@ function renderTrancheDetail() {
         </div>
       </div>
 
+      ${(editMode && TR_SCOPE == null)
+        ? `<div class="op-anchor" data-grp="fin">${renderAllTranchesFinEdit(op, trancheSource)}</div>`
+        : `
       <div class="op-anchor" id="sec-tr-prets" data-grp="fin">${renderPretsSection(prets, op)}</div>
       <div class="op-anchor" id="sec-tr-gar" data-grp="fin">${renderGarantiesSection(garanties, op)}</div>
       <div class="op-anchor" id="sec-tr-subv" data-grp="fin">${renderSubvSection(subv, op)}</div>
@@ -4795,7 +4831,7 @@ function renderTrancheDetail() {
       </div>` : ''}
       <div class="op-anchor" id="sec-tr-res" data-grp="fin">${renderReservatairesSection(reservataires, op)}</div>
       <div class="op-anchor" id="sec-tr-prefi" data-grp="fin">${renderPrefinSection(prefin, op)}</div>
-      <div class="op-anchor" id="sec-tr-avenants" data-grp="fin">${renderAvenantsSection(avenants, op)}</div>
+      <div class="op-anchor" id="sec-tr-avenants" data-grp="fin">${renderAvenantsSection(avenants, op)}</div>`}
     `;
   }
 
