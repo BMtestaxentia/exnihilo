@@ -5757,3 +5757,10 @@
 /* Champs vides attendus : lisere ambre discret (code visuel maquette) */
 .edit-cockpit .kv-row:not(.is-filled) { box-shadow: inset 2px 0 0 rgba(217, 161, 59, .55); border-radius: 4px; padding-left: 10px; }
 .edit-cockpit .vol-cell-edit:not(.is-filled) { border: 1px dashed rgba(217, 161, 59, .45); border-radius: 8px; }
+
+/* ===== v79 : lot integrite - bandeau d'echec d'enregistrement ===== */
+.save-error-banner { display: flex; align-items: center; gap: 10px; padding: 10px 16px; margin: 0 0 10px;
+  background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-accent);
+  border-radius: 10px; font-size: 13px; font-weight: 600; }
+.save-error-banner span { flex: 1; }
+.save-error-banner .btn-edit { flex: none; }

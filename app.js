@@ -2119,6 +2119,15 @@ function deleteOp() {
 function createTranche() {
   const op = findOp(selectedOpCode);
   if (!op) return;
+  if (!editMode) {
+    // Entrée en édition par ce chemin : créer le snapshot AVANT le push de la
+    // tranche, sinon Annuler ne pourrait pas la retirer.
+    editSessionSnap = JSON.parse(JSON.stringify(op));
+    editMode = true;
+    if (typeof EDIT_FOCUS_ID !== 'undefined') EDIT_FOCUS_ID = '__auto__';
+  } else if (typeof collectEditsFromDom === 'function') {
+    collectEditsFromDom(op); // ne pas perdre la saisie en cours au re-render
+  }
   // Find next integer id
   const ids = op.tranches
     .map(t => parseInt(String(t.id || '').match(/^\d+/)?.[0] || '0', 10))
@@ -2126,7 +2135,6 @@ function createTranche() {
   const nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
   op.tranches.push(makeNewTranche(op.code, String(nextId)));
   selectedTrancheIdx = op.tranches.length - 1;
-  editMode = true;
   renderAll();
   showToast('Tranche créée', 'plus');
 }
@@ -3140,6 +3148,15 @@ function saveOpEdits() {
   // === Snapshot before save (for audit log diff at the end) ===
   const _beforeSnap = editSessionSnap ? JSON.parse(JSON.stringify(editSessionSnap)) : null;
 
+  collectEditsFromDom(op);
+  _saveOpEditsTail(op, _beforeSnap);
+}
+
+// Moisson DOM -> objet op. Appelée par saveOpEdits, et AVANT tout re-render en
+// cours d'édition (addEntityRow, deleteEntityRow, createTranche) pour ne jamais
+// perdre une saisie encore non enregistrée.
+function collectEditsFromDom(op) {
+  if (!op || !editMode) return;
   // Op display_name (separate handler, not via data-edit-op-field)
   const nameInput = document.querySelector('[data-edit-op-name]');
   if (nameInput) {
@@ -3269,7 +3286,11 @@ function saveOpEdits() {
       }
     });
   });
+}
 
+// Suite de saveOpEdits après moisson : audit, dérivations, push Supabase.
+// On ne quitte le mode édition qu'après un enregistrement Supabase réussi.
+async function _saveOpEditsTail(op, _beforeSnap) {
   // === Audit log: diff op fields against _beforeSnap and record changes ===
   if (_beforeSnap) {
     const trackedOpFields = [
@@ -3336,19 +3357,50 @@ function saveOpEdits() {
   syncPrefinancementsFromPrets(op, op.tranches[selectedTrancheIdx]);
   syncAapTagsFromEntities(op);
 
-  editMode = false;
-  editSessionSnap = null;
-  renderAll();
-  // === Push modifications to Supabase if op came from Supabase ===
+  // === Push Supabase AVANT de quitter l'édition : en cas d'échec la saisie
+  // reste à l'écran et un bandeau propose de réessayer (fini le fire-and-forget).
   if (op._uid && op._uid.startsWith('op-supabase-')) {
-    saveOpToSupabase(op, _beforeSnap); // diff : ne PATCH que ce qui a changé
+    const btn = document.getElementById('saveOpBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+    const ok = await saveOpToSupabase(op, _beforeSnap); // diff : ne PATCH que ce qui a changé
+    if (!ok) {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-check"></i>Enregistrer'; if (typeof replaceTablerIcons === 'function') replaceTablerIcons(); }
+      _showSaveErrorBanner();
+      return;
+    }
+    _hideSaveErrorBanner();
   } else {
     showToast('Modifications enregistrées (mémoire locale - mockup)');
   }
+  editMode = false;
+  editSessionSnap = null;
+  renderAll();
 }
 
+function _showSaveErrorBanner() {
+  let b = document.getElementById('saveErrorBanner');
+  if (!b) {
+    const tb = document.querySelector('.edit-toolbar');
+    if (!tb) return;
+    b = document.createElement('div');
+    b.id = 'saveErrorBanner';
+    b.className = 'save-error-banner';
+    tb.insertAdjacentElement('afterend', b);
+  }
+  b.innerHTML = `<i class="ti ti-alert-triangle"></i><span>Échec de l'enregistrement : ${escapeHtml(_lastSaveError || 'erreur inconnue')}. Votre saisie est conservée à l'écran.</span><button type="button" class="btn-edit primary" onclick="saveOpEdits()">Réessayer</button>`;
+  if (typeof replaceTablerIcons === 'function') replaceTablerIcons();
+}
+function _hideSaveErrorBanner() { const b = document.getElementById('saveErrorBanner'); if (b) b.remove(); }
+
 function cancelOpEdits() {
+  if (hasUnsavedChanges()) {
+    if (!confirm('Abandonner les modifications non enregistrées ?')) return;
+    revertOpEdits(); // rollback mémoire depuis le snapshot de session
+    showToast('Modifications abandonnées', 'arrow-back-up');
+  }
   editMode = false;
+  editSessionSnap = null;
+  _hideSaveErrorBanner();
   renderAll();
 }
 
@@ -3964,7 +4016,7 @@ function renderOpDetail() {
       <div class="btn-bar">
         <button class="btn-edit danger" onclick="deleteOp()"><i class="ti ti-trash"></i>Supprimer</button>
         <button class="btn-edit" onclick="cancelOpEdits()"><i class="ti ti-x"></i>Annuler</button>
-        <button class="btn-edit primary" onclick="saveOpEdits()"><i class="ti ti-check"></i>Enregistrer</button>
+        <button class="btn-edit primary" id="saveOpBtn" onclick="saveOpEdits()"><i class="ti ti-check"></i>Enregistrer</button>
       </div>
     </div>
   ` : '';
@@ -5141,6 +5193,7 @@ const NUMERIC_FIELDS = new Set([
 function addEntityRow(section) {
   const op = findOp(selectedOpCode);
   if (!op) return;
+  collectEditsFromDom(op); // moissonner AVANT le re-render, sinon la saisie en cours est perdue
   if (!op[section]) op[section] = [];
   const t = op.tranches[selectedTrancheIdx];
   const trCode = t ? (t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id) : '';
@@ -5153,6 +5206,7 @@ function deleteEntityRow(section, originalIdx) {
   if (!confirm('Supprimer cette ligne ?')) return;
   const op = findOp(selectedOpCode);
   if (!op || !op[section]) return;
+  collectEditsFromDom(op); // préserver la saisie des autres lignes au re-render
   op[section].splice(originalIdx, 1);
   renderTrancheDetail();
   replaceTablerIcons();
@@ -6308,6 +6362,9 @@ function hasUnsavedChanges() {
   if (!editMode || !editSessionSnap) return false;
   const op = findOp(selectedOpCode);
   if (!op) return false;
+  // La saisie clavier vit dans le DOM jusqu'à la moisson : le tracker de champs
+  // touchés (field-modified-session) est le seul témoin fiable de la frappe.
+  if (document.querySelector('.field-modified-session')) return true;
   // Compare les champs principaux + tranches + sub-entités
   // On fait une comparaison stringifiée, ce qui couvre toute modification
   try {
@@ -12223,7 +12280,7 @@ async function _saveOpToSupabaseImpl(op, beforeSnap) {
   const supabaseId = op._supabase_id || (op._uid ? parseInt(op._uid.replace('op-supabase-', '')) : null);
   if (!supabaseId || isNaN(supabaseId)) {
     console.warn('UID non Supabase, sauvegarde locale uniquement:', op._uid);
-    return;
+    return true;
   }
   const headers = {
     'apikey': SUPABASE_KEY,
@@ -12247,11 +12304,15 @@ async function _saveOpToSupabaseImpl(op, beforeSnap) {
 
     console.log('Sauvegardé dans Supabase : op', supabaseId, 'et entités liées');
     showToast('Modifications enregistrées dans Supabase', 'check');
+    return true;
   } catch (err) {
     console.error('Erreur sauvegarde Supabase :', err);
     showToast('Erreur Supabase : ' + err.message, 'alert-triangle');
+    _lastSaveError = err.message || String(err);
+    return false;
   }
 }
+let _lastSaveError = '';
 
 // Synchronise les tranches / prêts / garanties d'une op vers Supabase
 // Stratégie : pour chaque entité locale, INSERT si pas d'_supabase_id, sinon PATCH
@@ -12961,14 +13022,21 @@ async function refreshData(silent){
   // Ne jamais écraser une saisie en cours
   // Ne jamais rafraîchir en arrière-plan pendant une saisie en cours.
   if (silent && (editMode || _pendingWrites > 0 || (Date.now() - _lastWriteAt < 8000) || (typeof hasUnsavedChanges === 'function' && hasUnsavedChanges()))) return;
+  // Refresh manuel pendant une édition : demander confirmation avant d'écraser la saisie
+  if (!silent && editMode) {
+    if (!confirm('Vous êtes en mode édition : rafraîchir va recharger les données et perdre la saisie non enregistrée. Continuer ?')) return;
+    editMode = false;
+    editSessionSnap = null;
+  }
   const selCode = (typeof storageGet === 'function') ? storageGet('selectedOp') : null;
   const view = (typeof storageGet === 'function') ? storageGet('activeView') : null;
   const rbtn = document.getElementById('sessRefreshBtn');
   if (!silent && rbtn) { rbtn.classList.add('spinning'); }
-  try { await loadFromSupabase({ silent: true }); } catch(e){}
+  let _refreshOk = true;
+  try { await loadFromSupabase({ silent: true }); } catch(e){ _refreshOk = false; }
   updateSyncStamp();
   if (!silent && view === 'operations' && selCode && typeof selectOp === 'function') { try { selectOp(selCode); } catch(e){} }
-  if (!silent && typeof showToast === 'function') showToast('Données rafraîchies', 'refresh');
+  if (!silent && typeof showToast === 'function') showToast(_refreshOk ? 'Données rafraîchies' : 'Échec du rafraîchissement - données inchangées', _refreshOk ? 'refresh' : 'alert-triangle');
   if (!silent && rbtn) setTimeout(()=>rbtn.classList.remove('spinning'), 400);
 }
 
