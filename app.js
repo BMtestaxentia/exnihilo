@@ -3553,7 +3553,7 @@ function opsKpiStripHtml(op, displayedOp) {
     ${kpi('Logements', lgts || '-')}
     ${kpi('Financement', couvert + ' %')}
     ${kpi('Livraison', escapeHtml(op.date_livraison || '-'))}
-    ${nCrit ? `<button type="button" class="ops-kpi-alert" onclick="gotoOpAlerts()" title="Voir la brique À faire &amp; échéances"><i class="ti ti-alert-triangle"></i>${nCrit} critique${nCrit > 1 ? 's' : ''}</button>` : ''}
+    ${nCrit ? `<button type="button" class="ops-kpi-alert" onclick="gotoOpAlerts()" title="Voir la brique À faire &amp; échéances"><i class="ti ti-alert-triangle"></i>${nCrit} à traiter</button>` : ''}
   </div>`;
 }
 
@@ -3575,7 +3575,7 @@ function renderOpHomeDashboard(op, displayedOp) {
   const comLines = coms.slice(0, 4).map(c =>
     `<div class="oph-line"><span class="l">${esc(c.type || 'Comité')}</span><span class="d">${esc(c.date || '-')}</span></div>`
   ).join('') || `<div class="oph-tsub">Aucun comité. <button type="button" class="subent-cta" onclick="event.stopPropagation();editFromDrawer('suivi')">+ Ajouter en édition</button></div>`;
-  const alertBadge = nCrit ? `<span class="oph-pill crit">${nCrit} critique${nCrit > 1 ? 's' : ''}</span>`
+  const alertBadge = nCrit ? `<span class="oph-pill crit">${nCrit} à traiter</span>`
     : (nWarn ? `<span class="oph-pill warn">${nWarn} à surveiller</span>` : '<span class="oph-pill good">À jour</span>');
   const _todayMid = new Date(); _todayMid.setHours(0, 0, 0, 0);
   const keyDates = [
@@ -3642,15 +3642,15 @@ function renderOpHomeDashboard(op, displayedOp) {
   }
   const finBody = `
       <div class="oph-stack" role="img" aria-label="Financement rapporté au prix de revient">
-        <span style="width:${pP}%;background:var(--info-accent)"></span>
-        <span style="width:${pS}%;background:var(--success-accent)"></span>
-        <span style="width:${pF}%;background:var(--warning-accent)"></span>
+        <span style="width:${pP}%;background:var(--cat-1)"></span>
+        <span style="width:${pS}%;background:var(--cat-2)"></span>
+        <span style="width:${pF}%;background:var(--cat-3)"></span>
         ${pReste ? `<span class="rest" style="width:${pReste}%"></span>` : ''}
       </div>
       <div class="oph-figrow">
-        <div class="oph-fig"><span class="oph-fl"><span class="oph-lsw" style="background:var(--info-accent)"></span>Prêts · ${nP}</span><span class="oph-fv">${fmtMontant(tPrets)} <span class="oph-soft">${pP}%</span></span></div>
-        <div class="oph-fig"><span class="oph-fl"><span class="oph-lsw" style="background:var(--success-accent)"></span>Subventions · ${nS}</span><span class="oph-fv">${fmtMontant(tSubv)} <span class="oph-soft">${pS}%</span></span></div>
-        <div class="oph-fig"><span class="oph-fl"><span class="oph-lsw" style="background:var(--warning-accent)"></span>Fonds propres</span><span class="oph-fv">${fmtMontant(fp)} <span class="oph-soft">${pF}%</span></span></div>
+        <div class="oph-fig"><span class="oph-fl"><span class="oph-lsw" style="background:var(--cat-1)"></span>Prêts · ${nP}</span><span class="oph-fv">${fmtMontant(tPrets)} <span class="oph-soft">${pP}%</span></span></div>
+        <div class="oph-fig"><span class="oph-fl"><span class="oph-lsw" style="background:var(--cat-2)"></span>Subventions · ${nS}</span><span class="oph-fv">${fmtMontant(tSubv)} <span class="oph-soft">${pS}%</span></span></div>
+        <div class="oph-fig"><span class="oph-fl"><span class="oph-lsw" style="background:var(--cat-3)"></span>Fonds propres</span><span class="oph-fv">${fmtMontant(fp)} <span class="oph-soft">${pF}%</span></span></div>
         ${resteAFin ? `<div class="oph-fig"><span class="oph-fl"><span class="oph-lsw oph-lsw-rest"></span>Reste à financer</span><span class="oph-fv" style="color:var(--danger-text)">${fmtMontant(resteAFin)} <span class="oph-soft">${pReste}%</span></span></div>` : ''}
       </div>
       <div class="oph-tsub">sur un prix de revient de ${fmtMontant(budget)}</div>
@@ -3692,9 +3692,9 @@ function renderOpHomeDashboard(op, displayedOp) {
   const _secSum = key => (displayedOp.tranches || []).reduce((s2, tt) =>
     s2 + Object.values((tt.bilan && tt.bilan[key]) || {}).reduce((a, b) => a + (Number(b) || 0), 0), 0);
   const _postes = [
-    ['Charge foncière', _secSum('charge_fonciere'), 'var(--warning-accent)'],
-    ['Bâtiment', _secSum('batiment'), 'var(--info-accent)'],
-    ['Honoraires', _secSum('honoraires'), 'var(--success-accent)'],
+    ['Charge foncière', _secSum('charge_fonciere'), 'var(--cat-5)'],
+    ['Bâtiment', _secSum('batiment'), 'var(--cat-6)'],
+    ['Honoraires', _secSum('honoraires'), 'var(--cat-3)'],
     ['Frais divers & financiers', _secSum('frais_divers') + _secSum('frais_financiers'), 'var(--border-color)'],
   ].filter(([, v]) => v > 0);
   const _postesTot = _postes.reduce((s2, [, v]) => s2 + v, 0);
@@ -3907,7 +3907,7 @@ function finHeadHtml(type) {
 
 // Vue "Financements de l'opération" : toutes les tranches, contenu généré.
 // Une couleur d'accent par tranche pour distinguer les regroupements.
-const FINOP_TR_COLORS = ['#185fa5', '#1d9e75', '#ba7517', '#9333ea', '#c4423a', '#0d9488'];
+const FINOP_TR_COLORS = ['var(--cat-1)', 'var(--cat-2)', 'var(--cat-3)', 'var(--cat-4)', 'var(--cat-5)', 'var(--cat-6)'];
 function renderOpFinancementsDrawer(op) {
   const trs = op.tranches || [];
   if (!trs.length) return '<div class="subent-empty">Aucune tranche sur cette opération.</div>';
@@ -11966,15 +11966,9 @@ async function loadFromSupabase(opts) {
 }
 
 function phaseBadgeColor(phase) {
-  const colors = {
-    'CEP': '#94a3b8',
-    'CA': '#facc15',
-    'CPR': '#14b8a6',
-    'CL': '#6366f1',
-    'OS': '#fb923c',
-    'Clôture': '#22c55e',
-  };
-  return colors[migratePhase(phase)] || '#94a3b8';
+  // Source unique : PHASE_COLORS (même couleur de phase partout - liste, badge, stepper, Gantt)
+  const c = PHASE_COLORS[migratePhase(phase)];
+  return (c && c.accent) || '#94a3b8';
 }
 
 // ----- Mapping fonctions Supabase → format mockup -----

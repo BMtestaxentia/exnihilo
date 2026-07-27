@@ -18,6 +18,10 @@
     --scrollbar-thumb: rgba(0, 0, 0, 0.25);
     --scrollbar-track: rgba(0, 0, 0, 0.04);
     --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px;
+    /* Palette CATEGORIELLE (identites : tranches, familles, postes) - decalee des
+       accents d'etat pour que vert/ambre/rouge gardent leur sens d'alerte partout. */
+    --cat-1: #2f6db3; --cat-2: #0d7f9e; --cat-3: #8a63d2;
+    --cat-4: #b0498c; --cat-5: #937055; --cat-6: #64748b;
   }
   [data-theme="dark"] {
     --bg-primary: #1c1f24;
@@ -38,6 +42,8 @@
     --card-edit-bg: rgba(24, 50, 79, 0.4);
     --scrollbar-thumb: rgba(255, 255, 255, 0.18);
     --scrollbar-track: rgba(255, 255, 255, 0.04);
+    --cat-1: #5b9bd9; --cat-2: #3fb3cf; --cat-3: #ab8ae8;
+    --cat-4: #d977b5; --cat-5: #bd9a7c; --cat-6: #94a3b8;
   }
   /* Scrollbar styling (works in WebKit + Firefox) */
   * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); }
@@ -5422,7 +5428,8 @@
 .oph-aline { display: flex; align-items: flex-start; gap: 9px; padding: 6px 0; border-top: 1px dashed var(--border-color); font-size: 12.8px; }
 .oph-aline:first-child { border-top: none; }
 .oph-adays { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 11px; padding: 1px 7px; border-radius: 999px; flex: none; background: var(--bg-secondary); color: var(--text-secondary); }
-.oph-a-expired .oph-adays, .oph-a-critical .oph-adays { background: var(--danger-bg); color: var(--danger-text); }
+.oph-a-expired .oph-adays { background: var(--danger-bg); color: var(--danger-text); }
+.oph-a-critical .oph-adays { background: var(--coral-bg); color: var(--coral-text); }
 .oph-a-warning .oph-adays { background: var(--warning-bg); color: var(--warning-text); }
 .oph-a-info .oph-adays { background: var(--info-bg); color: var(--info-text); }
 .oph-amsg { flex: 1; color: var(--text-primary); }
