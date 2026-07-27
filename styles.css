@@ -5813,9 +5813,6 @@
 .ops-kpi .v { font-size: 17px; }
 
 /* ===== v81 : navigation - fleche retour contextuelle dans le bandeau ===== */
-.ops-back { padding: 3px 7px; }
-.ops-back i { font-size: 14px; }
-.ops-shell[data-tab="home"] .ops-back { display: none; }
 
 /* ===== v83 : export SFO one-click dans la vue Financements op ===== */
 .finop-toolbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
@@ -5868,3 +5865,8 @@
 .compare-fold { display: none; }
 .compare-fold.open { display: flex; }
 .icon-btn.cmp-on { color: var(--info-accent); border-color: var(--info-accent); }
+
+/* ===== v88 : scope Total / tranche dans le bandeau ===== */
+.ops-tpill-total .ops-tpill-top { display: inline-flex; align-items: center; gap: 4px; color: var(--text-primary); }
+.ops-tpill-total .ops-tpill-top i { font-size: 12px; }
+.ops-tpill-total.active { background: var(--info-bg); border-color: var(--info-accent); }
