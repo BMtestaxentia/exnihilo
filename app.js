@@ -9412,6 +9412,11 @@ function computeTasks(op) {
   return tasks;
 }
 
+// Cockpit personnel : file de tâches (par urgence ou par opération), KPI
+// cliquables (filtres rapides), agenda des échéances et portefeuille à droite.
+let suiviGroupMode = 'urgence';   // 'urgence' | 'operation'
+let suiviQuickFilter = '';        // '' | 'overdue' | 'prio' | 'week'
+
 function renderSuivi() {
   const view = document.getElementById('view-suivi');
   if (!view) return;
@@ -9426,38 +9431,57 @@ function renderSuivi() {
   if (!suiviSelectedPerson || !persons.includes(suiviSelectedPerson))
     suiviSelectedPerson = persons.includes('Bastien MERCIER') ? 'Bastien MERCIER' : persons[0];
 
-  const myOps = DATA.filter(op =>
-    op.developpeur === suiviSelectedPerson || op.resp_op === suiviSelectedPerson || op.charge_fin === suiviSelectedPerson);
+  const myOps = DATA.filter(op => !op.deleted &&
+    (op.developpeur === suiviSelectedPerson || op.resp_op === suiviSelectedPerson || op.charge_fin === suiviSelectedPerson));
 
-  let tasks = myOps.flatMap(op => computeTasks(op));
+  const allTasks = myOps.flatMap(op => computeTasks(op));
   const catCounts = {};
-  tasks.forEach(t => { catCounts[t.cat] = (catCounts[t.cat] || 0) + 1; });
-  if (suiviCatFilter) tasks = tasks.filter(t => t.cat === suiviCatFilter);
+  allTasks.forEach(t => { catCounts[t.cat] = (catCounts[t.cat] || 0) + 1; });
 
-  tasks.sort((a, b) => a.level - b.level
+  // Compteurs AVANT filtres (les KPI restent stables et servent de filtres)
+  const overdue = allTasks.filter(t => t.overdue).length;
+  const prio = allTasks.filter(t => t.level === 1).length;
+  const week = allTasks.filter(t => t.days != null && t.days >= 0 && t.days <= 7).length;
+
+  let tasks = allTasks;
+  if (suiviCatFilter) tasks = tasks.filter(t => t.cat === suiviCatFilter);
+  if (suiviQuickFilter === 'overdue') tasks = tasks.filter(t => t.overdue);
+  else if (suiviQuickFilter === 'prio') tasks = tasks.filter(t => t.level === 1);
+  else if (suiviQuickFilter === 'week') tasks = tasks.filter(t => t.days != null && t.days >= 0 && t.days <= 7);
+
+  const byUrgency = (a, b) => a.level - b.level
     || (a.days == null) - (b.days == null)
     || ((a.days == null ? 0 : a.days) - (b.days == null ? 0 : b.days))
-    || String(a.op.code || '').localeCompare(String(b.op.code || '')));
+    || String(a.op.code || '').localeCompare(String(b.op.code || ''));
+  tasks.sort(byUrgency);
 
-  const overdue = tasks.filter(t => t.overdue).length;
-  const prio = tasks.filter(t => t.level === 1).length;
-  const week = tasks.filter(t => t.days != null && t.days >= 0 && t.days <= 7).length;
+  const fmtD = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 
+  // ---- Barre du haut : personne + KPI cliquables + bascule de groupement ----
   const personSelector = `
     <div class="suivi-selector">
       <label class="suivi-selector-label">Suivi de :</label>
       <select class="suivi-selector-select" id="suiviPersonSelect">
         ${persons.map(p => `<option value="${escapeHtml(p)}"${p === suiviSelectedPerson ? ' selected' : ''}>${escapeHtml(p)}</option>`).join('')}
       </select>
-      <span class="suivi-selector-meta">${myOps.length} opération${myOps.length > 1 ? 's' : ''} · ${tasks.length} tâche${tasks.length > 1 ? 's' : ''}</span>
+      <span class="suivi-selector-meta">${myOps.length} opération${myOps.length > 1 ? 's' : ''} · ${allTasks.length} tâche${allTasks.length > 1 ? 's' : ''}</span>
+      <div class="suivi-mode">
+        <button class="suivi-mode-btn${suiviGroupMode === 'urgence' ? ' active' : ''}" data-suivi-mode="urgence">Par urgence</button>
+        <button class="suivi-mode-btn${suiviGroupMode === 'operation' ? ' active' : ''}" data-suivi-mode="operation">Par opération</button>
+      </div>
     </div>`;
 
+  const kpi = (key, n, label, cls) => `
+    <button type="button" class="suivi-kpi ${n > 0 ? cls : 'suivi-kpi-zero'}${suiviQuickFilter === key ? ' active' : ''}" data-suivi-quick="${key}"
+      title="${key ? 'Filtrer sur : ' + label : 'Toutes les tâches'}">
+      <div class="suivi-kpi-num">${n}</div><div class="suivi-kpi-label">${label}</div>
+    </button>`;
   const kpiHtml = `
     <div class="suivi-kpis">
-      <div class="suivi-kpi ${overdue > 0 ? 'suivi-kpi-expired' : 'suivi-kpi-zero'}"><div class="suivi-kpi-num">${overdue}</div><div class="suivi-kpi-label">En retard</div></div>
-      <div class="suivi-kpi ${prio > 0 ? 'suivi-kpi-critical' : 'suivi-kpi-zero'}"><div class="suivi-kpi-num">${prio}</div><div class="suivi-kpi-label">Prioritaires</div></div>
-      <div class="suivi-kpi ${week > 0 ? 'suivi-kpi-warning' : 'suivi-kpi-zero'}"><div class="suivi-kpi-num">${week}</div><div class="suivi-kpi-label">Sous 7 jours</div></div>
-      <div class="suivi-kpi suivi-kpi-total"><div class="suivi-kpi-num">${tasks.length}</div><div class="suivi-kpi-label">Tâches</div></div>
+      ${kpi('overdue', overdue, 'En retard', 'suivi-kpi-expired')}
+      ${kpi('prio', prio, 'Prioritaires', 'suivi-kpi-critical')}
+      ${kpi('week', week, 'Sous 7 jours', 'suivi-kpi-warning')}
+      ${kpi('', allTasks.length, 'Tâches', 'suivi-kpi-total')}
     </div>`;
 
   const totalAll = Object.values(catCounts).reduce((a, b) => a + b, 0);
@@ -9467,14 +9491,8 @@ function renderSuivi() {
       ${cats.map(c => `<button class="suivi-cat-chip${suiviCatFilter === c ? ' active' : ''}" data-cat="${escapeHtml(c)}"><span class="suivi-cat-dot" style="background:${SUIVI_CATS[c].color}"></span>${escapeHtml(c)} (${catCounts[c]})</button>`).join('')}
     </div>`;
 
-  const GROUPS = [
-    { lvl: 1, label: 'À traiter en priorité', cls: 'g1' },
-    { lvl: 2, label: 'Ce mois-ci', cls: 'g2' },
-    { lvl: 3, label: 'À planifier', cls: 'g3' },
-    { lvl: 4, label: 'À anticiper', cls: 'g4' },
-  ];
-  const fmtD = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-  const taskRow = (t) => {
+  // ---- Ligne de tâche (commune aux deux groupements) ----
+  const taskRow = (t, hideOp) => {
     const ech = t.days == null ? 'sans échéance' : (t.overdue ? `en retard de ${-t.days} j` : (t.days === 0 ? "aujourd'hui" : `dans ${t.days} j`));
     const col = (SUIVI_CATS[t.cat] || {}).color || '#888';
     return `<div class="suivi-task suivi-task-l${t.level}${t.overdue ? ' suivi-task-overdue' : ''}" data-suivi-open="${escapeHtml(t.op._uid)}">
@@ -9483,33 +9501,111 @@ function renderSuivi() {
         <div class="suivi-task-action">${escapeHtml(t.action)}</div>
         <div class="suivi-task-sub">
           <span class="suivi-task-cat" style="color:${col};border-color:${col}55;background:${col}14;">${escapeHtml(t.cat)}</span>
-          <span class="suivi-task-op">${escapeHtml(t.op.code || '')} · ${escapeHtml(t.op.display_name || '')}</span>
+          ${hideOp ? '' : `<span class="suivi-task-op">${escapeHtml(t.op.code || '')} · ${escapeHtml(t.op.display_name || '')}</span>`}
           ${t.detail ? `<span class="suivi-task-detail">${escapeHtml(t.detail)}</span>` : ''}
         </div>
       </div>
       <div class="suivi-task-ech">${escapeHtml(ech)}${t.deadline ? `<span class="suivi-task-date">${escapeHtml(fmtD(t.deadline))}</span>` : ''}</div>
     </div>`;
   };
-  const groupsHtml = GROUPS.map(g => {
+
+  // ---- Groupement par urgence ----
+  const GROUPS = [
+    { lvl: 1, label: 'À traiter en priorité', cls: 'g1' },
+    { lvl: 2, label: 'Ce mois-ci', cls: 'g2' },
+    { lvl: 3, label: 'À planifier', cls: 'g3' },
+    { lvl: 4, label: 'À anticiper', cls: 'g4' },
+  ];
+  const urgencyHtml = GROUPS.map(g => {
     const items = tasks.filter(t => t.level === g.lvl);
     if (!items.length) return '';
     return `<div class="suivi-group suivi-group-${g.cls}">
       <div class="suivi-group-head"><span class="suivi-group-dot"></span>${g.label}<span class="suivi-group-count">${items.length}</span></div>
-      <div class="suivi-group-body">${items.map(taskRow).join('')}</div>
+      <div class="suivi-group-body">${items.map(t => taskRow(t, false)).join('')}</div>
     </div>`;
   }).join('');
+
+  // ---- Groupement par opération (dossier par dossier) ----
+  const opGroups = [];
+  myOps.forEach(op => {
+    const items = tasks.filter(t => t.op._uid === op._uid);
+    if (items.length) opGroups.push({ op, items, minLevel: Math.min(...items.map(t => t.level)), nOverdue: items.filter(t => t.overdue).length });
+  });
+  opGroups.sort((a, b) => b.nOverdue - a.nOverdue || a.minLevel - b.minLevel || String(a.op.code || '').localeCompare(String(b.op.code || '')));
+  const operationHtml = opGroups.map(g => {
+    const ph = g.op.phase_actuelle || 'Montage';
+    const conf = PHASE_COLORS[ph] || {};
+    return `<div class="suivi-opgroup${g.nOverdue ? ' has-overdue' : ''}">
+      <div class="suivi-opgroup-head" data-suivi-open="${escapeHtml(g.op._uid)}">
+        <span class="suivi-opgroup-code">${escapeHtml(g.op.code || '')}</span>
+        <span class="suivi-opgroup-name">${escapeHtml(g.op.display_name || '')}</span>
+        <span class="phase-badge" style="background:${conf.bg || 'var(--bg-secondary)'};color:${conf.text || 'var(--text-secondary)'};">${escapeHtml(ph)}</span>
+        ${g.nOverdue ? `<span class="suivi-opgroup-late">${g.nOverdue} en retard</span>` : ''}
+        <span class="suivi-opgroup-count">${g.items.length} tâche${g.items.length > 1 ? 's' : ''}</span>
+        <span class="suivi-opgroup-open">Ouvrir →</span>
+      </div>
+      <div class="suivi-opgroup-body">${g.items.map(t => taskRow(t, true)).join('')}</div>
+    </div>`;
+  }).join('');
+
+  const tasksHtml = tasks.length === 0
+    ? '<div class="suivi-empty-state"><i class="ti ti-circle-check"></i>Aucune tâche pour ce filtre - tout est à jour.</div>'
+    : (suiviGroupMode === 'operation' ? operationHtml : `<div class="suivi-tasks">${urgencyHtml}</div>`);
+
+  // ---- Colonne droite : agenda des échéances datées + portefeuille ----
+  const dated = allTasks.filter(t => t.deadline).sort((a, b) => a.deadline - b.deadline).slice(0, 15);
+  const agendaHtml = dated.length
+    ? dated.map(t => `<div class="suivi-ag${t.overdue ? ' overdue' : ''}" data-suivi-open="${escapeHtml(t.op._uid)}">
+        <span class="suivi-ag-date">${escapeHtml(fmtD(t.deadline))}</span>
+        <span class="suivi-ag-days">${t.overdue ? 'J+' + (-t.days) : 'J-' + t.days}</span>
+        <span class="suivi-ag-body"><span class="suivi-ag-action">${escapeHtml(t.action)}</span>
+        <span class="suivi-ag-op">${escapeHtml(t.op.code || '')}</span></span>
+      </div>`).join('')
+    : '<div class="suivi-empty-mini">Aucune échéance datée.</div>';
+
+  const portfolioHtml = myOps
+    .map(op => {
+      const n = allTasks.filter(t => t.op._uid === op._uid).length;
+      const nLate = allTasks.filter(t => t.op._uid === op._uid && t.overdue).length;
+      return { op, n, nLate };
+    })
+    .sort((a, b) => b.nLate - a.nLate || b.n - a.n)
+    .map(({ op, n, nLate }) => {
+      const ph = op.phase_actuelle || 'Montage';
+      const conf = PHASE_COLORS[ph] || {};
+      return `<div class="suivi-pf" data-suivi-open="${escapeHtml(op._uid)}">
+        <span class="suivi-pf-dot" style="background:${conf.dot || conf.text || 'var(--text-tertiary)'}"></span>
+        <span class="suivi-pf-name">${escapeHtml(op.display_name || op.code || '')}</span>
+        ${nLate ? `<span class="suivi-pf-late">${nLate}</span>` : ''}
+        <span class="suivi-pf-count">${n || '·'}</span>
+      </div>`;
+    }).join('');
 
   content.innerHTML = `
     ${personSelector}
     ${kpiHtml}
     ${chips}
-    ${tasks.length === 0
-      ? '<div class="suivi-empty-state"><i class="ti ti-circle-check"></i>Aucune tâche en cours - tout est à jour pour cette personne.</div>'
-      : `<div class="suivi-tasks">${groupsHtml}</div>`}
-  `;
+    <div class="suivi-layout">
+      <div class="suivi-main">${tasksHtml}</div>
+      <aside class="suivi-side">
+        <div class="suivi-panel">
+          <div class="suivi-panel-title"><i class="ti ti-calendar-due"></i>Prochaines échéances</div>
+          ${agendaHtml}
+        </div>
+        <div class="suivi-panel">
+          <div class="suivi-panel-title"><i class="ti ti-building-community"></i>Mes opérations <span class="suivi-panel-hint">retards · tâches</span></div>
+          ${portfolioHtml || '<div class="suivi-empty-mini">Aucune opération attitrée.</div>'}
+        </div>
+      </aside>
+    </div>`;
 
   const select = document.getElementById('suiviPersonSelect');
-  if (select) select.addEventListener('change', (e) => { suiviSelectedPerson = e.target.value; suiviCatFilter = ''; renderSuivi(); replaceTablerIcons(); });
+  if (select) select.addEventListener('change', (e) => { suiviSelectedPerson = e.target.value; suiviCatFilter = ''; suiviQuickFilter = ''; renderSuivi(); replaceTablerIcons(); });
+  view.querySelectorAll('[data-suivi-mode]').forEach(b => b.addEventListener('click', () => { suiviGroupMode = b.dataset.suiviMode; renderSuivi(); replaceTablerIcons(); }));
+  view.querySelectorAll('[data-suivi-quick]').forEach(b => b.addEventListener('click', () => {
+    suiviQuickFilter = (suiviQuickFilter === b.dataset.suiviQuick) ? '' : b.dataset.suiviQuick;
+    renderSuivi(); replaceTablerIcons();
+  }));
   view.querySelectorAll('.suivi-cat-chip').forEach(b => b.addEventListener('click', () => { suiviCatFilter = b.dataset.cat; renderSuivi(); replaceTablerIcons(); }));
   view.querySelectorAll('[data-suivi-open]').forEach(el => el.addEventListener('click', () => {
     const uid = el.dataset.suiviOpen;
