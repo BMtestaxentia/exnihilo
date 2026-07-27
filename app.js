@@ -3450,29 +3450,6 @@ function sumSurfaceKey(op, key) { return op.tranches.reduce((s, t) => s + ((t.su
 
 // ===== Espace Opérations : onglets du dossier =====
 let OPS_TAB = sessionStorage.getItem('exnihilo_ops_tab') || 'syn';
-const OPS_TABS_DEF = [
-  ['syn',   'Synthèse',        'layout-dashboard'],
-  ['dos',   'Informations',    'folder'],
-  ['bilan', 'Bilan',           'report-money'],
-  ['tr',    'Tranches',        'building-skyscraper'],
-  ['fin',   'Financements',    'coin'],
-  ['suivi', 'Comités & suivi', 'activity'],
-];
-function opsTabsHtml(op) {
-  const nAlerts = (typeof computeAlerts === 'function')
-    ? computeAlerts(op).filter(al => al.level === 'expired' || al.level === 'critical').length : 0;
-  const nFin = ['prets', 'garanties', 'subventions', 'prefinancements', 'avenants', 'reservataires']
-    .reduce((s, k) => s + ((op[k] || []).length), 0);
-  const counts = {
-    syn: nAlerts ? `<span class="ops-tab-n ops-tab-alert">${nAlerts}</span>` : '',
-    tr: `<span class="ops-tab-n">${(op.tranches || []).length}</span>`,
-    fin: nFin ? `<span class="ops-tab-n">${nFin}</span>` : '',
-    suivi: (op.comites || []).length ? `<span class="ops-tab-n">${(op.comites || []).length}</span>` : '',
-  };
-  return `<nav class="ops-tabs">` + OPS_TABS_DEF.map(([id, label, icon]) =>
-    `<button type="button" class="ops-tab${OPS_TAB === id ? ' active' : ''}" data-tabid="${id}" onclick="switchOpsTab('${id}')"><i class="ti ti-${icon}"></i>${label}${counts[id] || ''}</button>`
-  ).join('') + `</nav>`;
-}
 function applyOpsTab() {
   const sh = document.getElementById('opsShell');
   if (sh) sh.dataset.tab = OPS_TAB;
@@ -3481,7 +3458,6 @@ function switchOpsTab(t) {
   OPS_TAB = t;
   try { sessionStorage.setItem('exnihilo_ops_tab', t); } catch (e) {}
   applyOpsTab();
-  document.querySelectorAll('.ops-tab').forEach(b => b.classList.toggle('active', b.dataset.tabid === t));
   if (typeof _syncOpsNav === 'function') _syncOpsNav();
   // Les mini-cartes Leaflet doivent se recalibrer si créées dans une vue masquée
   if ((t === 'syn' || t === 'home' || t === 'dos') && typeof opLocationMapInstances !== 'undefined') {
@@ -3492,36 +3468,6 @@ function switchOpsTab(t) {
 // ===== Refonte vue opération (consultation) : bandeau tranches permanent +
 // tableau de bord + tiroir de détail (drill-in). L'édition garde l'ancien
 // layout inline par onglet (flux de saisie éprouvé). =====
-
-// Bandeau permanent « Vue opération + pastille par tranche », rendu dans
-// l'en-tête (zone haute non défilante) → toujours visible, au-dessus du tiroir.
-function opsTrancheBandeauHtml(op, displayedOp, editing) {
-  const trs = (displayedOp.tranches || []);
-  const pills = trs.map((t, i) => {
-    const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : (t.id || ('T' + (i + 1)));
-    const agr = t.statut_agrement || '';
-    const dot = /sign|obtenu|acquis|dfa/i.test(agr) ? 'good' : (agr ? 'warn' : 'neutral');
-    const tip = `${t.type_structure || 'Tranche ' + suffix} - Agrément : ${agr || 'non renseigné'}`;
-    const click = editing
-      ? `selectTranche(${i}); if (OPS_TAB !== 'tr' && OPS_TAB !== 'fin') switchOpsTab('tr'); _setBandeauActive('${i}')`
-      : `selectTranche(${i}); switchOpsTab(OPS_TAB === 'fin' ? 'fin' : 'tr')`;
-    const active = editing && i === selectedTrancheIdx;
-    return `<button type="button" class="ops-tpill${active ? ' active' : ''}" data-tranche-pill="${i}"
-        title="${escapeHtml(tip)}" onclick="${click}">
-        <span class="ops-tpill-dot ${dot}" title="Agrément : ${escapeHtml(agr || 'non renseigné')}"></span>
-        <span class="ops-tpill-top">${escapeHtml(suffix)}</span>
-        <span class="ops-tpill-meta">${trancheLogements(t) || '-'} logts · ${fmtMontant(trancheBudgetTTC(t))}</span>
-      </button>`;
-  }).join('');
-  const opClick = editing ? `switchOpsTab('syn'); _setBandeauActive('op')` : `closeOpsDrawer()`;
-  return `<div class="ops-tbar">
-    <span class="ops-tbar-lead">Tranches</span>
-    <button type="button" class="ops-tpill op${editing ? '' : ' active'}" data-tranche-pill="op" onclick="${opClick}">
-      <span class="ops-tpill-top"><i class="ti ti-layout-dashboard"></i>Vue opération</span></button>
-    <span class="ops-tbar-div"></span>
-    ${pills || '<span class="ops-tbar-empty">Aucune tranche - passez en édition pour en créer</span>'}
-  </div>`;
-}
 
 // Bandeau KPI compact de l'en-tête (consultation) : lecture "10 secondes" de l'op.
 function opsKpiStripHtml(op, displayedOp) {
@@ -3720,12 +3666,17 @@ function _syncOpsNav() {
 }
 
 // Bandeau unique (consultation) : nav de vues + pastilles de tranches + sous-vues.
-function opsUnifiedBarHtml(op, displayedOp) {
-  // Synthèse retirée : la Vue d'ensemble couvre tout (alertes complètes,
-  // volumétrie consolidée dans la brique Bilan, localisation dans le Dossier).
-  const opNav = [['home', 'Vue d\'ensemble'], ['dos', 'Informations'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
+function opsUnifiedBarHtml(op, displayedOp, editing) {
+  // Un seul bandeau, même gabarit en consultation et en édition ; seuls les
+  // onglets changent (Vue d'ensemble/finop en lecture, Synthèse/fin par tranche en édition).
+  const nAlerts = (editing && typeof computeAlerts === 'function')
+    ? computeAlerts(op).filter(al => al.level === 'expired' || al.level === 'critical').length : 0;
+  const opNav = editing
+    ? [['syn', `Synthèse${nAlerts ? ` <span class="ops-tab-n ops-tab-alert">${nAlerts}</span>` : ''}`], ['dos', 'Informations'], ['bilan', 'Bilan'], ['suivi', 'Comités & suivi']]
+    : [['home', 'Vue d\'ensemble'], ['dos', 'Informations'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
+  const navClick = (tab) => editing ? `switchOpsTab('${tab}'); _setBandeauActive('op')` : `openOpsDomain('${tab}')`;
   const vBtn = ([tab, label]) =>
-    `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="openOpsDomain('${tab}')">${escapeHtml(label)}</button>`;
+    `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="${navClick(tab)}">${label}</button>`;
   const trs = displayedOp.tranches || [];
   const isTr = (OPS_TAB === 'tr' || OPS_TAB === 'fin');
   const pills = trs.map((t, i) => {
@@ -3740,14 +3691,17 @@ function opsUnifiedBarHtml(op, displayedOp) {
         <span class="ops-tpill-meta">${trancheLogements(t) || '-'} logts · ${fmtMontant(trancheBudgetTTC(t))}</span>
       </button>`;
   }).join('');
-  const trNav = `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" onclick="openOpsDomain('tranche')">Détail</button>
-    <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" onclick="openOpsDomain('tranche-fin')">Financements</button>`;
+  const addPill = editing
+    ? `<button type="button" class="ops-tpill ops-tpill-add" title="Ajouter une nouvelle tranche" onclick="createTranche()"><span class="ops-tpill-top"><i class="ti ti-plus"></i></span></button>`
+    : '';
+  const trNav = `<button type="button" class="ops-dn${OPS_TAB === 'tr' ? ' active' : ''}" data-view="tr" onclick="switchOpsTab('tr')">Détail</button>
+    <button type="button" class="ops-dn${OPS_TAB === 'fin' ? ' active' : ''}" data-view="fin" onclick="switchOpsTab('fin')">Financements</button>`;
   // Zone tranches visuellement distincte des vues opération (encart dédié)
   return `<div class="ops-tbar ops-unibar">
     ${opNav.map(vBtn).join('')}
-    ${trs.length ? `<div class="ops-tzone${(OPS_TAB === 'tr' || OPS_TAB === 'fin') ? ' active' : ''}">
-      <span class="ops-tbar-lead">Tranches</span>${pills}
-      <span class="ops-tzone-sub">${trNav}</span>
+    ${(trs.length || editing) ? `<div class="ops-tzone${isTr ? ' active' : ''}">
+      <span class="ops-tbar-lead">Tranches</span>${pills}${addPill}
+      ${trs.length ? `<span class="ops-tzone-sub">${trNav}</span>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -4176,12 +4130,9 @@ function renderOpDetail() {
   `;
   const _hmk = '</div><!-- /op-sticky-top -->';
   const _hcut = html.indexOf(_hmk) + _hmk.length;
-  // Consultation : bandeau unique (nav + tranches + sous-vues) ; édition :
-  // onglets + bandeau tranches (contexte tranche conservé pendant la saisie).
+  // Bandeau unique (nav + tranches + sous-vues), même gabarit dans les deux modes.
   document.getElementById('opsHeader').innerHTML = html.slice(0, _hcut)
-    + (effectiveEditMode
-        ? opsTabsHtml(op) + opsTrancheBandeauHtml(op, displayedOp, true)
-        : opsUnifiedBarHtml(op, displayedOp));
+    + opsUnifiedBarHtml(op, displayedOp, effectiveEditMode);
   document.getElementById('opDetail').innerHTML = html.slice(_hcut);
   applyOpsTab();
   // Restore edit mode flag if temporarily cleared

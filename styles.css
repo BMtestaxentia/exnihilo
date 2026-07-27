@@ -5216,16 +5216,7 @@
   .op-detail { grid-row: 2; grid-column: 2; }
   .tranche-detail { grid-row: 2; grid-column: 3; }
 
-  /* Barre d'onglets */
-  .ops-tabs { display: flex; gap: 2px; padding: 2px 24px 0; overflow-x: auto; scrollbar-width: thin; }
-  .ops-tab { appearance: none; border: none; background: transparent; font-family: inherit;
-    display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px 10px;
-    font-size: 12.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer;
-    border-bottom: 2px solid transparent; white-space: nowrap; border-radius: 6px 6px 0 0;
-    transition: color .12s ease, border-color .12s ease, background .12s ease; }
-  .ops-tab i { font-size: 15px; opacity: .85; }
-  .ops-tab:hover { color: var(--text-primary); background: var(--bg-primary); }
-  .ops-tab.active { color: var(--info-accent); border-bottom-color: var(--info-accent); }
+  /* Pastille compteur (réutilisée dans le bandeau unifié) */
   .ops-tab-n { font-size: 10px; font-weight: 700; line-height: 1;
     background: var(--bg-primary); border: 1px solid var(--border-color);
     border-radius: 999px; padding: 2px 6px; color: var(--text-tertiary); }
@@ -5257,7 +5248,6 @@
 
   /* Impression : la fiche complète, sans les onglets */
   body.printing-op-detail .ops-header { display: block !important; }
-  body.printing-op-detail .ops-tabs { display: none !important; }
   body.printing-op-detail .op-detail { display: block !important; }
   body.printing-op-detail .op-detail > [data-grp] { display: block !important; max-width: none; }
 
@@ -5280,8 +5270,6 @@
   .ops-header .detail-title { font-size: 19px; margin: 1px 0 4px; line-height: 1.2; }
   .ops-header .detail-badges { margin: 0; }
   .ops-header .edit-toolbar, .ops-header .compare-row, .ops-header .snapshot-banner { margin: 8px 0 0; }
-  .ops-tabs { padding: 7px 28px 0; }
-  .ops-tab { padding: 8px 13px 9px; font-size: 12px; }
 
   /* --- Conteneurs : centrage fluide jusqu'à 1560px --- */
   .op-detail, .tranche-detail { padding: 16px max(28px, calc((100% - 1560px) / 2)) 26px; }
@@ -5354,8 +5342,6 @@
 .ops-tbar { display: flex; align-items: center; gap: 9px; padding: 9px 24px; border-top: 1px solid var(--border-color);
   background: var(--bg-secondary); overflow-x: auto; scrollbar-width: thin; }
 .ops-tbar-lead { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-tertiary); flex: none; }
-.ops-tbar-div { width: 1px; align-self: stretch; background: var(--border-color); flex: none; margin: 2px 1px; }
-.ops-tbar-empty { font-size: 12px; color: var(--text-tertiary); font-style: italic; }
 .ops-tpill { appearance: none; font-family: inherit; cursor: pointer; text-align: left; flex: none; position: relative;
   border: 1px solid var(--border-color); background: var(--bg-primary); border-radius: 10px; padding: 7px 13px; color: var(--text-primary);
   display: flex; flex-direction: column; gap: 1px; min-width: 122px; transition: border-color .12s, background .12s, box-shadow .12s; }
@@ -5726,3 +5712,7 @@
 .acc2-main .suivi-task { cursor: pointer; }
 .accueil-kpi-warning { border-color: var(--warning-accent); }
 .accueil-kpi-warning .accueil-kpi-num, .accueil-kpi-warning .accueil-kpi-icon { color: var(--warning-text); }
+
+/* v76 : bandeau unifie aussi en mode edition */
+.ops-tpill-add { padding: 2px 8px; border-style: dashed; color: var(--text-tertiary); }
+.ops-tpill-add:hover { color: var(--info-accent); border-color: var(--info-accent); }
