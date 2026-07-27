@@ -5796,3 +5796,27 @@
 
 /* ===== v83 : export SFO one-click dans la vue Financements op ===== */
 .finop-toolbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+
+/* ===== v84 : ligne de temps operation + benchmark KPI ===== */
+.oph-c12 { grid-column: 1 / -1; }
+.optl { display: flex; flex-direction: column; gap: 7px; }
+.optl-row { display: flex; align-items: center; gap: 10px; }
+.optl-lab { flex: 0 0 210px; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+.optl-track { flex: 1; position: relative; height: 14px; background: var(--bg-secondary); border-radius: 99px; overflow: visible; }
+.optl-bar { position: absolute; top: 2px; bottom: 2px; border-radius: 99px; }
+.optl-bar.ok { background: var(--success-bg); border: 1px solid var(--success-accent); }
+.optl-bar.warn { background: var(--warning-bg); border: 1px solid var(--warning-accent); }
+.optl-bar.crit { background: var(--coral-bg); border: 1px solid var(--coral-accent); }
+.optl-bar.expired { background: var(--danger-bg); border: 1px solid var(--danger-accent); }
+.optl-cd { flex: 0 0 92px; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.optl-cd.ok { color: var(--success-text); } .optl-cd.warn { color: var(--warning-text); }
+.optl-cd.crit { color: var(--coral-text); } .optl-cd.expired { color: var(--danger-text); }
+.optl-now { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--info-accent); border-radius: 2px; }
+.optl-now i { position: absolute; top: -14px; left: -12px; font-style: normal; font-size: 9px; font-weight: 700; color: var(--info-accent); }
+.optl-axisrow { margin-top: 4px; }
+.optl-axis { height: 18px; background: none; border-top: 2px solid var(--border-color-strong); border-radius: 0; }
+.optl-dot { position: absolute; top: -5px; width: 9px; height: 9px; border-radius: 50%; background: var(--info-accent); border: 2px solid var(--bg-primary); transform: translateX(-50%); cursor: help; }
+.optl-dot.past { background: var(--neutral-accent); }
+.ops-kpi-bench { display: block; font-size: 10px; font-weight: 600; color: var(--text-tertiary); margin-top: 1px; white-space: nowrap; }
+.ops-kpi-bench.over { color: var(--coral-text); }
+.ops-kpi-bench.under { color: var(--success-text); }

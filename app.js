@@ -2576,6 +2576,98 @@ function generateBilanPdf(op, tranchesSelected, mode) {
   }
 }
 
+// ============== DOSSIER DE REVUE D'OPÉRATION ==============
+// Génère en un clic le support de revue : KPI, plan de financement par tranche,
+// écarts vs dernier snapshot de phase, alertes et prochaines actions. À la
+// génération, la date de revue est mise à jour (ce qui éteint la tâche Pilotage).
+function generateRevueOpPdf() {
+  const op = findOp(selectedOpCode);
+  if (!op) return;
+  if (typeof pdfMake === 'undefined' || !pdfMake.createPdf) {
+    showToast('Générateur PDF non disponible (vérifie ta connexion).', 'alert-triangle');
+    return;
+  }
+  try {
+    const todayStr = fmtDateStr(new Date());
+    const eur = v => (v || v === 0) ? Math.round(v).toLocaleString('fr-FR') + ' €' : '-';
+    const budget = totalBudget(op), lgts = totalLgts(op);
+    const fp = (op.tranches || []).reduce((s, t) => s + (Number(t.fonds_propres) || 0), 0);
+    const tP = opTotalPrets(op), tS = opTotalSubv(op);
+    const couvert = budget > 0 ? Math.round((tP + tS + fp) / budget * 100) : 0;
+
+    // Écarts vs dernier snapshot de phase
+    let ecartRows = [];
+    const hist = op.phases_history || [];
+    const last = hist.length ? hist[hist.length - 1] : null;
+    if (last && last.snapshot) {
+      const snapOpLike = { ...last.snapshot, phases_history: [] };
+      const sb = totalBudget(snapOpLike), sp = opTotalPrets(snapOpLike), ss = opTotalSubv(snapOpLike);
+      const line = (lbl, now, was) => [lbl, eur(was), eur(now), (now - was) ? ((now - was > 0 ? '+' : '') + eur(now - was)) : '='];
+      ecartRows = [
+        line('Prix de revient', budget, sb),
+        line('Prêts', tP, sp),
+        line('Subventions', tS, ss),
+      ];
+    }
+
+    // Plan de financement par tranche
+    const trRows = (op.tranches || []).map(t => {
+      const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id;
+      const prets = (op.prets || []).filter(p => p.tranche === suffix).reduce((s, p) => s + bestPretAmount(p), 0);
+      const subv = (op.subventions || []).filter(x => x.tranche === suffix).reduce((s, x) => s + bestSubvAmount(x), 0);
+      const tfp = Number(t.fonds_propres) || 0;
+      const pr = bilanTotal(t);
+      return [suffix, eur(prets), eur(subv), eur(tfp), eur(prets + subv + tfp), eur(pr)];
+    });
+
+    const alerts = (typeof computeAlerts === 'function') ? computeAlerts(op) : [];
+    const tasks = (typeof computeTasks === 'function')
+      ? computeTasks(op).sort((a, b) => (a.level - b.level) || ((a.days == null ? 9999 : a.days) - (b.days == null ? 9999 : b.days))).slice(0, 8)
+      : [];
+
+    const docDef = {
+      pageMargins: [40, 46, 40, 40],
+      content: [
+        { text: `Revue d'opération · ${op.code || ''} ${op.display_name || ''}`, fontSize: 15, bold: true },
+        { text: `${todayStr} · Phase ${op.phase_actuelle || '-'} · ${op.commune || ''}${op.charge_fin ? ' · Chargé de financement : ' + op.charge_fin : ''}`, fontSize: 9, color: '#666', margin: [0, 2, 0, 12] },
+        { table: { widths: ['*', '*', '*', '*'], body: [[
+            { text: `Prix de revient\n${eur(budget)}`, alignment: 'center' },
+            { text: `Logements\n${lgts || '-'}`, alignment: 'center' },
+            { text: `Financement\n${couvert} %`, alignment: 'center' },
+            { text: `Livraison\n${op.date_livraison || '-'}`, alignment: 'center' },
+          ]] }, layout: 'lightHorizontalLines', fontSize: 10, margin: [0, 0, 0, 14] },
+        { text: 'Plan de financement par tranche', bold: true, fontSize: 11, margin: [0, 4, 0, 5] },
+        { table: { headerRows: 1, widths: ['auto', '*', '*', '*', '*', '*'],
+            body: [['Tranche', 'Prêts', 'Subventions', 'Fonds propres', 'Total financé', 'Prix de revient'], ...trRows] },
+          layout: 'lightHorizontalLines', fontSize: 9, margin: [0, 0, 0, 14] },
+        ...(ecartRows.length ? [
+          { text: `Écarts depuis la phase « ${last.name} » figée le ${last.date_fige || '-'}`, bold: true, fontSize: 11, margin: [0, 4, 0, 5] },
+          { table: { headerRows: 1, widths: ['*', '*', '*', '*'], body: [['', 'Au figeage', 'Aujourd\'hui', 'Écart'], ...ecartRows] },
+            layout: 'lightHorizontalLines', fontSize: 9, margin: [0, 0, 0, 14] },
+        ] : []),
+        { text: `Alertes & échéances (${alerts.length})`, bold: true, fontSize: 11, margin: [0, 4, 0, 5] },
+        alerts.length
+          ? { ul: alerts.map(a => `${a.days != null ? (a.days < 0 ? `[dépassée ${-a.days}j] ` : `[J-${a.days}] `) : ''}${a.msg}`), fontSize: 9, margin: [0, 0, 0, 14] }
+          : { text: 'Aucune alerte.', fontSize: 9, italics: true, margin: [0, 0, 0, 14] },
+        { text: 'Prochaines actions', bold: true, fontSize: 11, margin: [0, 4, 0, 5] },
+        tasks.length
+          ? { ul: tasks.map(t => `${t.action}${t.detail ? ' - ' + t.detail : ''}${t.days != null ? ` (${t.days < 0 ? 'retard ' + (-t.days) + 'j' : 'J-' + t.days})` : ''}`), fontSize: 9 }
+          : { text: 'Aucune action en attente.', fontSize: 9, italics: true },
+      ],
+    };
+    const safe = (op.code || op.display_name || 'operation').replace(/[^a-z0-9_-]+/gi, '_');
+    pdfMake.createPdf(docDef).download(`Revue_${safe}_${todayStr.replace(/\//g, '-')}.pdf`);
+    // La revue est faite : on la date (éteint la tâche Pilotage « planifier une revue »)
+    op.date_revue_op = todayStr;
+    if (op._uid && op._uid.startsWith('op-supabase-')) saveOpToSupabase(op);
+    renderAll();
+    showToast(`Dossier de revue généré · revue datée du ${todayStr}`, 'check');
+  } catch (e) {
+    console.error('Revue PDF:', e);
+    showToast('Erreur lors de la génération du dossier de revue.', 'alert-triangle');
+  }
+}
+
 // ============== END BILAN PR/PF ==============
 
 function deleteTranche() {
@@ -3545,12 +3637,28 @@ function opsKpiStripHtml(op, displayedOp) {
   const alerts = (typeof computeAlerts === 'function') ? computeAlerts(displayedOp) : [];
   const nCrit = alerts.filter(a => a.level === 'expired' || a.level === 'critical').length;
   const kpi = (l, v) => `<div class="ops-kpi"><span class="l">${l}</span><span class="v">${v}</span></div>`;
+  // Benchmark portefeuille : prix / logement situé par rapport à la médiane des
+  // opérations comparables (même zone ABC). La question posée en CA, sans Excel.
+  const prixLogt = (lgts > 0 && budget > 0) ? Math.round(budget / lgts) : null;
+  let benchHtml = '';
+  if (prixLogt && op.zone_abc) {
+    const panel = DATA.filter(o => !o.deleted && o._uid !== op._uid && o.zone_abc === op.zone_abc)
+      .map(o => { const l = totalLgts(o), b = totalBudget(o); return (l > 0 && b > 0) ? Math.round(b / l) : null; })
+      .filter(Boolean).sort((a, b) => a - b);
+    if (panel.length >= 3) {
+      const med = panel[Math.floor(panel.length / 2)];
+      const diff = Math.round((prixLogt - med) / med * 100);
+      benchHtml = `<span class="ops-kpi-bench${diff > 10 ? ' over' : (diff < -10 ? ' under' : '')}"
+        title="Médiane des ${panel.length} opérations en zone ${escapeHtml(op.zone_abc)} : ${fmtMontant(med)} / logement">méd. zone ${escapeHtml(op.zone_abc)} ${fmtMontant(med)} · ${diff >= 0 ? '+' : ''}${diff}%</span>`;
+    }
+  }
   // Volontairement sans « Tranches » (pastilles du bandeau juste dessous) ni
   // « Fonds propres » (détaillés dans la brique Financements) : chaque KPI du
   // strip est unique à l'écran, en niveau de lecture n°1.
   return `<div class="ops-kpis">
     ${kpi('Prix de revient', fmtMontant(budget))}
     ${kpi('Logements', lgts || '-')}
+    ${prixLogt ? `<div class="ops-kpi"><span class="l">Prix / logement</span><span class="v">${fmtMontant(prixLogt)}</span>${benchHtml}</div>` : ''}
     ${kpi('Financement', couvert + ' %')}
     ${kpi('Livraison', escapeHtml(op.date_livraison || '-'))}
     ${nCrit ? `<button type="button" class="ops-kpi-alert" onclick="gotoOpAlerts()" title="Voir la brique À faire &amp; échéances"><i class="ti ti-alert-triangle"></i>${nCrit} à traiter</button>` : ''}
@@ -3735,11 +3843,89 @@ function renderOpHomeDashboard(op, displayedOp) {
         <span class="oph-title">À faire &amp; échéances</span><span style="margin-left:auto">${alertBadge}</span></div>
       <div class="oph-body">${todoBody}</div>
     </section>
+    ${opTimelineBrickHtml(displayedOp)}
     ${card('oph-c6', 'report-money', 'Bilan d\'opération', `<span class="oph-pill neutral">${fmtMontant(totalBudget(displayedOp))}</span>`, 'bilan', bilanBody)}
-    ${card('oph-c6', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span>`, 'suivi', comLines)}
+    ${card('oph-c6', 'activity', 'Comités &amp; suivi', `<span class="oph-pill neutral">${coms.length} comité${coms.length > 1 ? 's' : ''}</span><button type="button" class="subent-cta" onclick="event.stopPropagation();generateRevueOpPdf()" title="Générer le dossier de revue (PDF : KPI, plan de financement, écarts, alertes, actions) et dater la revue d'opération">Dossier de revue</button>`, 'suivi', comLines)}
     ${card('oph-c6', 'folder', 'Informations', '', 'dos', dossierBody)}
     ${locBrick}
   </div>`;
+}
+
+// Frise de vie de l'opération : fenêtres réglementaires en cours (compte à
+// rebours) au-dessus d'un axe des jalons passés/futurs. Le raisonnement mental
+// quotidien du chargé de financement, enfin dessiné.
+function opTimelineBrickHtml(op) {
+  const esc = escapeHtml;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const addM = (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + n); return r; };
+  // parse JJ/MM/AAAA ou ISO (prefinancements.date_* sont des DATE)
+  const pAny = s => { if (!s) return null; const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : parseDateStr(s); };
+
+  const events = [];
+  const ev = (d, label) => { const dt = pAny(d); if (dt) events.push({ d: dt, label }); };
+  (op.phases_history || []).forEach(h => ev(h.date_fige, `Phase ${h.name} figée`));
+  (op.comites || []).forEach(c => ev(c.date, c.type || 'Comité'));
+  ev(op.date_acte, 'Acte authentique'); ev(op.date_obt_pc || op.date_obtention_pc, 'PC obtenu');
+  ev(op.date_os, 'OS'); ev(op.date_livraison, 'Livraison');
+
+  const wins = [];
+  const win = (from, to, label) => {
+    if (!from || !to || to < new Date(today.getTime() - 45 * 86400000)) return;
+    const days = Math.round((to - today) / 86400000);
+    wins.push({ from, to, label, days, level: days < 0 ? 'expired' : (days <= 31 ? 'crit' : (days <= 90 ? 'warn' : 'ok')) });
+  };
+  (op.prets || []).forEach(p => {
+    if (p.date_lo && !p.date_contrat) {
+      const f = pAny(p.date_lo);
+      const t2 = pAny(p.date_caducite_lo) || (f ? addM(f, 4) : null);
+      win(f, t2, `Validité LO ${p.ligne || p.financeur || ''}`.trim());
+    }
+  });
+  const phIdx = PHASES.indexOf(op.phase_actuelle || PHASES[0]);
+  if (phIdx < PHASES.indexOf('Clôture')) {
+    const pc = pAny(op.date_obt_pc || op.date_obtention_pc);
+    if (pc) win(pc, addM(pc, 24), 'Validité PC (24 mois)');
+    (op.tranches || []).forEach(t => {
+      const d = pAny(t.date_agrement || t.date_dfa);
+      if (d) win(d, addM(d, 18), `Agrément ${t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id} -> OS (18 mois)`);
+    });
+  }
+  (op.prefinancements || []).forEach(pf => {
+    const t2 = pAny(pf.date_fin);
+    if (t2) win(pAny(pf.date_debut) || today, t2, `Préfi ${pf.banque || ''}`.trim());
+  });
+  wins.sort((a, b) => a.to - b.to);
+  const shownWins = wins.slice(0, 5);
+  if (!shownWins.length && events.length < 2) return '';
+
+  const allT = [...events.map(e => e.d.getTime()), ...shownWins.flatMap(w => [w.from.getTime(), w.to.getTime()]), today.getTime()];
+  const minT = Math.min(...allT), maxT = Math.max(...allT, today.getTime() + 120 * 86400000);
+  const span = Math.max(1, maxT - minT);
+  const pct = d => Math.max(0, Math.min(100, (d.getTime() - minT) / span * 100)).toFixed(1);
+
+  const winRows = shownWins.map(w => {
+    const cd = w.days < 0 ? `dépassée ${-w.days}j` : `J-${w.days}`;
+    return `<div class="optl-row">
+      <span class="optl-lab" title="${esc(w.label)}">${esc(w.label)}</span>
+      <span class="optl-track"><span class="optl-bar ${w.level}" style="left:${pct(w.from)}%;width:${Math.max(1.5, pct(w.to) - pct(w.from)).toFixed(1)}%"></span>
+        <span class="optl-now" style="left:${pct(today)}%"></span></span>
+      <span class="optl-cd ${w.level}">${cd}</span>
+    </div>`;
+  }).join('');
+  const dots = events.sort((a, b) => a.d - b.d).map(e =>
+    `<span class="optl-dot${e.d < today ? ' past' : ''}" style="left:${pct(e.d)}%" title="${esc(e.label)} · ${esc(fmtDateStr(e.d))}"></span>`).join('');
+  const axisRow = events.length ? `<div class="optl-row optl-axisrow">
+      <span class="optl-lab">Jalons</span>
+      <span class="optl-track optl-axis">${dots}<span class="optl-now" style="left:${pct(today)}%"><i>auj.</i></span></span>
+      <span class="optl-cd"></span>
+    </div>` : '';
+
+  return `<section class="oph-card oph-c12">
+    <div class="oph-head"><span class="oph-ic"><i class="ti ti-timeline"></i></span>
+      <span class="oph-title">Ligne de temps</span>
+      <span class="oph-tsub" style="margin-left:auto">fenêtres en cours · survolez les points pour le détail</span></div>
+    <div class="oph-body optl">${winRows}${axisRow}</div>
+  </section>`;
 }
 
 // Amène l'utilisateur SUR la brique « À faire & échéances » (au lieu d'un simple
@@ -5442,9 +5628,41 @@ function previsionalLOFromComite(comiteDate) {
   return fmtDateStr(lo);
 }
 
+// Délais réellement observés sur le portefeuille pour un financeur donné :
+// médianes demande -> LO et LO -> contrat (en jours), calculées sur les prêts
+// de DATA. Sert à dater les prévisions et à objectiver les relances.
+function delaisObserves(financeur) {
+  const norm = s => String(s || '').trim().toLowerCase();
+  const f = norm(financeur);
+  if (!f) return null;
+  const dLO = [], loC = [];
+  DATA.forEach(o => { if (!o.deleted) (o.prets || []).forEach(p => {
+    if (norm(p.financeur) !== f) return;
+    const d1 = parseDateStr(p.date_demande), d2 = parseDateStr(p.date_lo), d3 = parseDateStr(p.date_contrat);
+    if (d1 && d2 && d2 > d1) dLO.push(Math.round((d2 - d1) / 86400000));
+    if (d2 && d3 && d3 > d2) loC.push(Math.round((d3 - d2) / 86400000));
+  }); });
+  const med = a => { if (a.length < 3) return null; a.sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; };
+  return { demandeLO: med(dLO), loContrat: med(loC), nLO: dLO.length, nC: loC.length };
+}
+
 function renderPretCard(i) {
   // Détail d'un prêt (déplié sous la ligne compacte) : stepper daté + chips.
   const previsionLO = (!i.date_lo && i.date_comite_banque) ? previsionalLOFromComite(i.date_comite_banque) : null;
+  // Prévision par délais observés (médiane du financeur) + chip de dépassement d'instruction
+  let previsionLOMed = null, instructionChip = '';
+  if (!i.date_lo && i.date_demande) {
+    const _obs = delaisObserves(i.financeur);
+    const dDem = parseDateStr(i.date_demande);
+    if (_obs && _obs.demandeLO != null && dDem) {
+      const exp = new Date(dDem); exp.setDate(exp.getDate() + _obs.demandeLO);
+      previsionLOMed = fmtDateStr(exp);
+      const elapsed = Math.round((Date.now() - dDem.getTime()) / 86400000);
+      if (elapsed > _obs.demandeLO) {
+        instructionChip = `<span class="pd-chipwarn" title="Médiane observée sur ${_obs.nLO} prêts ${escapeHtml(i.financeur || '')} : ${_obs.demandeLO}j entre demande et LO">instruction ${elapsed}j · +${elapsed - _obs.demandeLO}j vs médiane</span>`;
+      }
+    }
+  }
   const spLink = (url, label) => url
     ? `<a class="jalon-sp-link" href="${escapeHtml(url)}" target="_blank" rel="noopener" title="${escapeHtml(label)}" onclick="event.stopPropagation();"><i class="ti ti-file-text"></i></a>`
     : '';
@@ -5470,9 +5688,9 @@ function renderPretCard(i) {
   const mCA = i.montant_valide_ca, mSim = i.montant_sim;
   const steps = [
     { label: 'Simulation', date: '', sub: mCA ? fmtMontant(mCA) + ' validé CA' : (mSim ? fmtMontant(mSim) + ' sim.' : '') },
-    { label: 'Demande', date: i.date_demande || '' },
+    { label: 'Demande', date: i.date_demande || '', chip: instructionChip },
     { label: 'Comité banque', date: i.date_comite_banque || '' },
-    { label: 'Lettre d\'offre', date: i.date_lo || previsionLO || '', prev: !i.date_lo && !!previsionLO,
+    { label: 'Lettre d\'offre', date: i.date_lo || previsionLO || previsionLOMed || '', prev: !i.date_lo && !!(previsionLO || previsionLOMed),
       sub: i.montant_lo ? fmtMontant(i.montant_lo) : '', link: spLink(i.lien_sp_lo, 'Ouvrir la lettre d\'offre'), chip: caduChip },
     { label: 'Contrat', date: i.date_contrat || '', sub: [i.montant_contrat ? fmtMontant(i.montant_contrat) : '', i.n_contrat ? 'N° ' + i.n_contrat : ''].filter(Boolean).join(' · '),
       link: spLink(i.lien_sp_contrat, 'Ouvrir le contrat') },
