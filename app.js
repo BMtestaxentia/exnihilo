@@ -3666,28 +3666,14 @@ function opsKpiStripHtml(op, displayedOp) {
   const alerts = (typeof computeAlerts === 'function') ? computeAlerts(displayedOp) : [];
   const nCrit = alerts.filter(a => a.level === 'expired' || a.level === 'critical').length;
   const kpi = (l, v) => `<div class="ops-kpi"><span class="l">${l}</span><span class="v">${v}</span></div>`;
-  // Benchmark portefeuille : prix / logement situé par rapport à la médiane des
-  // opérations comparables (même zone ABC). La question posée en CA, sans Excel.
   const prixLogt = (lgts > 0 && budget > 0) ? Math.round(budget / lgts) : null;
-  let benchHtml = '';
-  if (prixLogt && op.zone_abc) {
-    const panel = DATA.filter(o => !o.deleted && o._uid !== op._uid && o.zone_abc === op.zone_abc)
-      .map(o => { const l = totalLgts(o), b = totalBudget(o); return (l > 0 && b > 0) ? Math.round(b / l) : null; })
-      .filter(Boolean).sort((a, b) => a - b);
-    if (panel.length >= 3) {
-      const med = panel[Math.floor(panel.length / 2)];
-      const diff = Math.round((prixLogt - med) / med * 100);
-      benchHtml = `<span class="ops-kpi-bench${diff > 10 ? ' over' : (diff < -10 ? ' under' : '')}"
-        title="Médiane des ${panel.length} opérations en zone ${escapeHtml(op.zone_abc)} : ${fmtMontant(med)} / logement">méd. zone ${escapeHtml(op.zone_abc)} ${fmtMontant(med)} · ${diff >= 0 ? '+' : ''}${diff}%</span>`;
-    }
-  }
   // Volontairement sans « Tranches » (pastilles du bandeau juste dessous) ni
   // « Fonds propres » (détaillés dans la brique Financements) : chaque KPI du
   // strip est unique à l'écran, en niveau de lecture n°1.
   return `<div class="ops-kpis">
     ${kpi('Prix de revient', fmtMontant(budget))}
     ${kpi('Logements', lgts || '-')}
-    ${prixLogt ? `<div class="ops-kpi"><span class="l">Prix / logement</span><span class="v">${fmtMontant(prixLogt)}</span>${benchHtml}</div>` : ''}
+    ${prixLogt ? `<div class="ops-kpi"><span class="l">Prix / logement</span><span class="v">${fmtMontant(prixLogt)}</span></div>` : ''}
     ${kpi('Financement', couvert + ' %')}
     ${kpi('Livraison', escapeHtml(op.date_livraison || '-'))}
     ${nCrit ? `<button type="button" class="ops-kpi-alert" onclick="gotoOpAlerts()" title="Voir la brique À faire &amp; échéances"><i class="ti ti-alert-triangle"></i>${nCrit} à traiter</button>` : ''}

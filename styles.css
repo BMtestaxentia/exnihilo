@@ -5842,9 +5842,6 @@
 .optl-axis { height: 18px; background: none; border-top: 2px solid var(--border-color-strong); border-radius: 0; }
 .optl-dot { position: absolute; top: -5px; width: 9px; height: 9px; border-radius: 50%; background: var(--info-accent); border: 2px solid var(--bg-primary); transform: translateX(-50%); cursor: help; }
 .optl-dot.past { background: var(--neutral-accent); }
-.ops-kpi-bench { display: block; font-size: 10px; font-weight: 600; color: var(--text-tertiary); margin-top: 1px; white-space: nowrap; }
-.ops-kpi-bench.over { color: var(--coral-text); }
-.ops-kpi-bench.under { color: var(--success-text); }
 
 /* ===== v86 : stepper de phases compact (consultation) + fusion Financements ===== */
 .psc-wrap { display: flex; align-items: center; }
