@@ -5753,10 +5753,16 @@
 .ops-tpill-add:hover { color: var(--info-accent); border-color: var(--info-accent); }
 
 /* ===== v77 : cockpit de saisie (edition, vue Detail de tranche) - codes visuels de la maquette validee ===== */
-.ops-shell[data-tab="tr"] .tranche-detail.edit-cockpit { grid-template-columns: 240px repeat(12, minmax(0, 1fr)); }
-.ops-shell[data-tab="tr"] .tranche-detail.edit-cockpit > *:not(.edit-rail) { grid-column: 2 / -1 !important; }
-.ops-shell[data-tab="tr"] .tranche-detail.edit-cockpit > .edit-rail { grid-column: 1; grid-row: 1 / span 99; align-self: start; position: sticky; top: 8px; }
-.ops-shell:not([data-tab="tr"]) .edit-rail { display: none; }
+.ops-shell[data-tab="tr"] .tranche-detail.edit-cockpit,
+.ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit,
+.ops-shell[data-tab="dos"] .op-detail.edit-cockpit { grid-template-columns: 240px repeat(12, minmax(0, 1fr)); }
+.ops-shell[data-tab="tr"] .tranche-detail.edit-cockpit > *:not(.edit-rail),
+.ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit > *:not(.edit-rail),
+.ops-shell[data-tab="dos"] .op-detail.edit-cockpit > *:not(.edit-rail) { grid-column: 2 / -1 !important; }
+.ops-shell[data-tab="tr"] .tranche-detail.edit-cockpit > .edit-rail,
+.ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit > .edit-rail,
+.ops-shell[data-tab="dos"] .op-detail.edit-cockpit > .edit-rail { grid-column: 1; grid-row: 1 / span 99; align-self: start; position: sticky; top: 8px; }
+.ops-shell:not([data-tab="tr"]):not([data-tab="fin"]):not([data-tab="dos"]) .edit-rail { display: none; }
 .cockpit-hidden { display: none !important; }
 .only-missing .is-filled { display: none !important; }
 .only-missing .all-filled { display: none !important; }
@@ -5872,3 +5878,10 @@
 .ops-tpill-total .ops-tpill-top { display: inline-flex; align-items: center; gap: 4px; color: var(--text-primary); }
 .ops-tpill-total .ops-tpill-top i { font-size: 12px; }
 .ops-tpill-total.active { background: var(--info-bg); border-color: var(--info-accent); }
+
+/* ===== v93 : creation rapide 3 champs (prets / subventions) ===== */
+.qadd { display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin-top: 6px;
+  border: 1px dashed var(--border-color-strong); border-radius: var(--radius-lg); background: var(--bg-secondary); }
+.qadd-ic { color: var(--info-accent); flex: none; }
+.qadd .card-input { flex: 1; min-width: 0; font-size: 12.5px; }
+.qadd .qadd-go { flex: none; }

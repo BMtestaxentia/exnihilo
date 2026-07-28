@@ -3646,6 +3646,8 @@ function switchOpsTab(t) {
   try { sessionStorage.setItem('exnihilo_ops_tab', t); } catch (e) {}
   applyOpsTab();
   if (typeof _syncOpsNav === 'function') _syncOpsNav();
+  // Le rail du cockpit suit l'onglet actif en édition (Informations / Détail / Financements)
+  if (editMode && typeof initEditCockpit === 'function') initEditCockpit();
   // Les mini-cartes Leaflet doivent se recalibrer si créées dans une vue masquée
   if ((t === 'syn' || t === 'home' || t === 'dos') && typeof opLocationMapInstances !== 'undefined') {
     setTimeout(() => { Object.values(opLocationMapInstances).forEach(m => { try { m.invalidateSize(); } catch (e) {} }); }, 80);
@@ -5626,6 +5628,57 @@ const NUMERIC_FIELDS = new Set([
   'nouveau_montant','nouvelle_duree','gar_quotite'
 ]);
 
+// ===== Création rapide « 3 champs » (prêts, subventions) =====
+// L'essentiel d'abord (ligne + banque + montant), le reste se complète dans la
+// ligne dépliée. Entrée dans un champ = Ajouter.
+let _qaddSeq = 0;
+function quickAddHtml(section) {
+  _qaddSeq++;
+  if (section === 'prets') {
+    return `<div class="qadd" data-qadd="prets">
+      <i class="ti ti-plus qadd-ic"></i>
+      <input class="card-input" data-qf="ligne" list="qadd-lignes-${_qaddSeq}" placeholder="Ligne / produit (PLAI, PLUS…)" title="Ligne / produit">
+      <input class="card-input" data-qf="financeur" list="qadd-banques-${_qaddSeq}" placeholder="Banque / financeur" title="Banque / financeur">
+      <input class="card-input" type="number" min="0" data-qf="montant" placeholder="Montant simulé (€)" title="Montant simulé">
+      <button type="button" class="btn-edit primary qadd-go" onclick="quickAddEntity('prets', this)">Ajouter</button>
+      <datalist id="qadd-lignes-${_qaddSeq}">${getRef('lignes_prets').map(o => `<option value="${escapeHtml(o)}">`).join('')}</datalist>
+      <datalist id="qadd-banques-${_qaddSeq}">${getRef('banques').map(o => `<option value="${escapeHtml(o)}">`).join('')}</datalist>
+    </div>`;
+  }
+  if (section === 'subventions') {
+    return `<div class="qadd" data-qadd="subventions">
+      <i class="ti ti-plus qadd-ic"></i>
+      <input class="card-input" data-qf="financeur" placeholder="Financeur (Département, État…)" title="Financeur">
+      <input class="card-input" data-qf="financement" placeholder="Type de financement" title="Type de financement">
+      <input class="card-input" type="number" min="0" data-qf="montant" placeholder="Montant demandé (€)" title="Montant demandé">
+      <button type="button" class="btn-edit primary qadd-go" onclick="quickAddEntity('subventions', this)">Ajouter</button>
+    </div>`;
+  }
+  return `<button class="add-row-btn" onclick="addEntityRow('${section}')"><i class="ti ti-plus"></i>Ajouter</button>`;
+}
+
+function quickAddEntity(section, btn) {
+  const wrap = btn.closest('.qadd');
+  const op = findOp(selectedOpCode);
+  if (!op || !wrap) return;
+  const v = {};
+  wrap.querySelectorAll('[data-qf]').forEach(el => { v[el.dataset.qf] = String(el.value || '').trim(); });
+  if (!Object.values(v).some(Boolean)) { showToast('Renseignez au moins un des trois champs', 'alert-circle'); return; }
+  collectEditsFromDom(op); // préserver la saisie en cours avant le re-render
+  if (!op[section]) op[section] = [];
+  const t = op.tranches[selectedTrancheIdx];
+  const trCode = t ? (t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id) : '';
+  const m = v.montant !== '' ? parseFloat(v.montant) : null;
+  if (section === 'prets') {
+    op.prets.push({ tranche: trCode, ligne: v.ligne, financeur: v.financeur, montant_sim: m });
+  } else if (section === 'subventions') {
+    op.subventions.push({ tranche: trCode, financeur: v.financeur, financement: v.financement, montant_demande: m });
+  }
+  renderTrancheDetail();
+  replaceTablerIcons();
+  showToast(section === 'prets' ? 'Prêt ajouté - dépliez la ligne pour compléter' : 'Subvention ajoutée - dépliez la ligne pour compléter', 'plus');
+}
+
 function addEntityRow(section) {
   const op = findOp(selectedOpCode);
   if (!op) return;
@@ -5656,7 +5709,7 @@ function renderSubvSection(items, op) {
   const body = items.length > 0
     ? finHeadHtml('subventions') + items.map(i => editMode ? renderSubvCardEdit(i, op) : renderSubvRow(i)).join('')
     : `<div class="subent-empty">Aucune subvention enregistrée.${!editMode ? ` <button type="button" class="subent-cta" onclick="editFromDrawer('fin')">+ Ajouter en édition</button>` : ''}</div>`;
-  const addBtn = editMode ? `<button class="add-row-btn" onclick="addEntityRow('subventions')"><i class="ti ti-plus"></i>Ajouter une subvention</button>` : '';
+  const addBtn = editMode ? quickAddHtml('subventions') : '';
   // Deleted entities (in snapshot but not current)
   const deleted = entitiesDeleted(op, 'subventions', items).filter(d => d.tranche === (op.tranches[selectedTrancheIdx]?.code_full?.split('-').slice(1).join('-') || op.tranches[selectedTrancheIdx]?.id));
   const deletedHtml = deleted.length > 0
@@ -5769,7 +5822,7 @@ function renderPretsSection(items, op) {
   const body = items.length > 0
     ? finHeadHtml('prets') + items.map(i => editMode ? renderPretCardEdit(i, op) : renderPretRow(i)).join('')
     : `<div class="subent-empty">Aucun prêt enregistré.${!editMode ? ` <button type="button" class="subent-cta" onclick="editFromDrawer('fin')">+ Ajouter en édition</button>` : ''}</div>`;
-  const addBtn = editMode ? `<button class="add-row-btn" onclick="addEntityRow('prets')"><i class="ti ti-plus"></i>Ajouter un prêt</button>` : '';
+  const addBtn = editMode ? quickAddHtml('prets') : '';
   return `
     <div class="section">
       <div class="subent-header">
@@ -13807,11 +13860,25 @@ const _ED_INPUT_SEL = 'input.editable-input:not([type="checkbox"]), select.edita
 // Champs de comptage entiers qui reçoivent des boutons -/+ (en plus de la saisie clavier)
 const _ED_STEP_SEL = '[data-edit-tranche-volagree], input[data-edit-tranche-field="logts_lli"], input[data-edit-tranche-field="logts_rhvs"], input[data-edit-tranche-field="logts_libre"], input[data-edit-tranche-field="locaux_libre"], input[data-edit-tranche-field="nb_chambres"]';
 
-function _edContainer() { return document.getElementById('trancheDetail'); }
+// Conteneur actif selon l'onglet : détail/financements de tranche ou Informations op
+function _edContainer() {
+  if (OPS_TAB === 'tr' || OPS_TAB === 'fin') return document.getElementById('trancheDetail');
+  if (OPS_TAB === 'dos') return document.getElementById('opDetail');
+  return null;
+}
+let _edSecSeq = 0;
 function _edEntries() {
   const c = _edContainer();
   if (!c) return [];
-  return [...c.querySelectorAll('[data-grp~="tr"][id^="sec-tr"]')].map(el => {
+  // Candidats : toute section/ancre VISIBLE contenant au moins un champ de saisie
+  const all = [...c.querySelectorAll('.section, .op-anchor')]
+    .filter(el => !el.closest('.edit-rail'))
+    .filter(el => el.querySelector(_ED_INPUT_SEL))
+    .filter(el => el.offsetParent !== null);
+  // Ne garder que le plus haut niveau (pas d'entrée imbriquée dans une autre)
+  const tops = all.filter(el => !all.some(o => o !== el && o.contains(el)));
+  return tops.map(el => {
+    if (!el.id) el.id = 'edsec-' + (++_edSecSeq);
     const lab = el.querySelector('.section-label, .subent-header .subent-title');
     let label = lab ? osnLabelText(lab).replace(/·.*$/, '').trim() : el.id;
     if (el.id === 'sec-tr-hcl') label = 'Hors agrément & convention';
@@ -13897,6 +13964,12 @@ function updateEditCockpitCounts() {
 }
 
 function initEditCockpit() {
+  // Nettoyage des rails et classes des deux conteneurs (un seul actif à la fois)
+  document.querySelectorAll('.edit-rail').forEach(r => r.remove());
+  ['trancheDetail', 'opDetail'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('edit-cockpit', 'only-missing'); el.querySelectorAll('.cockpit-hidden').forEach(x => x.classList.remove('cockpit-hidden')); }
+  });
   const c = _edContainer();
   if (!c || !editMode) return;
   const entries = _edEntries();
@@ -13917,7 +13990,8 @@ function initEditCockpit() {
   const rail = document.createElement('aside');
   rail.className = 'edit-rail';
   rail.id = 'editRail';
-  rail.innerHTML = '<div class="er-h">Saisie de la tranche</div>'
+  const railTitle = OPS_TAB === 'dos' ? "Saisie de l'opération" : (OPS_TAB === 'fin' ? 'Financements · saisie' : 'Saisie de la tranche');
+  rail.innerHTML = '<div class="er-h">' + railTitle + '</div>'
     + secBtns
     + '<button type="button" class="er-all er-sec" onclick="edFocus(null)"><span class="er-lab"><i class="ti ti-layout-list"></i>&nbsp;Tout afficher</span></button>'
     + '<label class="er-missing-toggle"><input type="checkbox"' + (EDIT_ONLY_MISSING ? ' checked' : '') + ' onchange="edToggleMissing(this.checked)"><span>Manquants seulement</span></label>'
@@ -13957,6 +14031,14 @@ function initEditCockpit() {
     if (e.key !== 'Enter' || !editMode) return;
     const t = e.target;
     if (!t || t.tagName !== 'INPUT') return;
+    // Formulaire de création rapide : Entrée = Ajouter
+    const qa = t.closest('.qadd');
+    if (qa) {
+      e.preventDefault();
+      const go = qa.querySelector('.qadd-go');
+      if (go) go.click();
+      return;
+    }
     const c = _edContainer();
     if (!c || !c.contains(t)) return;
     e.preventDefault();
