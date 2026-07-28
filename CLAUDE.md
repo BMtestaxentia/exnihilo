@@ -10,6 +10,7 @@ ExNihilo est un POC de **suivi du financement d'opérations immobilières** pour
 - Trois fichiers servis en statique : `index.html` (coquille + CDN), `app.js` (logique), `styles.css` (styles).
 - **Backend Supabase (Postgres)** appelé en **`fetch()` brut vers l'API PostgREST** - surtout **PAS** la librairie `supabase-js`. `SUPABASE_URL` en tête de `app.js`.
 - Hébergement : **GitHub Pages**, fichiers à la racine, servis sur `https://bmtestaxentia.github.io/exnihilo/`.
+- Migration en préparation vers une **VM DSI auto-hébergée** (Docker : Postgres + PostgREST + GoTrue + nginx hôte) : livrables dans `deploy/` (compose, .env.example, nginx, INSTALL.md, gen-keys.sh). Interlocuteur : Christophe Chapuis. En attente : domaine définitif et type de certificat.
 
 ## Environnement de travail (important)
 - **Ni Node ni Python sur la machine.** `node --check`, `predeploy.mjs`, `smoke_test.mjs` n'existent pas / ne sont pas utilisables.

@@ -1,0 +1,77 @@
+# ============================================================================
+# ExNihilo / SFO - stack auto-hébergée
+# Postgres (données) + PostgREST (API REST, équivalent Supabase) + GoTrue (auth)
+# nginx tourne sur l'HÔTE (cf. nginx/exnihilo.conf + INSTALL.md) : il sert les
+# fichiers statiques et fait reverse proxy vers les deux conteneurs.
+# Prérequis : fichier .env rempli (copier .env.example) - voir INSTALL.md.
+# ============================================================================
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: sfo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # mot de passe du rôle de connexion PostgREST, injecté dans 01-roles.sql
+      AUTHENTICATOR_PASSWORD: ${AUTHENTICATOR_PASSWORD}
+    volumes:
+      - sfo-pgdata:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    # Port exposé uniquement en local (migrations / pg_dump depuis la VM)
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  rest:
+    image: postgrest/postgrest:v12.2.3
+    container_name: sfo-rest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${AUTHENTICATOR_PASSWORD}@db:5432/${POSTGRES_DB}
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  auth:
+    image: supabase/gotrue:v2.158.1
+    container_name: sfo-auth
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: ${SITE_URL}
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?search_path=auth
+      GOTRUE_DB_NAMESPACE: auth
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: "86400"
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      # Pas d'auto-inscription : les comptes sont créés par l'admin (cf. INSTALL.md)
+      GOTRUE_DISABLE_SIGNUP: "true"
+      # Pas de serveur mail : les comptes créés par l'admin sont confirmés d'office
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+    ports:
+      - "127.0.0.1:9999:9999"
+
+volumes:
+  sfo-pgdata:
