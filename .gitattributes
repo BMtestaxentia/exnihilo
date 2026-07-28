@@ -1,0 +1,4 @@
+# Les fichiers destinés à la VM Linux doivent rester en LF, même sur un
+# checkout Windows (un script shell en CRLF casse : "bad interpreter").
+deploy/** text eol=lf
+sql/*.sql text eol=lf
