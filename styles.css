@@ -5903,3 +5903,47 @@
 .pe-grid .card-edit-field { min-width: 0; }
 .pe-grid .card-edit-field.wide { grid-column: 1 / -1; }
 .pe-grid .card-input { width: 100%; font-size: 12px; }
+
+/* ===== v95 : login screen - meme identite, finition superieure ===== */
+/* Aurore conique en rotation tres lente derriere la scene */
+.auth-aurora { position: absolute; inset: -25%; pointer-events: none; opacity: .55; filter: blur(70px);
+  background: conic-gradient(from 180deg at 50% 42%, transparent 0deg, rgba(46, 86, 150, .22) 70deg, transparent 130deg,
+    rgba(194, 164, 92, .13) 200deg, transparent 260deg, rgba(38, 120, 160, .18) 320deg, transparent 360deg);
+  animation: authaur 44s linear infinite; }
+@keyframes authaur { to { transform: rotate(360deg); } }
+/* Rayons d'aube derriere le logo, oscillation lente */
+.auth-rays { position: absolute; left: 50%; top: -10vh; width: 150vmin; height: 80vh; pointer-events: none; opacity: .85;
+  background: conic-gradient(from 90deg at 50% 0%, transparent 41%, rgba(226, 199, 130, 0.07) 45%, transparent 49%,
+    rgba(140, 190, 235, 0.05) 54%, transparent 58%, rgba(226, 199, 130, 0.05) 63%, transparent 67%);
+  -webkit-mask-image: linear-gradient(180deg, #000 15%, transparent 85%); mask-image: linear-gradient(180deg, #000 15%, transparent 85%);
+  animation: authraysway 16s ease-in-out infinite; }
+@keyframes authraysway { 0%, 100% { transform: translateX(-50%) rotate(-2.5deg); } 50% { transform: translateX(-50%) rotate(2.5deg); } }
+/* Parallaxe fluide */
+.auth-mark-wrap, .auth-stage { will-change: transform; transition: transform .25s ease-out; }
+/* Kicker encadre de filets */
+.auth-kicker { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.auth-kicker > span { display: block; width: 36px; height: 1px; background: linear-gradient(90deg, transparent, rgba(196, 210, 234, 0.45)); }
+.auth-kicker > span:last-child { transform: scaleX(-1); }
+/* Liseret lumineux en tete de carte */
+.auth-card::before { content: ''; position: absolute; left: 24px; right: 24px; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(233, 196, 106, 0.55), transparent); }
+/* Labels flottants */
+.af-wrap .af-float { position: absolute; left: 38px; top: 50%; transform: translateY(-50%); font-size: 14px; font-weight: 500;
+  color: rgba(160, 180, 210, .55); pointer-events: none; transition: all .16s ease; }
+.auth-input.af-fl { padding: 20px 42px 8px 38px; }
+.auth-input.af-fl:focus + .af-float, .auth-input.af-fl:not(:placeholder-shown) + .af-float {
+  top: 9px; transform: none; font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700;
+  color: rgba(233, 196, 106, .85); }
+/* Oeil afficher/masquer */
+.af-eye { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); border: none; background: none; cursor: pointer;
+  color: rgba(170, 190, 215, .55); padding: 5px; display: grid; place-items: center; border-radius: var(--radius-sm); }
+.af-eye:hover, .af-eye.on { color: #e9c46a; }
+/* Alerte verrouillage majuscules */
+.af-caps { margin: 6px 3px 0; font-size: 11px; font-weight: 600; color: #e9c46a; text-align: left; }
+/* Erreur avec pictogramme */
+.auth-err:not(:empty)::before { content: '⚠ '; }
+/* Spinner du bouton */
+.auth-btn .auth-spin { display: none; }
+.auth-btn.loading .auth-spin { display: inline-block; width: 14px; height: 14px; margin-right: 8px; vertical-align: -2px;
+  border: 2px solid rgba(34, 24, 3, .3); border-top-color: #221803; border-radius: 50%; animation: authspin .7s linear infinite; }
+@keyframes authspin { to { transform: rotate(360deg); } }

@@ -13609,9 +13609,12 @@ function showLoginOverlay(){
     return `<span class="auth-pt" style="left:${rnd(0, 100).toFixed(1)}%;width:${sz}px;height:${sz}px;animation-duration:${rnd(8, 18).toFixed(1)}s;animation-delay:${rnd(0, 12).toFixed(1)}s;${cy ? 'background:rgba(90,180,225,0.85);box-shadow:0 0 8px rgba(90,180,225,0.7);' : ''}"></span>`;
   }).join('');
 
+  const _eyeSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
   ov.innerHTML = `
     <div class="auth-bg"></div>
+    <div class="auth-aurora"></div>
     <div class="auth-grid"></div>
+    <div class="auth-rays"></div>
     <div class="auth-mark-wrap"><img class="auth-mark" src="${AXENTIA_MARK}" alt="" aria-hidden="true"></div>
     <div class="auth-particles">${embers}</div>
     <div class="auth-grain"></div>
@@ -13620,22 +13623,24 @@ function showLoginOverlay(){
     <div class="auth-stage">
       <div class="auth-logo-wrap"><img class="auth-logo-img" src="${AXENTIA_LOGO}" alt="AXENTIA"></div>
       <div class="auth-word">Ex<em>Nihilo</em></div>
-      <div class="auth-kicker">Espace financement d'opérations</div>
+      <div class="auth-kicker"><span></span>Espace financement d'opérations<span></span></div>
       <form class="auth-card" id="authForm" autocomplete="on">
         <div class="auth-field">
-          <label class="af-lab" for="authEmail">Identifiant</label>
           <div class="af-wrap"><span class="af-ic2">@</span>
-            <input class="auth-input" type="email" id="authEmail" required autocomplete="username" placeholder="prenom.nom@axentia.fr"></div>
+            <input class="auth-input af-fl" type="email" id="authEmail" required autocomplete="username" placeholder=" ">
+            <label class="af-float" for="authEmail">Adresse e-mail</label></div>
         </div>
         <div class="auth-field">
-          <label class="af-lab" for="authPwd">Mot de passe</label>
           <div class="af-wrap"><span class="af-ic2">&#128274;</span>
-            <input class="auth-input" type="password" id="authPwd" required autocomplete="current-password" placeholder="••••••••"></div>
+            <input class="auth-input af-fl" type="password" id="authPwd" required autocomplete="current-password" placeholder=" ">
+            <label class="af-float" for="authPwd">Mot de passe</label>
+            <button type="button" class="af-eye" id="authEye" aria-label="Afficher / masquer le mot de passe" tabindex="-1">${_eyeSvg}</button></div>
+          <div class="af-caps" id="authCaps" hidden>&#9650; Verrouillage majuscules activé</div>
         </div>
-        <div class="auth-err" id="authErr"></div>
-        <button class="auth-btn" type="submit" id="authBtn">Se connecter</button>
+        <div class="auth-err" id="authErr" role="alert"></div>
+        <button class="auth-btn" type="submit" id="authBtn"><span class="auth-spin"></span><span class="auth-btn-t">Se connecter</span></button>
       </form>
-      <div class="auth-foot"><span class="lk">&#128274;</span> Connexion chiffrée · accès réservé</div>
+      <div class="auth-foot"><span class="lk">&#128274;</span> Connexion chiffrée · accès réservé aux comptes AXENTIA</div>
     </div>`;
   document.body.appendChild(ov);
   document.body.style.overflow = 'hidden';
@@ -13653,16 +13658,51 @@ function showLoginOverlay(){
   };
   ov.querySelectorAll('.auth-input').forEach(inp => inp.addEventListener('input', () => spawnBurst(inp)));
 
+  // Afficher / masquer le mot de passe
+  const pwdInput = document.getElementById('authPwd');
+  const eyeBtn = document.getElementById('authEye');
+  if (eyeBtn && pwdInput) {
+    eyeBtn.addEventListener('click', () => {
+      const show = pwdInput.type === 'password';
+      pwdInput.type = show ? 'text' : 'password';
+      eyeBtn.classList.toggle('on', show);
+      pwdInput.focus();
+    });
+  }
+  // Alerte verrouillage majuscules (cause n°1 des échecs de mot de passe)
+  const capsHint = document.getElementById('authCaps');
+  if (pwdInput && capsHint) {
+    const check = (e) => { if (e.getModifierState) capsHint.hidden = !e.getModifierState('CapsLock'); };
+    pwdInput.addEventListener('keydown', check);
+    pwdInput.addEventListener('keyup', check);
+    pwdInput.addEventListener('blur', () => { capsHint.hidden = true; });
+  }
+  // Parallaxe discrète : le monolithe et la scène suivent légèrement la souris
+  let _authDone = false;
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    ov.addEventListener('mousemove', (e) => {
+      if (_authDone) return;
+      const dx = e.clientX / window.innerWidth - 0.5, dy = e.clientY / window.innerHeight - 0.5;
+      const mw = ov.querySelector('.auth-mark-wrap');
+      const st = ov.querySelector('.auth-stage');
+      if (mw) mw.style.transform = `translate(${(dx * -20).toFixed(1)}px, ${(dy * -14).toFixed(1)}px)`;
+      if (st) st.style.transform = `translate(${(dx * 7).toFixed(1)}px, ${(dy * 5).toFixed(1)}px)`;
+    });
+  }
+
   document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('authBtn');
+    const btnT = btn.querySelector('.auth-btn-t');
     const err = document.getElementById('authErr');
     err.textContent = '';
-    btn.disabled = true; btn.textContent = 'Connexion…';
+    btn.disabled = true; btn.classList.add('loading'); btnT.textContent = 'Connexion…';
     try {
       await authLogin(document.getElementById('authEmail').value.trim(), document.getElementById('authPwd').value);
       // Embrasement du monolithe puis fondu vers l'application
-      btn.textContent = 'Bienvenue';
+      _authDone = true;
+      const st = ov.querySelector('.auth-stage'); if (st) st.style.transform = '';
+      btn.classList.remove('loading'); btnT.textContent = 'Bienvenue';
       ov.classList.add('auth-sunrise');
       bootAfterAuth();
       setTimeout(() => ov.classList.add('auth-leave'), 650);
@@ -13672,7 +13712,7 @@ function showLoginOverlay(){
       const card = document.getElementById('authForm');
       card.classList.add('shake');
       setTimeout(() => card.classList.remove('shake'), 500);
-      btn.disabled = false; btn.textContent = 'Se connecter';
+      btn.disabled = false; btn.classList.remove('loading'); btnT.textContent = 'Se connecter';
     }
   });
   setTimeout(()=>{ const i=document.getElementById('authEmail'); if(i) i.focus(); }, 50);
