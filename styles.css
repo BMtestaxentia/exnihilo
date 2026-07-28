@@ -362,12 +362,6 @@
   .comite-date i, .comite-date .tabler-svg-icon {
     color: var(--text-tertiary); font-size: 13px;
   }
-  .comite-doc-name {
-    flex: 1; min-width: 0;
-    font-size: 12.5px; color: var(--text-primary);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .comite-doc-empty { color: var(--text-tertiary); font-style: italic; }
   /* State pills for comites: Planifié / PV signé */
   .comite-state-pill {
     flex-shrink: 0;
@@ -447,29 +441,6 @@
     flex-shrink: 0;
   }
   .comite-remove-btn:hover { background: var(--danger-accent); color: white; border-color: var(--danger-accent); }
-  .comite-card-doc {
-    margin-top: 6px;
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11.5px; color: var(--text-secondary);
-    padding: 5px 8px;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-xs);
-  }
-  .comite-card-doc i, .comite-card-doc .tabler-svg-icon { color: var(--info-accent); font-size: 13px; }
-  .comite-doc-size { margin-left: auto; color: var(--text-tertiary); font-size: 11px; }
-  .comite-edit-actions {
-    margin-top: 8px;
-    display: flex; gap: 6px;
-  }
-  .comite-upload-btn {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 5px 10px; font-size: 11.5px; font-weight: 500;
-    background: var(--info-bg); color: var(--info-text);
-    border: 1px dashed var(--info-accent);
-    border-radius: var(--radius-xs); cursor: pointer;
-  }
-  .comite-upload-btn:hover { background: var(--info-accent); color: white; border-style: solid; }
-  .comite-upload-btn i, .comite-upload-btn .tabler-svg-icon { font-size: 13px; }
 
   .btn-add-comite {
     margin-top: 10px;
@@ -526,31 +497,6 @@
   .com-row-wf.wf-status-danger { background: var(--danger-bg); color: var(--danger-text); }
   .com-row-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
-  /* Validations / Workflow view */
-  .wf-dropzone {
-    border: 2px dashed var(--border-color-strong);
-    border-radius: var(--radius-md);
-    padding: 30px 20px;
-    text-align: center;
-    background: var(--bg-secondary);
-    transition: all 0.15s;
-    margin-bottom: 18px;
-  }
-  .wf-dropzone-active {
-    border-color: var(--info-accent);
-    background: var(--info-bg);
-    transform: scale(1.005);
-  }
-  .wf-dropzone i, .wf-dropzone .tabler-svg-icon {
-    font-size: 36px; color: var(--info-accent); margin-bottom: 8px;
-  }
-  .wf-dropzone-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
-  .wf-dropzone-sub { font-size: 13px; color: var(--text-secondary); }
-  .wf-dropzone-browse {
-    background: transparent; border: none; padding: 0;
-    color: var(--info-accent); text-decoration: underline;
-    cursor: pointer; font-family: inherit; font-size: 13px;
-  }
 
   .wf-filter-bar {
     display: flex; gap: 14px; align-items: center;
@@ -727,31 +673,6 @@
   }
   .wf-modal-close:hover { color: var(--text-primary); }
   .wf-modal-body { padding: 18px 22px; overflow-y: auto; flex: 1; }
-  .wf-modal-file {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 12px;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-md);
-    margin-bottom: 16px;
-  }
-  .wf-modal-file-info { flex: 1; min-width: 0; }
-  .wf-modal-file-preview {
-    flex-shrink: 0;
-    padding: 6px 12px; font-size: 12px; font-weight: 500;
-    background: var(--info-accent); color: white;
-    border: none; border-radius: var(--radius-xs);
-    cursor: pointer; font-family: inherit;
-    display: inline-flex; align-items: center; gap: 5px;
-  }
-  .wf-modal-file-preview:hover { background: var(--info-text); }
-  .wf-modal-file-preview i, .wf-modal-file-preview .tabler-svg-icon { font-size: 13px; }
-
-  /* Preview button on workflow rows */
-  .btn-preview {
-    background: var(--info-bg); color: var(--info-text);
-  }
-  .btn-preview:hover { background: var(--info-accent); color: white; }
-
   /* Comités tab toolbar (drop zone + plan button) */
   .com-toolbar {
     display: grid;
@@ -759,7 +680,6 @@
     gap: 12px;
     margin-bottom: 18px;
   }
-  .wf-dropzone-com { margin-bottom: 0; padding: 16px 14px; }
   .com-plan-btn {
     display: flex; align-items: center; gap: 14px;
     padding: 18px 22px;
@@ -1052,74 +972,7 @@
   .comite-wf-chip.wf-status-success { background: var(--success-bg); color: var(--success-text); }
   .comite-wf-chip.wf-status-danger { background: var(--danger-bg); color: var(--danger-text); }
 
-  /* PDF preview modal (full-screen iframe) */
-  .pdf-preview-backdrop {
-    position: fixed; inset: 0; z-index: 3000;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px;
-  }
-  .pdf-preview-modal {
-    background: var(--bg-primary);
-    border-radius: var(--radius-lg);
-    width: 100%; max-width: 1100px;
-    height: calc(100vh - 40px);
-    max-height: 95vh;
-    display: flex; flex-direction: column;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-    overflow: hidden;
-  }
-  .pdf-preview-head {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 18px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
-  }
-  .pdf-preview-head > i, .pdf-preview-head > .tabler-svg-icon {
-    color: var(--info-accent); font-size: 18px; flex-shrink: 0;
-  }
-  .pdf-preview-name {
-    flex: 1; min-width: 0;
-    font-size: 14px; font-weight: 600;
-    color: var(--text-primary);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .pdf-preview-dl {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 32px; height: 32px;
-    border-radius: var(--radius-xs);
-    background: var(--bg-tertiary); color: var(--text-secondary);
-    text-decoration: none;
-    transition: background 0.1s;
-  }
-  .pdf-preview-dl:hover { background: var(--info-accent); color: white; }
-  .pdf-preview-dl i, .pdf-preview-dl .tabler-svg-icon { font-size: 16px; }
-  .pdf-preview-close {
-    border: none; background: transparent;
-    color: var(--text-secondary); cursor: pointer;
-    font-size: 26px; padding: 0 6px; line-height: 1;
-  }
-  .pdf-preview-close:hover { color: var(--text-primary); }
-  .pdf-preview-body {
-    flex: 1; min-height: 0;
-    background: #525659; /* dark gray, matches typical PDF viewer chrome */
-  }
-  .pdf-preview-iframe {
-    width: 100%; height: 100%;
-    border: none;
-    background: #525659;
-  }
 
-  .wf-modal-file i, .wf-modal-file .tabler-svg-icon {
-    width: 32px; height: 40px; padding: 6px;
-    color: white;
-    background: linear-gradient(135deg, #f08080, #c4423a);
-    border-radius: var(--radius-xs); font-size: 16px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .wf-modal-filename { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
-  .wf-modal-filesize { font-size: 11.5px; color: var(--text-tertiary); }
   .wf-modal-field { margin-bottom: 14px; }
   .wf-modal-field label {
     display: block; font-size: 11px; font-weight: 700;

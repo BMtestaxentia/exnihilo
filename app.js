@@ -7433,7 +7433,7 @@ function buildMarkerIcon(color) {
 
 // ============== COMITÉS ==============
 // Each comité is attached to an op (in op.comites array).
-// Fields: id, type ('CA'|'C2I'|'Revue'), date, lien_sharepoint, doc_name, doc_data_url, doc_size, notes,
+// Fields: id, type ('CA'|'C2I'|'Revue'), date, lien_sharepoint, notes,
 
 function comiteTypeConfig(type) {
   switch (type) {
@@ -7527,17 +7527,6 @@ function renderComiteCard(c, op, isEditMode) {
           </div>
           <button class="comite-remove-btn" onclick="removeComite('${escapeHtml(op._uid)}', '${escapeHtml(c.id)}')" type="button" title="Supprimer ce comité"><i class="ti ti-trash"></i></button>
         </div>
-        ${c.doc_name ? `<div class="comite-card-doc">
-          <i class="ti ti-file-text"></i><span>${escapeHtml(c.doc_name)}</span>
-          <span class="comite-doc-size">${formatFileSize(c.doc_size)}</span>
-        </div>` : ''}
-        <div class="comite-edit-actions">
-          <label class="comite-upload-btn" title="Joindre un PDF">
-            <input type="file" accept="application/pdf,.pdf" style="display:none;" onchange="attachComiteFile(event, '${escapeHtml(op._uid)}', '${escapeHtml(c.id)}')" />
-            <i class="ti ti-cloud"></i>${c.doc_name ? 'Remplacer le PDF' : 'Joindre un PDF'}
-          </label>
-          ${c.doc_data_url ? `<button class="btn-small btn-preview" type="button" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'document.pdf')}', findComite('${escapeHtml(c.id)}').comite.doc_data_url)"><i class="ti ti-eye"></i>Voir</button>` : ''}
-        </div>
       </div>
     `;
   }
@@ -7551,10 +7540,7 @@ function renderComiteCard(c, op, isEditMode) {
         <span class="comite-type-pill" style="background:${conf.bg};color:${conf.txt};border-color:${conf.accent};" title="${escapeHtml(conf.full)}">${escapeHtml(conf.label)}</span>
         <span class="comite-date"><i class="ti ti-calendar"></i>${escapeHtml(formatComDate(c.date))}</span>
         ${isPlanned ? `<span class="comite-state-pill planned"><i class="ti ti-clock"></i>Planifié</span>` : ''}
-        ${!isPlanned && c.doc_name ? `<span class="comite-doc-name">${escapeHtml(c.doc_name)}</span>` : ''}
-        ${!isPlanned && !c.doc_name ? '<span class="comite-doc-name comite-doc-empty">Aucun document joint</span>' : ''}
         <div class="comite-card-actions">
-          ${c.doc_data_url ? `<button class="comite-action-btn" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'document.pdf')}', findComite('${escapeHtml(c.id)}').comite.doc_data_url)" title="Prévisualiser"><i class="ti ti-eye"></i></button>` : ''}
           ${c.lien_sharepoint ? `<a class="comite-action-btn" href="${escapeHtml(c.lien_sharepoint)}" target="_blank" rel="noopener" title="Ouvrir sur SharePoint"><i class="ti ti-cloud"></i></a>` : ''}
         </div>
       </div>
@@ -7571,9 +7557,6 @@ function addComite(opUid) {
     type: 'CA',
     date: '',
     lien_sharepoint: '',
-    doc_name: null,
-    doc_data_url: null,
-    doc_size: null,
     notes: '',
     statut: 'realise',
   };
@@ -7594,29 +7577,6 @@ function removeComite(opUid, comiteId) {
   replaceTablerIcons();
 }
 
-function attachComiteFile(event, opUid, comiteId) {
-  const file = event.target.files[0];
-  if (!file) return;
-  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-    showToast('Seuls les fichiers PDF sont acceptés', 'alert-triangle');
-    return;
-  }
-  const op = DATA.find(o => o._uid === opUid);
-  if (!op || !Array.isArray(op.comites)) return;
-  const c = op.comites.find(x => x.id === comiteId);
-  if (!c) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    c.doc_name = file.name;
-    c.doc_size = file.size;
-    c.doc_data_url = e.target.result;
-    persistComiteChange(c, op);
-    showToast(`Document « ${file.name} » joint`, 'check');
-    renderOpDetail();
-    replaceTablerIcons();
-  };
-  reader.readAsDataURL(file);
-}
 
 // Wire up the edit inputs to save back into op.comites
 // Called when an edit-input loses focus
@@ -7797,9 +7757,6 @@ function openPlanComiteModal(existingPlanningId) {
         planning_id: planningId,
         statut: 'planifie',
         lien_sharepoint: '',
-        doc_name: null,
-        doc_data_url: null,
-        doc_size: null,
       };
       op.comites.push(newComite);
       newComites.push({ comite: newComite, op });
@@ -7829,38 +7786,23 @@ function cancelPlannedComite(planningId) {
 }
 
 // Attach a PV to a planned comité → converts to "realised"
+// Clôture un comité planifié : passage en « réalisé », avec saisie facultative
+// du lien SharePoint du PV (les documents ne sont plus stockés dans l'outil).
 function attachPvToComite(comiteId) {
   const found = findComite(comiteId);
   if (!found) return;
   const { comite } = found;
-  // Trigger a file picker
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'application/pdf,.pdf';
-  input.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      showToast('Seuls les fichiers PDF sont acceptés', 'alert-triangle');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      comite.doc_name = file.name;
-      comite.doc_size = file.size;
-      comite.doc_data_url = ev.target.result;
-      comite.statut = 'realise'; // clôture la planification pour cette op
-      persistComiteChange(comite, found.op);
-      showToast(`PV joint, comité clôturé pour cette opération`, 'check');
-      renderComitesList();
-      if (selectedOpCode === found.op._uid) {
-        renderOpDetail();
-        replaceTablerIcons();
-      }
-    };
-    reader.readAsDataURL(file);
-  });
-  input.click();
+  const lien = prompt('Comité réalisé. Lien SharePoint du PV (facultatif) :', comite.lien_sharepoint || '');
+  if (lien === null) return; // annulé
+  if (lien.trim()) comite.lien_sharepoint = lien.trim();
+  comite.statut = 'realise';
+  persistComiteChange(comite, found.op);
+  showToast('Comité marqué réalisé', 'check');
+  renderComitesList();
+  if (selectedOpCode === found.op._uid) {
+    renderOpDetail();
+    replaceTablerIcons();
+  }
 }
 
 // =========== End planification ===========
@@ -7930,12 +7872,13 @@ function renderComitesTab() {
   if (!container.dataset.shellRendered) {
     container.innerHTML = `
       <div class="com-toolbar">
-        <div class="wf-dropzone wf-dropzone-com" id="comDropzone">
-          <i class="ti ti-cloud"></i>
-          <div class="wf-dropzone-title">Glissez un PV ou document de comité ici</div>
-          <div class="wf-dropzone-sub">ou <button class="wf-dropzone-browse" id="comBrowseBtn" type="button">parcourir vos fichiers</button> - vous l'associerez à une opération</div>
-          <input type="file" id="comFileInput" accept="application/pdf,.pdf" style="display:none;" />
-        </div>
+        <button class="com-plan-btn" id="comNewBtn" type="button">
+          <i class="ti ti-plus"></i>
+          <span>
+            <span class="com-plan-btn-title">Nouveau comité</span>
+            <span class="com-plan-btn-sub">Type, date, opération · lien SharePoint du PV en option</span>
+          </span>
+        </button>
         <button class="com-plan-btn" id="comPlanBtn" type="button">
           <i class="ti ti-calendar"></i>
           <span>
@@ -8012,7 +7955,7 @@ function renderComitesList() {
     if (comFilterStatut === 'planifie' && !isComitePlanifie(comite)) return false;
     if (comFilterStatut === 'realise' && isComitePlanifie(comite)) return false;
     if (q) {
-      const hay = [comite.doc_name, comite.date, op.code, op.display_name, comite.type].filter(Boolean).join(' ').toLowerCase();
+      const hay = [comite.date, op.code, op.display_name, comite.type, comite.notes].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -8119,10 +8062,9 @@ function renderComiteMemberRow(c, op, isPlan) {
   return `
     <div class="com-group-op-row">
       <a href="#" class="com-row-op-link" data-com-op-uid="${escapeHtml(op._uid)}"><strong>${escapeHtml(op.code || '')}</strong> · ${escapeHtml(op.display_name || '')}</a>
-      ${c.doc_name ? `<span class="com-group-op-doc">${escapeHtml(c.doc_name)}</span>` : (isPlan ? '<span class="com-group-op-doc com-group-op-doc-empty">PV à venir</span>' : '<span class="com-group-op-doc com-group-op-doc-empty">Aucun document</span>')}
+      ${c.lien_sharepoint ? '<span class="com-group-op-doc">PV sur SharePoint</span>' : (isPlan ? '<span class="com-group-op-doc com-group-op-doc-empty">PV à venir</span>' : '<span class="com-group-op-doc com-group-op-doc-empty">Pas de lien PV</span>')}
       ${wfChip}
       <div class="com-group-op-actions">
-        ${c.doc_data_url ? `<button class="comite-action-btn" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'document.pdf')}', findComite('${escapeHtml(c.id)}').comite.doc_data_url)" title="Prévisualiser"><i class="ti ti-eye"></i></button>` : ''}
         ${c.lien_sharepoint ? `<a class="comite-action-btn" href="${escapeHtml(c.lien_sharepoint)}" target="_blank" rel="noopener" title="SharePoint"><i class="ti ti-cloud"></i></a>` : ''}
       </div>
     </div>
@@ -8152,13 +8094,12 @@ function renderComiteRowGlobal(c, op) {
       ${dateBadge}
       <div class="com-row-main">
         <div class="com-row-op"><strong>${escapeHtml(op.code || '')}</strong> · <a href="#" class="com-row-op-link" data-com-op-uid="${escapeHtml(op._uid)}">${escapeHtml(op.display_name || '')}</a></div>
-        <div class="com-row-doc">${c.doc_name ? escapeHtml(c.doc_name) : (isPlan ? '<em>PV à venir</em>' : '<em>Aucun document joint</em>')}</div>
+        <div class="com-row-doc">${c.lien_sharepoint ? `<a href="${escapeHtml(c.lien_sharepoint)}" target="_blank" rel="noopener" class="com-row-op-link">PV sur SharePoint</a>` : (isPlan ? '<em>PV à venir</em>' : '<em>Pas de lien PV</em>')}</div>
         ${wfChip}
       </div>
       <div class="com-row-actions">
-        ${c.doc_data_url ? `<button class="comite-action-btn" onclick="openPdfPreview('${escapeHtml(c.doc_name || 'document.pdf')}', findComite('${escapeHtml(c.id)}').comite.doc_data_url)" title="Prévisualiser"><i class="ti ti-eye"></i></button>` : ''}
         ${c.lien_sharepoint ? `<a class="comite-action-btn" href="${escapeHtml(c.lien_sharepoint)}" target="_blank" rel="noopener" title="SharePoint"><i class="ti ti-cloud"></i></a>` : ''}
-        ${isPlan ? `<button class="comite-action-btn comite-submit-btn" onclick="attachPvToComite('${escapeHtml(c.id)}')" title="Joindre le PV (clôture le comité)"><i class="ti ti-cloud"></i></button>` : ''}
+        ${isPlan ? `<button class="comite-action-btn comite-submit-btn" onclick="attachPvToComite('${escapeHtml(c.id)}')" title="Marquer réalisé (lien PV facultatif)"><i class="ti ti-check"></i></button>` : ''}
       </div>
     </div>
   `;
@@ -8223,41 +8164,13 @@ function initComitesTabEvents() {
       }
     });
   }
-  // Drop zone
-  const zone = document.getElementById('comDropzone');
-  if (zone) {
-    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('wf-dropzone-active'); });
-    zone.addEventListener('dragleave', () => zone.classList.remove('wf-dropzone-active'));
-    zone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      zone.classList.remove('wf-dropzone-active');
-      handleComFile(e.dataTransfer.files[0]);
-    });
-  }
-  const browse = document.getElementById('comBrowseBtn');
-  const fileInput = document.getElementById('comFileInput');
-  if (browse && fileInput) {
-    browse.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-      handleComFile(e.target.files[0]);
-      fileInput.value = '';
-    });
-  }
+  // Bouton « Nouveau comité » (les documents ne sont plus stockés dans l'outil)
+  const newBtn = document.getElementById('comNewBtn');
+  if (newBtn) newBtn.addEventListener('click', () => openComiteCreationModal());
 }
 
-function handleComFile(file) {
-  if (!file) return;
-  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-    showToast('Seuls les fichiers PDF sont acceptés', 'alert-triangle');
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = (e) => openComiteCreationModal(file.name, file.size, e.target.result);
-  reader.readAsDataURL(file);
-}
-
-// Modal: choose op + type + date, attach the file, create the comité
-function openComiteCreationModal(docName, docSize, dataUrl) {
+// Modal : type + date + opération (+ lien SharePoint du PV en option)
+function openComiteCreationModal() {
   document.querySelectorAll('.wf-modal-backdrop').forEach(p => p.remove());
 
   const opOptions = DATA.filter(o => !o.deleted).map(o =>
@@ -8270,19 +8183,10 @@ function openComiteCreationModal(docName, docSize, dataUrl) {
     <div class="wf-modal">
       <div class="wf-modal-head">
         <i class="ti ti-users"></i>
-        <span>Nouveau document de comité</span>
+        <span>Nouveau comité</span>
         <button class="wf-modal-close" type="button">×</button>
       </div>
       <div class="wf-modal-body">
-        <div class="wf-modal-file">
-          <i class="ti ti-file-text"></i>
-          <div class="wf-modal-file-info">
-            <div class="wf-modal-filename">${escapeHtml(docName)}</div>
-            <div class="wf-modal-filesize">${formatFileSize(docSize)}</div>
-          </div>
-          <button class="wf-modal-file-preview" type="button" id="comModalPreviewBtn"><i class="ti ti-eye"></i>Prévisualiser</button>
-        </div>
-
         <div class="wf-modal-field">
           <label>Type de comité</label>
           <select id="comFormType">
@@ -8301,6 +8205,11 @@ function openComiteCreationModal(docName, docSize, dataUrl) {
             <option value="">- Sélectionner une opération -</option>
             ${opOptions}
           </select>
+        </div>
+
+        <div class="wf-modal-field">
+          <label>Lien SharePoint du PV (facultatif)</label>
+          <input type="text" id="comFormSp" placeholder="https://axentia.sharepoint.com/..." />
         </div>
       </div>
       <div class="wf-modal-foot">
@@ -8323,10 +8232,6 @@ function openComiteCreationModal(docName, docSize, dataUrl) {
   backdrop.querySelector('#comFormCancel').addEventListener('click', close);
   backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
 
-  backdrop.querySelector('#comModalPreviewBtn').addEventListener('click', () => {
-    openPdfPreview(docName, dataUrl);
-  });
-
   backdrop.querySelector('#comFormSave').addEventListener('click', () => {
     const opUid = backdrop.querySelector('#comFormOp').value;
     if (!opUid) {
@@ -8336,16 +8241,16 @@ function openComiteCreationModal(docName, docSize, dataUrl) {
     const op = DATA.find(o => o._uid === opUid);
     if (!op) return;
     if (!Array.isArray(op.comites)) op.comites = [];
-    op.comites.push({
+    const newComite = {
       id: 'com-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       type: backdrop.querySelector('#comFormType').value,
       date: backdrop.querySelector('#comFormDate').value,
-      lien_sharepoint: '',
-      doc_name: docName,
-      doc_data_url: dataUrl,
-      doc_size: docSize,
+      lien_sharepoint: (backdrop.querySelector('#comFormSp').value || '').trim(),
       notes: '',
-    });
+      statut: 'realise',
+    };
+    op.comites.push(newComite);
+    persistNewComite(newComite, op);
     showToast(`Comité ajouté à ${op.code || op.display_name}`, 'check');
     close();
     renderComitesList();
@@ -8364,55 +8269,6 @@ function openComiteCreationModal(docName, docSize, dataUrl) {
 // - all approved → approved
 // - else → pending
 
-function formatFileSize(bytes) {
-  if (bytes == null) return '?';
-  if (bytes < 1024) return bytes + ' o';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' Ko';
-  return (bytes / (1024 * 1024)).toFixed(2) + ' Mo';
-}
-
-
-
-// Open a modal showing the PDF inline via iframe (browser-native PDF viewer)
-function openPdfPreview(docName, dataUrl) {
-  if (!dataUrl) {
-    showToast('Aucun fichier disponible pour ce document', 'alert-triangle');
-    return;
-  }
-  document.querySelectorAll('.pdf-preview-backdrop').forEach(p => p.remove());
-
-  const backdrop = document.createElement('div');
-  backdrop.className = 'pdf-preview-backdrop';
-  backdrop.innerHTML = `
-    <div class="pdf-preview-modal">
-      <div class="pdf-preview-head">
-        <i class="ti ti-file-text"></i>
-        <span class="pdf-preview-name">${escapeHtml(docName)}</span>
-        <a class="pdf-preview-dl" href="${dataUrl}" download="${escapeHtml(docName)}" title="Télécharger"><i class="ti ti-arrow-down"></i></a>
-        <button class="pdf-preview-close" type="button" title="Fermer">×</button>
-      </div>
-      <div class="pdf-preview-body">
-        <iframe class="pdf-preview-iframe" src="${dataUrl}" title="${escapeHtml(docName)}"></iframe>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
-  replaceTablerIcons(backdrop);
-
-  const close = () => backdrop.remove();
-  backdrop.querySelector('.pdf-preview-close').addEventListener('click', close);
-  backdrop.addEventListener('click', (e) => {
-    if (e.target === backdrop) close();
-  });
-  // Esc to close
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      close();
-      document.removeEventListener('keydown', escHandler);
-    }
-  };
-  document.addEventListener('keydown', escHandler);
-}
 
 
 
@@ -8430,9 +8286,6 @@ function comitePayloadFromMockup(comite, opSupabaseId) {
     statut: comite.statut || 'planifie',
     planning_id: comite.planning_id || null,
     notes: comite.notes || null,
-    doc_name: comite.doc_name || null,
-    doc_size: comite.doc_size || null,
-    doc_data_url: comite.doc_data_url || null,
     lien_sharepoint: comite.lien_sharepoint || null,
   };
 }
@@ -9329,7 +9182,7 @@ function collectOpTimelineEvents(op) {
   });
   (op.comites || []).forEach(com => {
     const conf = comiteTypeConfig(com.type);
-    addEvt(com.date, 'Comité', `${conf.full}`, com.doc_name || null, 'purple');
+    addEvt(com.date, 'Comité', `${conf.full}`, null, 'purple');
   });
   events.sort((a, b) => a.date.getTime() - b.date.getTime());
   return events;
@@ -12619,9 +12472,6 @@ function mapComiteFromSupabase(c) {
     statut: c.statut || 'realise',
     planning_id: c.planning_id || '',
     notes: c.notes || '',
-    doc_name: c.doc_name || null,
-    doc_size: c.doc_size || null,
-    doc_data_url: c.doc_data_url || null,
     lien_sharepoint: c.lien_sharepoint || '',
   };
 }
@@ -13144,9 +12994,6 @@ async function syncEntitiesToSupabase(op, operationId, beforeSnap) {
       statut: c.statut || 'realise',
       planning_id: c.planning_id || null,
       notes: c.notes || '',
-      doc_name: c.doc_name || null,
-      doc_size: c.doc_size || null,
-      doc_data_url: c.doc_data_url || null,
       lien_sharepoint: c.lien_sharepoint || '',
     }),
   });
