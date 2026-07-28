@@ -6066,6 +6066,13 @@ function renderPretCardEdit(i, op) {
   const isLibre = tauxIdx === 'Autre';
   const isFixe = tauxIdx === 'Fixe';
   const showSpread = !isLibre;
+  // États des cartes d'étape (miroir du stepper de consultation)
+  const _dDem = !!i.date_demande, _dLO = !!i.date_lo, _dCon = !!i.date_contrat;
+  const stDem = (_dDem || _dLO || _dCon) ? 'done' : 'current';
+  const stLO = (_dLO || _dCon) ? 'done' : (_dDem ? 'current' : 'future');
+  const stCon = _dCon ? 'done' : (_dLO ? 'current' : 'future');
+  const stTxt = s => s === 'done' ? 'fait' : (s === 'current' ? 'étape en cours' : 'à venir');
+  const stageH = (label, s) => `<div class="pe-stage-h"><span class="pe-dot">${s === 'done' ? '✓' : ''}</span>${label}<span class="pe-state">${stTxt(s)}</span></div>`;
   return `
     <div class="entity-card editing fin-erow${diffEntityClass('prets', i)}" data-section="prets" data-row-idx="${i._originalIdx}">
       <!-- Ligne compacte (toujours visible) -->
@@ -6088,43 +6095,40 @@ function renderPretCardEdit(i, op) {
         <button type="button" class="fin-del danger" onclick="deleteEntityRow('prets', ${i._originalIdx})" title="Supprimer le prêt"><i class="ti ti-trash"></i></button>
       </div>
 
-      <!-- Détail replié -->
+      <!-- Détail replié : ligne de vie éditable (3 cartes d'étape) + conditions -->
       <div class="fin-edetail">
-      <!-- Identité -->
-      <div class="card-edit-subgroup">
-        <div class="card-edit-subgroup-title">Identité</div>
-        <div class="card-edit-grid">
-          <div class="card-edit-field"><label>N° dossier</label><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}"></div>
+      <div class="pe-stages">
+        <div class="pe-stage ${stDem}">
+          ${stageH('Demande', stDem)}
+          <div class="pe-grid">
+            <div class="card-edit-field"><label>Date demande LO</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+            <div class="card-edit-field"><label>Date comité banque</label><input class="card-input" data-field="date_comite_banque" data-pret-comite value="${escapeHtml(i.date_comite_banque || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+            <div class="card-edit-field wide"><label>N° dossier</label><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}"></div>
+          </div>
+        </div>
+        <div class="pe-stage ${stLO}">
+          ${stageH("Lettre d'offre", stLO)}
+          <div class="pe-grid">
+            <div class="card-edit-field"><label>Date LO <span class="auto-tag" data-lo-tag="${i._originalIdx}">${(!i.date_lo && i.date_comite_banque) ? '· prév. (comité +2sem.)' : ''}</span></label><input class="card-input ${(!i.date_lo && i.date_comite_banque) ? 'previsional-input' : ''}" data-field="date_lo" data-pret-lo value="${escapeHtml(i.date_lo || (i.date_comite_banque ? previsionalLOFromComite(i.date_comite_banque) || '' : ''))}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+            <div class="card-edit-field"><label>Montant LO (€)</label><input type="number" min="0" class="card-input" data-field="montant_lo" value="${i.montant_lo || ''}"></div>
+            <div class="card-edit-field"><label>Date caducité LO</label><input class="card-input" data-field="date_caducite_lo" value="${escapeHtml(i.date_caducite_lo || '')}" placeholder="JJ/MM/AAAA"></div>
+            ${sharepointEditFields([{ field: 'lien_sp_lo', label: 'Lien SharePoint LO', currentValue: i.lien_sp_lo }])}
+          </div>
+        </div>
+        <div class="pe-stage ${stCon}">
+          ${stageH('Contrat', stCon)}
+          <div class="pe-grid">
+            <div class="card-edit-field"><label>Date contrat</label><input class="card-input" data-field="date_contrat" value="${escapeHtml(i.date_contrat || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+            <div class="card-edit-field"><label>Montant contrat (€)</label><input type="number" min="0" class="card-input" data-field="montant_contrat" value="${i.montant_contrat || ''}"></div>
+            <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
+            ${sharepointEditFields([{ field: 'lien_sp_contrat', label: 'Lien SharePoint contrat', currentValue: i.lien_sp_contrat }])}
+          </div>
         </div>
       </div>
 
-      <!-- Lettre d'offre -->
+      <!-- Conditions financières & remboursement (fusion des 3 anciens groupes) -->
       <div class="card-edit-subgroup">
-        <div class="card-edit-subgroup-title">Lettre d'offre</div>
-        <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Date demande LO</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
-          <div class="card-edit-field"><label>Date comité banque LO</label><input class="card-input" data-field="date_comite_banque" data-pret-comite value="${escapeHtml(i.date_comite_banque || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
-          <div class="card-edit-field"><label>Montant LO (€)</label><input type="number" min="0" class="card-input" data-field="montant_lo" value="${i.montant_lo || ''}"></div>
-          <div class="card-edit-field"><label>Date LO <span class="auto-tag" data-lo-tag="${i._originalIdx}">${(!i.date_lo && i.date_comite_banque) ? '· prévisionnelle (comité +2sem.)' : ''}</span></label><input class="card-input ${(!i.date_lo && i.date_comite_banque) ? 'previsional-input' : ''}" data-field="date_lo" data-pret-lo value="${escapeHtml(i.date_lo || (i.date_comite_banque ? previsionalLOFromComite(i.date_comite_banque) || '' : ''))}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
-          <div class="card-edit-field"><label>Date caducité LO</label><input class="card-input" data-field="date_caducite_lo" value="${escapeHtml(i.date_caducite_lo || '')}" placeholder="JJ/MM/AAAA"></div>
-          ${sharepointEditFields([{ field: 'lien_sp_lo', label: 'Lien SharePoint LO', currentValue: i.lien_sp_lo }])}
-        </div>
-      </div>
-
-      <!-- Contrat -->
-      <div class="card-edit-subgroup">
-        <div class="card-edit-subgroup-title">Contrat</div>
-        <div class="card-edit-grid">
-          <div class="card-edit-field"><label>Montant contrat (€)</label><input type="number" min="0" class="card-input" data-field="montant_contrat" value="${i.montant_contrat || ''}"></div>
-          <div class="card-edit-field"><label>Date contrat</label><input class="card-input" data-field="date_contrat" value="${escapeHtml(i.date_contrat || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
-          <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
-          ${sharepointEditFields([{ field: 'lien_sp_contrat', label: 'Lien SharePoint contrat', currentValue: i.lien_sp_contrat }])}
-        </div>
-      </div>
-
-      <!-- Conditions financières -->
-      <div class="card-edit-subgroup">
-        <div class="card-edit-subgroup-title">Conditions financières</div>
+        <div class="card-edit-subgroup-title">Conditions financières &amp; remboursement</div>
         <div class="card-edit-grid">
           <div class="card-edit-field"><label>Durée emprunt (ans)</label><input type="number" min="0" class="card-input" data-field="duree_emprunt" value="${i.duree_emprunt || ''}"></div>
           <div class="card-edit-field"><label>Indice</label>
@@ -6147,23 +6151,9 @@ function renderPretCardEdit(i, op) {
             </select>
           </div>
           <div class="card-edit-field"><label>Profil amort Caisse d'épargne</label><input class="card-input" data-field="profil_amort" value="${escapeHtml(i.profil_amort || '')}"></div>
-        </div>
-      </div>
-
-      <!-- Préfinancement -->
-      <div class="card-edit-subgroup">
-        <div class="card-edit-subgroup-title">Préfinancement</div>
-        <div class="card-edit-grid">
           <div class="card-edit-field"><label>Durée préfi (mois)</label><input type="number" min="0" class="card-input" data-field="duree_prefi" value="${i.duree_prefi || ''}"></div>
           <div class="card-edit-field"><label>Date fin préfi</label><input class="card-input" data-field="date_fin_prefi" value="${escapeHtml(i.date_fin_prefi || '')}" placeholder="JJ/MM/AAAA"></div>
           <div class="card-edit-field"><label>Avenant durée préfi</label><input class="card-input" data-field="avenant_duree_prefi" value="${escapeHtml(i.avenant_duree_prefi || '')}"></div>
-        </div>
-      </div>
-
-      <!-- Échéancier & tirage -->
-      <div class="card-edit-subgroup">
-        <div class="card-edit-subgroup-title">Échéancier &amp; tirage</div>
-        <div class="card-edit-grid">
           <div class="card-edit-field"><label>Échéancier reçu</label>
             <select class="card-input" data-field="echeancier_recu">
               <option value=""></option>

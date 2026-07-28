@@ -5885,3 +5885,21 @@
 .qadd-ic { color: var(--info-accent); flex: none; }
 .qadd .card-input { flex: 1; min-width: 0; font-size: 12.5px; }
 .qadd .qadd-go { flex: none; }
+
+/* ===== v94 : encart de saisie du pret - ligne de vie editable ===== */
+.pe-stages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px 12px 4px; }
+@media (max-width: 1150px) { .pe-stages { grid-template-columns: 1fr; } }
+.pe-stage { border: 1px solid var(--border-color); border-left-width: 3px; border-radius: var(--radius-lg); background: var(--bg-primary); padding: 10px 12px; min-width: 0; }
+.pe-stage.done { border-left-color: var(--success-accent); }
+.pe-stage.current { border-left-color: var(--info-accent); background: var(--card-edit-bg); }
+.pe-stage.future { border-left-color: var(--border-color-strong); opacity: .8; }
+.pe-stage-h { display: flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); margin-bottom: 9px; }
+.pe-dot { width: 15px; height: 15px; border-radius: 50%; display: grid; place-items: center; font-size: 9px; color: #fff; background: var(--border-color-strong); flex: none; }
+.pe-stage.done .pe-dot { background: var(--success-accent); }
+.pe-stage.current .pe-dot { background: var(--info-accent); }
+.pe-state { margin-left: auto; font-size: 9.5px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text-tertiary); white-space: nowrap; }
+.pe-stage.current .pe-state { color: var(--info-accent); }
+.pe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 9px; }
+.pe-grid .card-edit-field { min-width: 0; }
+.pe-grid .card-edit-field.wide { grid-column: 1 / -1; }
+.pe-grid .card-input { width: 100%; font-size: 12px; }
