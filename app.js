@@ -13522,7 +13522,6 @@ function showLoginOverlay(){
     <div class="auth-aurora"></div>
     <div class="auth-grid"></div>
     <div class="auth-rays"></div>
-    <div class="auth-mark-wrap"><img class="auth-mark" src="${AXENTIA_MARK}" alt="" aria-hidden="true"></div>
     <div class="auth-particles">${embers}</div>
     <div class="auth-grain"></div>
     <div class="auth-vignette"></div>
