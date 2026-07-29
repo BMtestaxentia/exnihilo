@@ -65,8 +65,12 @@ services:
       GOTRUE_JWT_EXP: "86400"
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
       GOTRUE_JWT_ADMIN_ROLES: service_role
-      # Pas d'auto-inscription : les comptes sont créés par l'admin (cf. INSTALL.md)
-      GOTRUE_DISABLE_SIGNUP: "true"
+      # Inscriptions ouvertes : la première connexion SSO d'un utilisateur crée son
+      # compte GoTrue (bloquée sinon). L'accès reste contrôlé par Entra ID (mono-tenant
+      # AXENTIA ; restreindre par affectation d'utilisateurs dans l'app Entra si besoin).
+      # Durcissement possible après la bascule : repasser à "true" une fois tous les
+      # utilisateurs connectés une première fois, ou couper EXTERNAL_EMAIL_ENABLED.
+      GOTRUE_DISABLE_SIGNUP: "false"
       # Pas de serveur mail : les comptes créés par l'admin sont confirmés d'office
       GOTRUE_MAILER_AUTOCONFIRM: "true"
       GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
