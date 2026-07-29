@@ -13251,6 +13251,43 @@ function authSaveSession(s){ try{ sessionStorage.setItem(AUTH_STORE_KEY, JSON.st
 function authLoadSession(){ try{ return JSON.parse(sessionStorage.getItem(AUTH_STORE_KEY) || 'null'); }catch(e){ return null; } }
 function authClear(){ try{ sessionStorage.removeItem(AUTH_STORE_KEY); }catch(e){} AUTH_TOKEN = SUPABASE_KEY; }
 
+// --- SSO Microsoft Entra ID : actif uniquement quand le backend est la VM sfo
+// (sur GitHub Pages / Supabase cloud, le login e-mail + mot de passe reste en place).
+const AUTH_SSO_AZURE = SUPABASE_URL.indexOf('sfo.axentia.fr') !== -1;
+let AUTH_SSO_ERROR = '';
+
+function authJwtPayload(tok){
+  try {
+    let b = (tok.split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/');
+    while (b.length % 4) b += '=';
+    return JSON.parse(decodeURIComponent(escape(atob(b))));
+  } catch(e){ return {}; }
+}
+
+// Retour du callback GoTrue (flux implicite) : jetons ou erreur dans le fragment d'URL
+function authHandleSsoReturn(){
+  const h = location.hash || '';
+  if (!/access_token=|error=/.test(h)) return null;
+  const p = new URLSearchParams(h.replace(/^#\/?/, ''));
+  history.replaceState(null, '', location.pathname + location.search);
+  if (p.get('error')) { AUTH_SSO_ERROR = p.get('error_description') || p.get('error'); return null; }
+  const at = p.get('access_token');
+  if (!at) return null;
+  const pay = authJwtPayload(at);
+  const _md = pay.user_metadata || {};
+  const _mail = pay.email || '';
+  const session = {
+    access_token: at,
+    refresh_token: p.get('refresh_token') || '',
+    expires_at: Date.now() + ((parseInt(p.get('expires_in'), 10) || 3600) * 1000),
+    email: _mail,
+    name: _md.display_name || _md.full_name || _md.name || (_mail.split('@')[0] || 'Utilisateur')
+  };
+  AUTH_TOKEN = session.access_token;
+  authSaveSession(session);
+  return session;
+}
+
 async function authLogin(email, password){
   const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
     method: 'POST',
@@ -13457,20 +13494,13 @@ function showLoginOverlay(){
   }).join('');
 
   const _eyeSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
-  ov.innerHTML = `
-    <div class="auth-bg"></div>
-    <div class="auth-aurora"></div>
-    <div class="auth-grid"></div>
-    <div class="auth-rays"></div>
-    <div class="auth-mark-wrap"><img class="auth-mark" src="${AXENTIA_MARK}" alt="" aria-hidden="true"></div>
-    <div class="auth-particles">${embers}</div>
-    <div class="auth-grain"></div>
-    <div class="auth-vignette"></div>
-    <div class="auth-flash"></div>
-    <div class="auth-stage">
-      <div class="auth-logo-wrap"><img class="auth-logo-img" src="${AXENTIA_LOGO}" alt="AXENTIA"></div>
-      <div class="auth-word">Ex<em>Nihilo</em></div>
-      <div class="auth-kicker"><span></span>Espace financement d'opérations<span></span></div>
+  const _msLogo = `<svg class="auth-ms-logo" viewBox="0 0 21 21" width="18" height="18" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>`;
+  const _cardHtml = AUTH_SSO_AZURE ? `
+      <div class="auth-card auth-card-sso">
+        <button class="auth-btn auth-btn-ms" type="button" id="authMsBtn"><span class="auth-spin"></span>${_msLogo}<span class="auth-btn-t">Se connecter avec Microsoft</span></button>
+        <div class="auth-err" id="authErr" role="alert"></div>
+        <div class="auth-sso-note">Connexion avec votre compte AXENTIA via Microsoft Entra ID - aucun mot de passe à saisir ici.</div>
+      </div>` : `
       <form class="auth-card" id="authForm" autocomplete="on">
         <div class="auth-field">
           <div class="af-wrap"><span class="af-ic2">@</span>
@@ -13486,7 +13516,21 @@ function showLoginOverlay(){
         </div>
         <div class="auth-err" id="authErr" role="alert"></div>
         <button class="auth-btn" type="submit" id="authBtn"><span class="auth-spin"></span><span class="auth-btn-t">Se connecter</span></button>
-      </form>
+      </form>`;
+  ov.innerHTML = `
+    <div class="auth-bg"></div>
+    <div class="auth-aurora"></div>
+    <div class="auth-grid"></div>
+    <div class="auth-rays"></div>
+    <div class="auth-mark-wrap"><img class="auth-mark" src="${AXENTIA_MARK}" alt="" aria-hidden="true"></div>
+    <div class="auth-particles">${embers}</div>
+    <div class="auth-grain"></div>
+    <div class="auth-vignette"></div>
+    <div class="auth-flash"></div>
+    <div class="auth-stage">
+      <div class="auth-logo-wrap"><img class="auth-logo-img" src="${AXENTIA_LOGO}" alt="AXENTIA"></div>
+      <div class="auth-word">Ex<em>Nihilo</em></div>
+      <div class="auth-kicker"><span></span>Espace financement d'opérations<span></span></div>${_cardHtml}
       <div class="auth-foot"><span class="lk">&#128274;</span> Connexion chiffrée · accès réservé aux comptes AXENTIA</div>
     </div>`;
   document.body.appendChild(ov);
@@ -13537,7 +13581,23 @@ function showLoginOverlay(){
     });
   }
 
-  document.getElementById('authForm').addEventListener('submit', async (e) => {
+  // Mode SSO : un seul bouton, redirection vers GoTrue -> Microsoft
+  const msBtn = document.getElementById('authMsBtn');
+  if (msBtn) {
+    if (AUTH_SSO_ERROR) {
+      const errEl = document.getElementById('authErr');
+      if (errEl) errEl.textContent = 'Échec de la connexion Microsoft : ' + AUTH_SSO_ERROR;
+      AUTH_SSO_ERROR = '';
+    }
+    msBtn.addEventListener('click', () => {
+      msBtn.disabled = true; msBtn.classList.add('loading');
+      const t = msBtn.querySelector('.auth-btn-t'); if (t) t.textContent = 'Redirection vers Microsoft…';
+      location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=azure`;
+    });
+  }
+
+  const _authForm = document.getElementById('authForm');
+  if (_authForm) _authForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('authBtn');
     const btnT = btn.querySelector('.auth-btn-t');
@@ -13698,6 +13758,10 @@ async function acctDelete(email){
 }
 
 async function initAuthGate(){
+  if (AUTH_SSO_AZURE) {
+    const sso = authHandleSsoReturn();
+    if (sso) { bootAfterAuth(); return; }
+  }
   const s = authLoadSession();
   if (s && s.access_token && s.expires_at > Date.now() + 60000) {
     AUTH_TOKEN = s.access_token;
