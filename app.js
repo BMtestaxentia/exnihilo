@@ -672,11 +672,11 @@ async function pushPhaseSnapshotToSupabase(op, historyEntry) {
     if (!res.ok) throw new Error('Status ' + res.status);
     const created = await res.json();
     const newId = Array.isArray(created) ? created[0]?.id : created.id;
-    showToast(`Phase « ${historyEntry.name} » figée dans Supabase`, 'check');
+    showToast(`Phase « ${historyEntry.name} » figée en base`, 'check');
     return newId;
   } catch (err) {
     console.error('Erreur figeage snapshot Supabase :', err);
-    showToast('Erreur figeage Supabase : ' + err.message, 'alert-triangle');
+    showToast('Erreur au figeage de la phase : ' + err.message, 'alert-triangle');
     return null;
   }
 }
@@ -1347,7 +1347,7 @@ async function saveAapToSupabase(aap) {
       if (ins.ok) { const created = await ins.json(); const newId = Array.isArray(created) ? created[0]?.id : created.id; if (newId) { aap._supabase_id = newId; aap._lid = 'aap-' + newId; } }
     }
     showToast('Appel à projets enregistré', 'check');
-  } catch (e) { console.error('Erreur sauvegarde AAP :', e); showToast('Erreur Supabase AAP : ' + e.message, 'alert-triangle'); }
+  } catch (e) { console.error('Erreur sauvegarde AAP :', e); showToast('Erreur d\'enregistrement AAP : ' + e.message, 'alert-triangle'); }
 }
 
 async function saveAap(lid) {
@@ -2105,7 +2105,7 @@ async function createOp() {
     if (id) { newOp._supabase_id = id; newOp._uid = 'op-supabase-' + id; }
   } catch (e) {
     console.error('Création Supabase échouée:', e);
-    showToast('Opération créée localement, mais non enregistrée dans Supabase', 'alert-triangle');
+    showToast('Opération créée localement, mais non enregistrée sur le serveur', 'alert-triangle');
   }
   DATA.push(newOp);
   selectedOpCode = newOp._uid;
@@ -12343,7 +12343,7 @@ async function loadFromSupabase(opts) {
     }
 
     if (!_silent && typeof showToast === 'function') {
-      showToast(`${DATA.length} opérations chargées depuis Supabase`, 'check');
+      showToast(`${DATA.length} opérations chargées`, 'check');
     }
     // Cacher l'écran de chargement (avec délai minimum de 1.2s pour effet visuel)
     clearTimeout(splashTimeout);
@@ -12357,7 +12357,7 @@ async function loadFromSupabase(opts) {
   } catch (err) {
     console.error('Erreur Supabase :', err);
     if (typeof showToast === 'function') {
-      showToast('Supabase indisponible - données démo affichées', 'alert-triangle');
+      showToast('Serveur indisponible - données démo affichées', 'alert-triangle');
     }
     // Cacher aussi le splash en cas d'erreur (sinon il reste éternellement)
     clearTimeout(splashTimeout);
@@ -12770,11 +12770,11 @@ async function _saveOpToSupabaseImpl(op, beforeSnap) {
     await syncEntitiesToSupabase(op, supabaseId, beforeSnap);
 
     console.log('Sauvegardé dans Supabase : op', supabaseId, 'et entités liées');
-    showToast('Modifications enregistrées dans Supabase', 'check');
+    showToast('Modifications enregistrées', 'check');
     return true;
   } catch (err) {
     console.error('Erreur sauvegarde Supabase :', err);
-    showToast('Erreur Supabase : ' + err.message, 'alert-triangle');
+    showToast('Erreur d\'enregistrement : ' + err.message, 'alert-triangle');
     _lastSaveError = err.message || String(err);
     return false;
   }
@@ -12820,7 +12820,7 @@ async function syncEntitiesToSupabase(op, operationId, beforeSnap) {
         detail = body.message || body.hint || body.details || JSON.stringify(body);
       } catch { /* corps non-JSON : on garde statusText */ }
       const msg = `${action} - échec ${res.status} : ${detail}`;
-      showToast('Erreur Supabase - ' + msg, 'alert-triangle');
+      showToast('Erreur serveur - ' + msg, 'alert-triangle');
       throw new Error(msg);
     }
     return res;
@@ -13480,7 +13480,7 @@ function addLogoutButton(){
   // Bouton rafraîchir (icône seule)
   const rbtn = document.createElement('button');
   rbtn.id = 'sessRefreshBtn'; rbtn.className = 'sess-btn sess-icon-btn';
-  rbtn.title = 'Rafraîchir les données depuis Supabase';
+  rbtn.title = 'Rafraîchir les données';
   rbtn.setAttribute('aria-label', 'Rafraîchir');
   rbtn.innerHTML = '<span class="sess-refresh-ico">⟳</span>';
   rbtn.addEventListener('click', () => refreshData(false));
