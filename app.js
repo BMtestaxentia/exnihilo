@@ -13592,7 +13592,9 @@ function showLoginOverlay(){
     msBtn.addEventListener('click', () => {
       msBtn.disabled = true; msBtn.classList.add('loading');
       const t = msBtn.querySelector('.auth-btn-t'); if (t) t.textContent = 'Redirection vers Microsoft…';
-      location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=azure`;
+      // scopes email + profile : sans eux l'id_token Microsoft ne contient ni
+      // e-mail ni nom -> GoTrue rejette avec "Error getting user email"
+      location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=azure&scopes=${encodeURIComponent('email,profile')}`;
     });
   }
 
