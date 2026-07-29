@@ -13880,11 +13880,13 @@ let _edSecSeq = 0;
 function _edEntries() {
   const c = _edContainer();
   if (!c) return [];
-  // Candidats : toute section/ancre VISIBLE contenant au moins un champ de saisie
+  // Candidats : toute section/ancre VISIBLE contenant au moins un champ de saisie.
+  // Une section masquée PAR LE COCKPIT (cockpit-hidden) reste candidate, sinon le
+  // rail ne peut plus jamais la ré-afficher après un premier focus (ni « Tout afficher »).
   const all = [...c.querySelectorAll('.section, .op-anchor')]
     .filter(el => !el.closest('.edit-rail'))
     .filter(el => el.querySelector(_ED_INPUT_SEL))
-    .filter(el => el.offsetParent !== null);
+    .filter(el => el.offsetParent !== null || el.classList.contains('cockpit-hidden'));
   // Ne garder que le plus haut niveau (pas d'entrée imbriquée dans une autre)
   const tops = all.filter(el => !all.some(o => o !== el && o.contains(el)));
   return tops.map(el => {
