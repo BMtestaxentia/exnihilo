@@ -13519,16 +13519,14 @@ function showLoginOverlay(){
       </form>`;
   ov.innerHTML = `
     <div class="auth-bg"></div>
-    <div class="auth-aurora"></div>
     <div class="auth-grid"></div>
-    <div class="auth-rays"></div>
+    <div class="auth-mark-wrap"><img class="auth-mark" src="${AXENTIA_MARK}" alt="" aria-hidden="true"></div>
     <div class="auth-particles">${embers}</div>
     <div class="auth-grain"></div>
     <div class="auth-vignette"></div>
     <div class="auth-flash"></div>
     <div class="auth-stage">
       <div class="auth-logo-wrap"><img class="auth-logo-img" src="${AXENTIA_LOGO}" alt="AXENTIA"></div>
-      <div class="auth-word">Ex<em>Nihilo</em></div>
       <div class="auth-kicker"><span></span>Espace financement d'opérations<span></span></div>${_cardHtml}
       <div class="auth-foot"><span class="lk">&#128274;</span> Connexion chiffrée · accès réservé aux comptes AXENTIA</div>
     </div>`;

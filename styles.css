@@ -5817,7 +5817,10 @@
    cher (blur 70px en rotation, drop-shadows recalcules en continu) : les
    couches restent visibles mais statiques. Les animations d'entree (one-shot)
    et l'embrasement de sortie (sunrise/flash) sont conserves. */
-.auth-bg, .auth-grid, .auth-aurora, .auth-rays { animation: none !important; }
+.auth-bg, .auth-grid { animation: none !important; }
+/* Aurore et rayons : figes ils laissaient un seam vertical (bord du conic-gradient)
+   au milieu de l'ecran -> retires du DOM (leurs regles v95 ci-dessus sont mortes) */
+.auth-aurora, .auth-rays { display: none !important; }
 .auth-mark { animation: authmarkin 1.6s cubic-bezier(.2,.7,.2,1) both !important; }
 .auth-card { animation: authup .7s cubic-bezier(.2,.75,.25,1) both !important; animation-delay: .44s !important; }
 .auth-btn::after { content: none !important; }
