@@ -13596,7 +13596,6 @@ function showLoginOverlay(){
       <div class="auth-card auth-card-sso">
         <button class="auth-btn auth-btn-ms" type="button" id="authMsBtn"><span class="auth-spin"></span>${_msLogo}<span class="auth-btn-t">Se connecter avec Microsoft</span></button>
         <div class="auth-err" id="authErr" role="alert"></div>
-        <div class="auth-sso-note">Connexion avec votre compte AXENTIA via Microsoft Entra ID - aucun mot de passe à saisir ici.</div>
       </div>` : `
       <form class="auth-card" id="authForm" autocomplete="on">
         <div class="auth-field">

@@ -5833,3 +5833,5 @@
 .kv-suggest-item { padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
   color: var(--text-primary, #e8e6e1); white-space: nowrap; }
 .kv-suggest-item:hover, .kv-suggest-item.active { background: rgba(233,196,106,0.16); }
+/* Kicker du login sur une seule ligne */
+.auth-kicker { white-space: nowrap; letter-spacing: 0.16em; }
