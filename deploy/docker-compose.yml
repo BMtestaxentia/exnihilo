@@ -73,7 +73,9 @@ services:
       GOTRUE_DISABLE_SIGNUP: "false"
       # Pas de serveur mail : les comptes créés par l'admin sont confirmés d'office
       GOTRUE_MAILER_AUTOCONFIRM: "true"
-      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      # SSO seul : le provider e-mail/mot de passe est coupé (aucun compte mdp
+      # n'existe plus ; ferme l'endpoint signup ouvert par DISABLE_SIGNUP=false)
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "false"
       # SSO Microsoft Entra ID (activé quand AZURE_SSO_ENABLED=true dans .env)
       GOTRUE_EXTERNAL_AZURE_ENABLED: ${AZURE_SSO_ENABLED:-false}
       GOTRUE_EXTERNAL_AZURE_CLIENT_ID: ${AZURE_CLIENT_ID:-}
