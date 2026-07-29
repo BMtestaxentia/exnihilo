@@ -2745,6 +2745,21 @@ function diffifyKV(displayedHtml, currentValue, field, scope) {
 
 // Edit-mode helpers: render either a span (read) or an input (edit)
 // scope: 'op-field' (default) or 'tranche-field'
+// Champs à valeurs récurrentes (personnes, promoteurs) : suggestions des valeurs
+// déjà saisies sur les autres opérations, pour converger vers une graphie unique
+const KV_SUGGEST_FIELDS = { developpeur: 1, resp_op: 1, charge_fin: 1, promoteur: 1 };
+function kvSuggestValues(field) {
+  const seen = new Set(), out = [];
+  (DATA || []).forEach(o => {
+    if (o.deleted) return;
+    const v = (o[field] == null ? '' : o[field]).toString().trim();
+    if (!v) return;
+    const k = v.toLowerCase();
+    if (!seen.has(k)) { seen.add(k); out.push(v); }
+  });
+  return out.sort((a, b) => a.localeCompare(b, 'fr'));
+}
+
 function editableKV(label, value, field, type='text', scope='op-field') {
   if (editMode) {
     // Détection automatique du type pour validation
@@ -2756,9 +2771,17 @@ function editableKV(label, value, field, type='text', scope='op-field') {
     }
     const validateAttr = validateType ? ` data-validate="${validateType}"` : '';
     const placeholder = validateType === 'date-fr' ? ' placeholder="JJ/MM/AAAA"' : '';
+    let listAttr = '', dlHtml = '';
+    if (scope === 'op-field' && KV_SUGGEST_FIELDS[field]) {
+      const vals = kvSuggestValues(field);
+      if (vals.length) {
+        listAttr = ` list="dl-${field}" autocomplete="off"`;
+        dlHtml = `<datalist id="dl-${field}">${vals.map(v => `<option value="${escapeHtml(v)}"></option>`).join('')}</datalist>`;
+      }
+    }
     return `<div class="kv-row">
       <span class="kv-key">${label}</span>
-      <input type="${type}" class="editable-input" data-edit-${scope}="${field}" value="${escapeHtml(value == null ? '' : value)}"${validateAttr}${placeholder}>
+      <input type="${type}" class="editable-input" data-edit-${scope}="${field}" value="${escapeHtml(value == null ? '' : value)}"${validateAttr}${placeholder}${listAttr}>${dlHtml}
     </div>`;
   }
   const displayed = diffifyKV(dash(value), value, field, scope);
