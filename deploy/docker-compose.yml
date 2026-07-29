@@ -70,6 +70,12 @@ services:
       # Pas de serveur mail : les comptes créés par l'admin sont confirmés d'office
       GOTRUE_MAILER_AUTOCONFIRM: "true"
       GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      # SSO Microsoft Entra ID (activé quand AZURE_SSO_ENABLED=true dans .env)
+      GOTRUE_EXTERNAL_AZURE_ENABLED: ${AZURE_SSO_ENABLED:-false}
+      GOTRUE_EXTERNAL_AZURE_CLIENT_ID: ${AZURE_CLIENT_ID:-}
+      GOTRUE_EXTERNAL_AZURE_SECRET: ${AZURE_CLIENT_SECRET:-}
+      GOTRUE_EXTERNAL_AZURE_URL: ${AZURE_TENANT_URL:-}
+      GOTRUE_EXTERNAL_AZURE_REDIRECT_URI: ${SITE_URL}/auth/v1/callback
     ports:
       - "127.0.0.1:9999:9999"
 
