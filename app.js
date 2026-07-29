@@ -13671,17 +13671,33 @@ function openAccountsAdmin(){
   loadKnownLoginEmails().then(() => renderAccountsAdmin());
 }
 
-// E-mails s'\u00e9tant d\u00e9j\u00e0 connect\u00e9s au moins une fois (pr\u00e9sence enregistr\u00e9e en base) :
-// avec le SSO le compte se cr\u00e9e tout seul, cette liste sert \u00e0 rep\u00e9rer les non-rattach\u00e9s
+// Liste des comptes cr\u00e9\u00e9s (vue comptes_auth sur auth.users, cf. sql/vue_comptes_auth.sql) :
+// avec le SSO le compte se cr\u00e9e tout seul, cette liste sert \u00e0 rattacher les nouveaux.
+// Repli sur la table sessions (e-mails vus en connexion) si la vue n'existe pas.
 let KNOWN_LOGIN_EMAILS = [];
+let KNOWN_LOGIN_META = {};    // email -> {created_at, last_sign_in_at, display_name}
+let KNOWN_LOGIN_SOURCE = '';  // 'auth' (comptes cr\u00e9\u00e9s) ou 'sessions' (repli)
 async function loadKnownLoginEmails(){
+  const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}` };
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/sessions?select=email`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}` }
-    });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/comptes_auth?select=email,created_at,last_sign_in_at,display_name&order=created_at.asc`, { headers: hdrs });
+    if (res.ok) {
+      const rows = await res.json();
+      KNOWN_LOGIN_EMAILS = []; KNOWN_LOGIN_META = {};
+      rows.forEach(r => {
+        const e = normEmail(r.email);
+        if (e && !KNOWN_LOGIN_META[e]) { KNOWN_LOGIN_EMAILS.push(e); KNOWN_LOGIN_META[e] = r; }
+      });
+      KNOWN_LOGIN_SOURCE = 'auth';
+      return;
+    }
+  } catch(e){}
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/sessions?select=email`, { headers: hdrs });
     if (!res.ok) return;
     const rows = await res.json();
     KNOWN_LOGIN_EMAILS = [...new Set(rows.map(r => normEmail(r.email)).filter(Boolean))];
+    KNOWN_LOGIN_META = {}; KNOWN_LOGIN_SOURCE = 'sessions';
   } catch(e){}
 }
 
@@ -13725,19 +13741,24 @@ function renderAccountsAdmin(){
   const personOptions = ['<option value="">\u2014 personne \u2014</option>']
     .concat(persons.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`)).join('');
 
-  // Comptes s'\u00e9tant d\u00e9j\u00e0 connect\u00e9s (SSO ou non) mais jamais rattach\u00e9s \u00e0 une personne
+  // Comptes cr\u00e9\u00e9s (GoTrue) mais jamais rattach\u00e9s \u00e0 une personne
   const attachedEmails = new Set(ACCOUNTS.map(a => normEmail(a.email)).filter(Boolean));
   const orphelins = KNOWN_LOGIN_EMAILS.filter(e => !attachedEmails.has(e));
-  const orphelinsHtml = orphelins.map(e =>
-    `<button class="acct-chip mail" type="button" data-email="${escapeHtml(e)}" title="Pr\u00e9remplir le formulaire avec ce compte">${escapeHtml(e)}</button>`
-  ).join('');
+  const _fmtTs = (ts) => { try { return ts ? new Date(ts).toLocaleDateString('fr-FR') : null; } catch(e){ return null; } };
+  const orphelinsHtml = orphelins.map(e => {
+    const m = KNOWN_LOGIN_META[e] || {};
+    const infos = [m.display_name, _fmtTs(m.created_at) ? `cr\u00e9\u00e9 le ${_fmtTs(m.created_at)}` : null,
+      _fmtTs(m.last_sign_in_at) ? `derni\u00e8re connexion ${_fmtTs(m.last_sign_in_at)}` : null].filter(Boolean).join(' \u00b7 ');
+    return `<button class="acct-chip mail" type="button" data-email="${escapeHtml(e)}" title="${escapeHtml(infos ? infos + ' - ' : '')}cliquer pour pr\u00e9remplir">${escapeHtml(e)}</button>`;
+  }).join('');
+  const orphelinsTitle = KNOWN_LOGIN_SOURCE === 'auth' ? 'Comptes cr\u00e9\u00e9s sans rattachement' : 'Comptes connect\u00e9s sans rattachement';
 
   body.innerHTML = `
     ${AUTH_SSO_AZURE ? `<div class="acct-hint">Avec le SSO Microsoft, le compte d'un coll\u00e8gue se cr\u00e9e automatiquement \u00e0 sa premi\u00e8re connexion. Il ne reste qu'\u00e0 le rattacher ici \u00e0 sa personne des op\u00e9rations (p\u00e9rim\u00e8tre \u00ab mes op\u00e9rations \u00bb).</div>` : ''}
     <div class="acct-section-title">Comptes rattach\u00e9s</div>
     <div class="acct-list">${comptesHtml}</div>
     ${orphelins.length ? `
-    <div class="acct-section-title" style="margin-top:18px;">Comptes connect\u00e9s sans rattachement</div>
+    <div class="acct-section-title" style="margin-top:18px;">${orphelinsTitle}</div>
     <div class="acct-chips">${orphelinsHtml}</div>` : ''}
     <div class="acct-add">
       <input id="acctAddEmail" class="acct-input" type="email" placeholder="prenom.nom@axentia.fr" autocomplete="off">
