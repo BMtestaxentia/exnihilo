@@ -13568,18 +13568,9 @@ function showLoginOverlay(){
     pwdInput.addEventListener('keyup', check);
     pwdInput.addEventListener('blur', () => { capsHint.hidden = true; });
   }
-  // Parallaxe discrète : le monolithe et la scène suivent légèrement la souris
+  // Parallaxe souris retirée (perf) : transforms continus sur le monolithe
+  // géant + drop-shadows = trop cher, l'écran figé garde la même identité
   let _authDone = false;
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    ov.addEventListener('mousemove', (e) => {
-      if (_authDone) return;
-      const dx = e.clientX / window.innerWidth - 0.5, dy = e.clientY / window.innerHeight - 0.5;
-      const mw = ov.querySelector('.auth-mark-wrap');
-      const st = ov.querySelector('.auth-stage');
-      if (mw) mw.style.transform = `translate(${(dx * -20).toFixed(1)}px, ${(dy * -14).toFixed(1)}px)`;
-      if (st) st.style.transform = `translate(${(dx * 7).toFixed(1)}px, ${(dy * 5).toFixed(1)}px)`;
-    });
-  }
 
   // Mode SSO : un seul bouton, redirection vers GoTrue -> Microsoft
   const msBtn = document.getElementById('authMsBtn');
@@ -13669,7 +13660,7 @@ function openAccountsAdmin(){
     <div class="acct-modal-head">
       <div>
         <div class="acct-modal-title">Administration des comptes</div>
-        <div class="acct-modal-sub">Rattachement compte (e-mail) \u2192 personne des op\u00e9rations</div>
+        <div class="acct-modal-sub">Rattachement compte ${AUTH_SSO_AZURE ? 'Microsoft (SSO)' : '(e-mail)'} \u2192 personne des op\u00e9rations</div>
       </div>
       <button class="acct-modal-close" id="acctModalClose" type="button">\u2715</button>
     </div>
@@ -13679,6 +13670,33 @@ function openAccountsAdmin(){
   bd.addEventListener('click', (e) => { if (e.target === bd) bd.remove(); });
   document.getElementById('acctModalClose').addEventListener('click', () => bd.remove());
   renderAccountsAdmin();
+  // Les e-mails d\u00e9j\u00e0 vus en connexion (table sessions) arrivent en diff\u00e9r\u00e9
+  loadKnownLoginEmails().then(() => renderAccountsAdmin());
+}
+
+// E-mails s'\u00e9tant d\u00e9j\u00e0 connect\u00e9s au moins une fois (pr\u00e9sence enregistr\u00e9e en base) :
+// avec le SSO le compte se cr\u00e9e tout seul, cette liste sert \u00e0 rep\u00e9rer les non-rattach\u00e9s
+let KNOWN_LOGIN_EMAILS = [];
+async function loadKnownLoginEmails(){
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/sessions?select=email`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}` }
+    });
+    if (!res.ok) return;
+    const rows = await res.json();
+    KNOWN_LOGIN_EMAILS = [...new Set(rows.map(r => normEmail(r.email)).filter(Boolean))];
+  } catch(e){}
+}
+
+// \u00ab Bastien MERCIER \u00bb -> \u00ab bastien.mercier@axentia.fr \u00bb (accents retir\u00e9s, espaces
+// du nom fusionn\u00e9s) : simple pr\u00e9remplissage, toujours \u00e9ditable avant validation
+function guessEmailFromPerson(p){
+  const s = normPerson(p).toLowerCase();
+  const parts = s.split(/\s+/).filter(Boolean);
+  if (!parts.length) return '';
+  const prenom = parts.shift();
+  const nom = parts.join('');
+  return (nom ? `${prenom}.${nom}` : prenom) + '@axentia.fr';
 }
 
 function renderAccountsAdmin(){
@@ -13704,17 +13722,28 @@ function renderAccountsAdmin(){
   }).join('') : '<div class="acct-muted" style="padding:8px 2px;">Aucun compte rattach\u00e9 pour le moment.</div>';
 
   const sansCompteHtml = sansCompte.length
-    ? sansCompte.map(p => `<span class="acct-chip warn">\u26a0 ${escapeHtml(p)}</span>`).join('')
+    ? sansCompte.map(p => `<button class="acct-chip warn person" type="button" data-person="${escapeHtml(p)}" title="Pr\u00e9remplir le formulaire avec cette personne">\u26a0 ${escapeHtml(p)}</button>`).join('')
     : '<span class="acct-muted">Toutes les personnes des op\u00e9rations ont un compte.</span>';
 
   const personOptions = ['<option value="">\u2014 personne \u2014</option>']
     .concat(persons.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`)).join('');
 
+  // Comptes s'\u00e9tant d\u00e9j\u00e0 connect\u00e9s (SSO ou non) mais jamais rattach\u00e9s \u00e0 une personne
+  const attachedEmails = new Set(ACCOUNTS.map(a => normEmail(a.email)).filter(Boolean));
+  const orphelins = KNOWN_LOGIN_EMAILS.filter(e => !attachedEmails.has(e));
+  const orphelinsHtml = orphelins.map(e =>
+    `<button class="acct-chip mail" type="button" data-email="${escapeHtml(e)}" title="Pr\u00e9remplir le formulaire avec ce compte">${escapeHtml(e)}</button>`
+  ).join('');
+
   body.innerHTML = `
+    ${AUTH_SSO_AZURE ? `<div class="acct-hint">Avec le SSO Microsoft, le compte d'un coll\u00e8gue se cr\u00e9e automatiquement \u00e0 sa premi\u00e8re connexion. Il ne reste qu'\u00e0 le rattacher ici \u00e0 sa personne des op\u00e9rations (p\u00e9rim\u00e8tre \u00ab mes op\u00e9rations \u00bb).</div>` : ''}
     <div class="acct-section-title">Comptes rattach\u00e9s</div>
     <div class="acct-list">${comptesHtml}</div>
+    ${orphelins.length ? `
+    <div class="acct-section-title" style="margin-top:18px;">Comptes connect\u00e9s sans rattachement</div>
+    <div class="acct-chips">${orphelinsHtml}</div>` : ''}
     <div class="acct-add">
-      <input id="acctAddEmail" class="acct-input" type="email" placeholder="email@axentia.fr" autocomplete="off">
+      <input id="acctAddEmail" class="acct-input" type="email" placeholder="prenom.nom@axentia.fr" autocomplete="off">
       <select id="acctAddPerson" class="acct-input">${personOptions}</select>
       <button id="acctAddBtn" class="acct-add-btn" type="button">Ajouter / mettre \u00e0 jour</button>
     </div>
@@ -13724,6 +13753,26 @@ function renderAccountsAdmin(){
   body.querySelectorAll('.acct-del').forEach(b => b.addEventListener('click', () => acctDelete(b.dataset.email)));
   const addBtn = document.getElementById('acctAddBtn');
   if (addBtn) addBtn.addEventListener('click', acctAdd);
+
+  const emailInput = document.getElementById('acctAddEmail');
+  const personSel = document.getElementById('acctAddPerson');
+  // Clic sur un compte connect\u00e9 : pr\u00e9remplit l'e-mail + tente de retrouver la personne
+  body.querySelectorAll('.acct-chip.mail').forEach(ch => ch.addEventListener('click', () => {
+    const em = ch.dataset.email || '';
+    if (emailInput) emailInput.value = em;
+    if (personSel && !personSel.value) {
+      const match = persons.find(p => guessEmailFromPerson(p) === em);
+      if (match) personSel.value = match;
+    }
+    if (emailInput) emailInput.focus();
+  }));
+  // Clic sur une personne sans compte : s\u00e9lectionne la personne + devine l'e-mail
+  body.querySelectorAll('.acct-chip.person').forEach(ch => ch.addEventListener('click', () => {
+    const p = ch.dataset.person || '';
+    if (personSel) personSel.value = p;
+    if (emailInput && !emailInput.value) emailInput.value = guessEmailFromPerson(p);
+    if (emailInput) emailInput.focus();
+  }));
 }
 
 async function acctAdd(){

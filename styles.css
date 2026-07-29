@@ -4872,6 +4872,11 @@
   .acct-chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .acct-chip { font-size: 12px; padding: 4px 10px; border-radius: var(--radius-pill); }
   .acct-chip.warn { background: rgba(196,66,58,0.10); color: #c4423a; border: 1px solid rgba(196,66,58,0.30); }
+  button.acct-chip { font-family: inherit; cursor: pointer; transition: filter .15s ease, box-shadow .15s ease; }
+  button.acct-chip:hover { filter: brightness(1.06); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+  .acct-chip.mail { background: rgba(58,110,196,0.10); color: #2c5aa8; border: 1px solid rgba(58,110,196,0.30); }
+  .acct-hint { font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); background: var(--bg-secondary, rgba(58,110,196,0.06));
+      border: 1px solid var(--border-light, rgba(58,110,196,0.18)); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: 14px; }
   .acct-muted { color: var(--text-tertiary); font-size: 12px; }
   .sess-ava { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg,#1F3A5F,#2e639e); color:#fff; font-size:10.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; letter-spacing:0.3px; }
   .sess-uname { font-size: 12.5px; font-weight: 600; color: var(--text-primary); max-width: 160px; overflow:hidden; text-overflow:ellipsis; }
@@ -5805,3 +5810,15 @@
 .auth-btn.loading .auth-spin { display: inline-block; width: 14px; height: 14px; margin-right: 8px; vertical-align: -2px;
   border: 2px solid rgba(34, 24, 3, .3); border-top-color: #221803; border-radius: 50%; animation: authspin .7s linear infinite; }
 @keyframes authspin { to { transform: rotate(360deg); } }
+
+/* ===== Perf login screen : seules les braises montantes restent animees =====
+   Les boucles infinies (mesh de fond, aurore conique, rayons, grille,
+   respiration du monolithe, halo de carte, reflet du bouton) coutaient trop
+   cher (blur 70px en rotation, drop-shadows recalcules en continu) : les
+   couches restent visibles mais statiques. Les animations d'entree (one-shot)
+   et l'embrasement de sortie (sunrise/flash) sont conserves. */
+.auth-bg, .auth-grid, .auth-aurora, .auth-rays { animation: none !important; }
+.auth-mark { animation: authmarkin 1.6s cubic-bezier(.2,.7,.2,1) both !important; }
+.auth-card { animation: authup .7s cubic-bezier(.2,.75,.25,1) both !important; animation-delay: .44s !important; }
+.auth-btn::after { content: none !important; }
+.auth-mark-wrap, .auth-stage { will-change: auto; transition: none; }
