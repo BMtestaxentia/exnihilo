@@ -2760,6 +2760,85 @@ function kvSuggestValues(field) {
   return out.sort((a, b) => a.localeCompare(b, 'fr'));
 }
 
+// Panneau de suggestions : au focus, TOUTES les valeurs connues sont proposées
+// (même champ rempli) ; la frappe filtre ensuite, accents et casse ignorés.
+let _kvSugInput = null, _kvSugIdx = -1;
+function _kvSugPanel() {
+  let p = document.getElementById('kvSuggestPanel');
+  if (!p) {
+    p = document.createElement('div');
+    p.id = 'kvSuggestPanel';
+    p.className = 'kv-suggest-panel';
+    p.style.display = 'none';
+    document.body.appendChild(p);
+  }
+  return p;
+}
+function _kvSugClose() { const p = document.getElementById('kvSuggestPanel'); if (p) p.style.display = 'none'; _kvSugInput = null; _kvSugIdx = -1; }
+function _kvSugRender(filterTyped) {
+  if (!_kvSugInput) return;
+  const p = _kvSugPanel();
+  let vals = kvSuggestValues(_kvSugInput.dataset.kvSuggest);
+  if (filterTyped) {
+    const q = normPerson(_kvSugInput.value);
+    if (q) vals = vals.filter(v => normPerson(v).includes(q));
+  }
+  if (!vals.length) { p.style.display = 'none'; return; }
+  _kvSugIdx = -1;
+  p.innerHTML = vals.map(v => `<div class="kv-suggest-item" data-val="${escapeHtml(v)}">${escapeHtml(v)}</div>`).join('');
+  const r = _kvSugInput.getBoundingClientRect();
+  p.style.left = r.left + 'px';
+  p.style.top = (r.bottom + 4) + 'px';
+  p.style.minWidth = r.width + 'px';
+  p.style.display = 'block';
+}
+(function _kvSugWire() {
+  document.addEventListener('focusin', (e) => {
+    const inp = e.target.closest ? e.target.closest('input[data-kv-suggest]') : null;
+    if (inp) { _kvSugInput = inp; _kvSugRender(false); }
+    else if (!e.target.closest || !e.target.closest('#kvSuggestPanel')) _kvSugClose();
+  });
+  document.addEventListener('input', (e) => {
+    if (_kvSugInput && e.target === _kvSugInput) _kvSugRender(true);
+  });
+  document.addEventListener('mousedown', (e) => {
+    const item = e.target.closest ? e.target.closest('.kv-suggest-item') : null;
+    if (item && _kvSugInput) {
+      e.preventDefault(); // garde le focus dans le champ
+      _kvSugInput.value = item.dataset.val;
+      _kvSugInput.dispatchEvent(new Event('input', { bubbles: true }));
+      _kvSugClose();
+      return;
+    }
+    if (!e.target.closest || (!e.target.closest('#kvSuggestPanel') && e.target !== _kvSugInput)) _kvSugClose();
+  });
+  // Capture : intercepter Entrée/flèches avant le « Entrée -> champ suivant » du cockpit
+  document.addEventListener('keydown', (e) => {
+    const p = document.getElementById('kvSuggestPanel');
+    if (!p || p.style.display === 'none' || !_kvSugInput) return;
+    const items = [...p.querySelectorAll('.kv-suggest-item')];
+    if (!items.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      _kvSugIdx = e.key === 'ArrowDown' ? Math.min(_kvSugIdx + 1, items.length - 1) : Math.max(_kvSugIdx - 1, 0);
+      items.forEach((it, i) => it.classList.toggle('active', i === _kvSugIdx));
+      items[_kvSugIdx].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && _kvSugIdx >= 0) {
+      e.preventDefault(); e.stopPropagation();
+      _kvSugInput.value = items[_kvSugIdx].dataset.val;
+      _kvSugInput.dispatchEvent(new Event('input', { bubbles: true }));
+      _kvSugClose();
+    } else if (e.key === 'Escape') { e.stopPropagation(); _kvSugClose(); }
+  }, true);
+  // Fermer au défilement de la page (le panneau est positionné en fixe),
+  // mais pas quand on fait défiler le panneau lui-même
+  window.addEventListener('scroll', (e) => {
+    if (e.target && e.target.closest && e.target.closest('#kvSuggestPanel')) return;
+    _kvSugClose();
+  }, true);
+  window.addEventListener('resize', _kvSugClose);
+})();
+
 function editableKV(label, value, field, type='text', scope='op-field') {
   if (editMode) {
     // Détection automatique du type pour validation
@@ -2771,17 +2850,12 @@ function editableKV(label, value, field, type='text', scope='op-field') {
     }
     const validateAttr = validateType ? ` data-validate="${validateType}"` : '';
     const placeholder = validateType === 'date-fr' ? ' placeholder="JJ/MM/AAAA"' : '';
-    let listAttr = '', dlHtml = '';
-    if (scope === 'op-field' && KV_SUGGEST_FIELDS[field]) {
-      const vals = kvSuggestValues(field);
-      if (vals.length) {
-        listAttr = ` list="dl-${field}" autocomplete="off"`;
-        dlHtml = `<datalist id="dl-${field}">${vals.map(v => `<option value="${escapeHtml(v)}"></option>`).join('')}</datalist>`;
-      }
-    }
+    // Suggestions maison (pas de datalist natif : il filtre sur le contenu
+    // courant du champ et masque donc les alternatives une fois le champ rempli)
+    const listAttr = (scope === 'op-field' && KV_SUGGEST_FIELDS[field]) ? ` data-kv-suggest="${field}" autocomplete="off"` : '';
     return `<div class="kv-row">
       <span class="kv-key">${label}</span>
-      <input type="${type}" class="editable-input" data-edit-${scope}="${field}" value="${escapeHtml(value == null ? '' : value)}"${validateAttr}${placeholder}${listAttr}>${dlHtml}
+      <input type="${type}" class="editable-input" data-edit-${scope}="${field}" value="${escapeHtml(value == null ? '' : value)}"${validateAttr}${placeholder}${listAttr}>
     </div>`;
   }
   const displayed = diffifyKV(dash(value), value, field, scope);
