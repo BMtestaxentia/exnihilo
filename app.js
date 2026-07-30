@@ -13593,7 +13593,7 @@ function showLoginOverlay(){
   const _eyeSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
   const _msLogo = `<svg class="auth-ms-logo" viewBox="0 0 21 21" width="18" height="18" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>`;
   const _cardHtml = AUTH_SSO_AZURE ? `
-      <div class="auth-card auth-card-sso">
+      <div class="auth-sso">
         <button class="auth-btn auth-btn-ms" type="button" id="authMsBtn"><span class="auth-spin"></span>${_msLogo}<span class="auth-btn-t">Se connecter avec Microsoft</span></button>
         <div class="auth-err" id="authErr" role="alert"></div>
       </div>` : `
