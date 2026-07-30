@@ -4863,8 +4863,6 @@
   .acct-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: var(--radius-pill); white-space: nowrap; }
   .acct-badge.ok { background: rgba(42,157,111,0.12); color: #1f7d56; border: 1px solid rgba(42,157,111,0.4); }
   .acct-badge.warn { background: rgba(196,66,58,0.10); color: #c4423a; border: 1px solid rgba(196,66,58,0.35); }
-  .acct-del { background: none; border: 1px solid var(--border-color); color: var(--text-tertiary); border-radius: var(--radius-sm); padding: 3px 8px; cursor: pointer; font-size: 12px; line-height: 1; }
-  .acct-del:hover { color: #c4423a; border-color: #c4423a; }
   .acct-add { display: flex; gap: 8px; margin-top: 12px; }
   .acct-input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); font-size: 13px; font-family: inherit; }
   .acct-add-btn { background: var(--info-bg); border: 1px solid var(--info-accent); color: var(--info-text); border-radius: var(--radius-md); padding: 8px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: inherit; }
@@ -4875,8 +4873,6 @@
   button.acct-chip { font-family: inherit; cursor: pointer; transition: filter .15s ease, box-shadow .15s ease; }
   button.acct-chip:hover { filter: brightness(1.06); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
   .acct-chip.mail { background: rgba(58,110,196,0.10); color: #2c5aa8; border: 1px solid rgba(58,110,196,0.30); }
-  .acct-hint { font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); background: var(--bg-secondary, rgba(58,110,196,0.06));
-      border: 1px solid var(--border-light, rgba(58,110,196,0.18)); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: 14px; }
   .acct-muted { color: var(--text-tertiary); font-size: 12px; }
   .sess-ava { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg,#1F3A5F,#2e639e); color:#fff; font-size:10.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; letter-spacing:0.3px; }
   .sess-uname { font-size: 12.5px; font-weight: 600; color: var(--text-primary); max-width: 160px; overflow:hidden; text-overflow:ellipsis; }

@@ -13753,7 +13753,7 @@ function openAccountsAdmin(){
     <div class="acct-modal-head">
       <div>
         <div class="acct-modal-title">Administration des comptes</div>
-        <div class="acct-modal-sub">Rattachement compte ${AUTH_SSO_AZURE ? 'Microsoft (SSO)' : '(e-mail)'} \u2192 personne des op\u00e9rations</div>
+        <div class="acct-modal-sub">Comptes ${AUTH_SSO_AZURE ? 'Microsoft (SSO)' : '(e-mail)'}</div>
       </div>
       <button class="acct-modal-close" id="acctModalClose" type="button">\u2715</button>
     </div>
@@ -13808,6 +13808,18 @@ function guessEmailFromPerson(p){
   return (nom ? `${prenom}.${nom}` : prenom) + '@axentia.fr';
 }
 
+// Inverse : \u00ab bastien.mercier@axentia.fr \u00bb -> \u00ab Bastien MERCIER \u00bb (nomenclature
+// d'affichage). Le nom vient de l'e-mail : rien \u00e0 re-saisir.
+function personFromEmail(email){
+  const local = normEmail(email).split('@')[0];
+  if (!local) return '';
+  const parts = local.split('.').filter(Boolean);
+  const prenom = parts.shift() || '';
+  const nom = parts.join(' ');
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+  return (cap(prenom) + (nom ? ' ' + nom.toUpperCase() : '')).trim();
+}
+
 function renderAccountsAdmin(){
   const body = document.getElementById('acctModalBody'); if (!body) return;
   const persons = getAllPersons();
@@ -13825,7 +13837,6 @@ function renderAccountsAdmin(){
       </div>
       <div class="acct-row-right">
         ${warn ? `<span class="acct-badge warn">\u26a0 ${escapeHtml(warn)}</span>` : `<span class="acct-badge ok">${n} op\u00e9ration${n>1?'s':''}</span>`}
-        <button class="acct-del" data-email="${escapeHtml(a.email||'')}" type="button" title="Supprimer ce rattachement">\u2715</button>
       </div>
     </div>`;
   }).join('') : '<div class="acct-muted" style="padding:8px 2px;">Aucun compte rattach\u00e9 pour le moment.</div>';
@@ -13834,23 +13845,22 @@ function renderAccountsAdmin(){
     ? sansCompte.map(p => `<button class="acct-chip warn person" type="button" data-person="${escapeHtml(p)}" title="Pr\u00e9remplir le formulaire avec cette personne">\u26a0 ${escapeHtml(p)}</button>`).join('')
     : '<span class="acct-muted">Toutes les personnes des op\u00e9rations ont un compte.</span>';
 
-  const personOptions = ['<option value="">\u2014 personne \u2014</option>']
-    .concat(persons.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`)).join('');
-
-  // Comptes cr\u00e9\u00e9s (GoTrue) mais jamais rattach\u00e9s \u00e0 une personne
+  // Comptes cr\u00e9\u00e9s (GoTrue) mais sans profil : un clic cr\u00e9e le profil directement
+  // (le nom vient du SSO ou de l'e-mail, l'affectation des op\u00e9rations se fait
+  // dans \u00c9quipe & pilotage de chaque op\u00e9ration).
   const attachedEmails = new Set(ACCOUNTS.map(a => normEmail(a.email)).filter(Boolean));
   const orphelins = KNOWN_LOGIN_EMAILS.filter(e => !attachedEmails.has(e));
   const _fmtTs = (ts) => { try { return ts ? new Date(ts).toLocaleDateString('fr-FR') : null; } catch(e){ return null; } };
   const orphelinsHtml = orphelins.map(e => {
     const m = KNOWN_LOGIN_META[e] || {};
-    const infos = [m.display_name, _fmtTs(m.created_at) ? `cr\u00e9\u00e9 le ${_fmtTs(m.created_at)}` : null,
+    const p = m.display_name || personFromEmail(e);
+    const infos = [_fmtTs(m.created_at) ? `cr\u00e9\u00e9 le ${_fmtTs(m.created_at)}` : null,
       _fmtTs(m.last_sign_in_at) ? `derni\u00e8re connexion ${_fmtTs(m.last_sign_in_at)}` : null].filter(Boolean).join(' \u00b7 ');
-    return `<button class="acct-chip mail" type="button" data-email="${escapeHtml(e)}" title="${escapeHtml(infos ? infos + ' - ' : '')}cliquer pour pr\u00e9remplir">${escapeHtml(e)}</button>`;
+    return `<button class="acct-chip mail" type="button" data-email="${escapeHtml(e)}" data-person="${escapeHtml(p)}" title="${escapeHtml(infos ? infos + ' - ' : '')}cliquer pour cr\u00e9er le profil \u00ab ${escapeHtml(p)} \u00bb">${escapeHtml(e)}</button>`;
   }).join('');
-  const orphelinsTitle = KNOWN_LOGIN_SOURCE === 'auth' ? 'Comptes cr\u00e9\u00e9s sans rattachement' : 'Comptes connect\u00e9s sans rattachement';
+  const orphelinsTitle = KNOWN_LOGIN_SOURCE === 'auth' ? 'Comptes cr\u00e9\u00e9s sans profil - cliquer pour cr\u00e9er' : 'Comptes connect\u00e9s sans profil - cliquer pour cr\u00e9er';
 
   body.innerHTML = `
-    ${AUTH_SSO_AZURE ? `<div class="acct-hint">Avec le SSO Microsoft, le compte d'un coll\u00e8gue se cr\u00e9e automatiquement \u00e0 sa premi\u00e8re connexion. Il ne reste qu'\u00e0 le rattacher ici \u00e0 sa personne des op\u00e9rations (p\u00e9rim\u00e8tre \u00ab mes op\u00e9rations \u00bb).</div>` : ''}
     <div class="acct-section-title">Comptes rattach\u00e9s</div>
     <div class="acct-list">${comptesHtml}</div>
     ${orphelins.length ? `
@@ -13858,50 +13868,55 @@ function renderAccountsAdmin(){
     <div class="acct-chips">${orphelinsHtml}</div>` : ''}
     <div class="acct-add">
       <input id="acctAddEmail" class="acct-input" type="email" placeholder="prenom.nom@axentia.fr" autocomplete="off">
-      <select id="acctAddPerson" class="acct-input">${personOptions}</select>
-      <button id="acctAddBtn" class="acct-add-btn" type="button">Ajouter / mettre \u00e0 jour</button>
+      <button id="acctAddBtn" class="acct-add-btn" type="button">Cr\u00e9er le profil</button>
     </div>
     <div class="acct-section-title" style="margin-top:18px;">Personnes des op\u00e9rations sans compte</div>
     <div class="acct-chips">${sansCompteHtml}</div>
   `;
-  body.querySelectorAll('.acct-del').forEach(b => b.addEventListener('click', () => acctDelete(b.dataset.email)));
   const addBtn = document.getElementById('acctAddBtn');
   if (addBtn) addBtn.addEventListener('click', acctAdd);
 
   const emailInput = document.getElementById('acctAddEmail');
-  const personSel = document.getElementById('acctAddPerson');
-  // Clic sur un compte connect\u00e9 : pr\u00e9remplit l'e-mail + tente de retrouver la personne
-  body.querySelectorAll('.acct-chip.mail').forEach(ch => ch.addEventListener('click', () => {
-    const em = ch.dataset.email || '';
-    if (emailInput) emailInput.value = em;
-    if (personSel && !personSel.value) {
-      const match = persons.find(p => guessEmailFromPerson(p) === em);
-      if (match) personSel.value = match;
-    }
-    if (emailInput) emailInput.focus();
-  }));
-  // Clic sur une personne sans compte : s\u00e9lectionne la personne + devine l'e-mail
+  // Clic sur un compte sans profil : cr\u00e9ation imm\u00e9diate (nom du SSO ou d\u00e9riv\u00e9 de l'e-mail)
+  body.querySelectorAll('.acct-chip.mail').forEach(ch => ch.addEventListener('click', () =>
+    acctCreate(ch.dataset.email || '', ch.dataset.person || '')));
+  // Clic sur une personne sans compte : pr\u00e9remplit l'e-mail devin\u00e9 (\u00e9ditable avant validation)
   body.querySelectorAll('.acct-chip.person').forEach(ch => ch.addEventListener('click', () => {
     const p = ch.dataset.person || '';
-    if (personSel) personSel.value = p;
-    if (emailInput && !emailInput.value) emailInput.value = guessEmailFromPerson(p);
-    if (emailInput) emailInput.focus();
+    if (emailInput) {
+      emailInput.value = guessEmailFromPerson(p);
+      emailInput.dataset.person = p;       // conserve la graphie exacte des op\u00e9rations
+      emailInput.dataset.personEmail = emailInput.value;
+      emailInput.focus();
+    }
   }));
+  if (emailInput) emailInput.addEventListener('input', () => { delete emailInput.dataset.person; delete emailInput.dataset.personEmail; });
 }
 
+// Cr\u00e9ation d'un profil : le nom vient de l'e-mail (prenom.nom -> Prenom NOM),
+// ou de la graphie exacte m\u00e9moris\u00e9e si on est pass\u00e9 par une chip \u00ab personne \u00bb.
 async function acctAdd(){
-  const email = normEmail((document.getElementById('acctAddEmail')||{}).value);
-  const personne = (document.getElementById('acctAddPerson')||{}).value || null;
+  const input = document.getElementById('acctAddEmail') || {};
+  const email = normEmail(input.value);
   if (!email) { if (typeof showToast === 'function') showToast('E-mail requis', 'alert-circle'); return; }
+  const personne = (input.dataset && input.dataset.person && input.dataset.personEmail === email)
+    ? input.dataset.person
+    : personFromEmail(email);
+  acctCreate(email, personne);
+}
+
+async function acctCreate(email, personne){
+  email = normEmail(email);
+  if (!email) return;
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/comptes?on_conflict=email`, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ email, personne })
+      body: JSON.stringify({ email, personne: personne || null })
     });
     if (!res.ok) throw new Error(await res.text());
     await loadAccounts(); resolveCurrentUser(); renderAccountsAdmin(); applyScopeRerender();
-    if (typeof showToast === 'function') showToast('Rattachement enregistr\u00e9', 'check');
+    if (typeof showToast === 'function') showToast(`Profil \u00ab ${personne || email} \u00bb cr\u00e9\u00e9`, 'check');
   } catch(e){ if (typeof showToast === 'function') showToast('\u00c9chec \u2014 la table \u00ab comptes \u00bb existe-t-elle ?', 'alert-triangle'); }
 }
 
@@ -13910,17 +13925,6 @@ async function acctAdd(){
   const el = document.getElementById('adminAccountsBtn');
   if (el) el.addEventListener('click', () => { if (typeof openAccountsAdmin === 'function') openAccountsAdmin(); });
 })();
-
-async function acctDelete(email){
-  if (!email) return;
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/comptes?email=eq.${encodeURIComponent(email)}`, {
-      method: 'DELETE', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${AUTH_TOKEN}` }
-    });
-    if (!res.ok) throw new Error(await res.text());
-    await loadAccounts(); resolveCurrentUser(); renderAccountsAdmin(); applyScopeRerender();
-  } catch(e){ if (typeof showToast === 'function') showToast('Suppression impossible', 'alert-triangle'); }
-}
 
 async function initAuthGate(){
   if (AUTH_SSO_AZURE) {
