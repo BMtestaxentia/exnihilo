@@ -13835,6 +13835,17 @@ const LOCAL_DEV = ['file:', 'null'].includes(location.protocol) ||
 
 async function initAuthGate(){
   if (LOCAL_DEV) {
+    // Garde-fou : aucune requête ne doit partir vers un backend distant depuis
+    // la maquette (l'ancien projet cloud existe encore). Les appels sont
+    // neutralisés et tracés en console, sans casser le code appelant.
+    const _origFetch = window.fetch.bind(window);
+    window.fetch = (url, opts) => {
+      if (typeof url === 'string' && url.indexOf(SUPABASE_URL) === 0) {
+        console.info('[maquette locale] requête ignorée :', (opts && opts.method) || 'GET', url.slice(SUPABASE_URL.length));
+        return Promise.resolve(new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      }
+      return _origFetch(url, opts);
+    };
     CURRENT_USER = 'Bastien MERCIER';
     document.body.classList.add('local-dev');
     const b = document.createElement('div');
