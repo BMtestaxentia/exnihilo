@@ -5800,3 +5800,9 @@
 .kv-suggest-item:hover, .kv-suggest-item.active { background: rgba(233,196,106,0.16); }
 /* Kicker du login sur une seule ligne */
 .auth-kicker { white-space: nowrap; letter-spacing: 0.16em; }
+
+/* ===== v111 : bandeau du mode maquette locale (jamais visible en production) ===== */
+.localdev-badge { position: fixed; bottom: 0; left: 0; right: 0; z-index: 99998;
+  background: repeating-linear-gradient(45deg, #b8860b, #b8860b 12px, #96700a 12px, #96700a 24px);
+  color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-align: center;
+  padding: 3px 0; text-transform: uppercase; pointer-events: none; opacity: .92; }

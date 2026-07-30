@@ -13827,7 +13827,26 @@ async function acctCreate(email, personne){
   if (el) el.addEventListener('click', () => { if (typeof openAccountsAdmin === 'function') openAccountsAdmin(); });
 })();
 
+// Mode maquette : l'app est ouverte en local (fichier ou serveur de dev), pas
+// servie par la VM. Pas d'authentification ni de base : on travaille sur le jeu
+// de données de démonstration intégré. Aucun effet en production.
+const LOCAL_DEV = ['file:', 'null'].includes(location.protocol) ||
+  ['localhost', '127.0.0.1', ''].includes(location.hostname);
+
 async function initAuthGate(){
+  if (LOCAL_DEV) {
+    CURRENT_USER = 'Bastien MERCIER';
+    document.body.classList.add('local-dev');
+    const b = document.createElement('div');
+    b.className = 'localdev-badge';
+    b.textContent = 'MAQUETTE LOCALE · données de démonstration';
+    document.addEventListener('DOMContentLoaded', () => document.body.appendChild(b));
+    if (document.readyState !== 'loading') document.body.appendChild(b);
+    try { addLogoutButton(); } catch (e) {}
+    renderAll();
+    if (typeof refreshDashboardKpis === 'function') try { refreshDashboardKpis(); } catch (e) {}
+    return;
+  }
   const sso = authHandleSsoReturn();
   if (sso) { bootAfterAuth(); return; }
   const s = authLoadSession();
