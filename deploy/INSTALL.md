@@ -88,19 +88,20 @@ docker exec -i sfo-db psql -U postgres -d exnihilo -c \
 docker restart sfo-rest
 ```
 
-## 7. Créer les comptes utilisateurs
+## 7. Comptes utilisateurs (SSO uniquement)
 
-L'auto-inscription est désactivée : les comptes se créent avec la clé admin (`SERVICE_KEY` du `.env`).
+L'application est en **SSO Microsoft Entra ID exclusif** : aucun mot de passe n'est géré
+(le provider e-mail de GoTrue est coupé, cf. `GOTRUE_EXTERNAL_EMAIL_ENABLED=false`).
 
-```bash
-source /opt/sfo/.env
-curl -s -X POST http://127.0.0.1:9999/admin/users \
-  -H "Authorization: Bearer $SERVICE_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"prenom.nom@axentia.fr","password":"MotDePasseInitial!","email_confirm":true}'
-```
-
-(Répéter par utilisateur. Le rattachement compte -> personne se fait ensuite dans la table `comptes` de l'application, comme aujourd'hui.)
+- Le compte GoTrue d'un utilisateur **se crée automatiquement à sa première connexion**
+  via « Se connecter avec Microsoft » (l'accès est contrôlé en amont par Entra ID :
+  application mono-tenant, restriction possible par affectation d'utilisateurs/groupes).
+- Le rattachement du compte à sa « personne des opérations » se fait ensuite dans
+  l'administration des comptes de l'application (un clic sur le compte nouvellement créé).
+- Prérequis Entra : inscription d'application mono-tenant, URI de redirection
+  `https://DOMAINE/auth/v1/callback`, et les 3 valeurs reportées dans `.env`
+  (`AZURE_TENANT_URL` **sans** `/v2.0` final, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`,
+  puis `AZURE_SSO_ENABLED=true` et recréation du conteneur auth).
 
 ## 8. Brancher l'application
 

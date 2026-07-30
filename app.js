@@ -13348,9 +13348,8 @@ function authSaveSession(s){ try{ sessionStorage.setItem(AUTH_STORE_KEY, JSON.st
 function authLoadSession(){ try{ return JSON.parse(sessionStorage.getItem(AUTH_STORE_KEY) || 'null'); }catch(e){ return null; } }
 function authClear(){ try{ sessionStorage.removeItem(AUTH_STORE_KEY); }catch(e){} AUTH_TOKEN = SUPABASE_KEY; }
 
-// --- SSO Microsoft Entra ID : actif uniquement quand le backend est la VM sfo
-// (sur GitHub Pages / Supabase cloud, le login e-mail + mot de passe reste en place).
-const AUTH_SSO_AZURE = SUPABASE_URL.indexOf('sfo.axentia.fr') !== -1;
+// --- Authentification : SSO Microsoft Entra ID UNIQUEMENT (décision du 31/07).
+// Le login e-mail + mot de passe a été retiré partout (provider GoTrue coupé côté VM).
 let AUTH_SSO_ERROR = '';
 
 function authJwtPayload(tok){
@@ -13377,28 +13376,6 @@ function authHandleSsoReturn(){
     access_token: at,
     refresh_token: p.get('refresh_token') || '',
     expires_at: Date.now() + ((parseInt(p.get('expires_in'), 10) || 3600) * 1000),
-    email: _mail,
-    name: _md.display_name || _md.full_name || _md.name || (_mail.split('@')[0] || 'Utilisateur')
-  };
-  AUTH_TOKEN = session.access_token;
-  authSaveSession(session);
-  return session;
-}
-
-async function authLogin(email, password){
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
-  });
-  const data = await res.json().catch(()=>({}));
-  if (!res.ok) throw new Error(data.error_description || data.msg || data.message || 'Identifiants invalides');
-  const _md = (data.user && data.user.user_metadata) || {};
-  const _mail = (data.user && data.user.email) || email || '';
-  const session = {
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
-    expires_at: Date.now() + ((data.expires_in || 3600) * 1000),
     email: _mail,
     name: _md.display_name || _md.full_name || _md.name || (_mail.split('@')[0] || 'Utilisateur')
   };
@@ -13590,29 +13567,13 @@ function showLoginOverlay(){
     return `<span class="auth-pt" style="left:${rnd(0, 100).toFixed(1)}%;width:${sz}px;height:${sz}px;animation-duration:${rnd(8, 18).toFixed(1)}s;animation-delay:${rnd(0, 12).toFixed(1)}s;${cy ? 'background:rgba(90,180,225,0.85);box-shadow:0 0 8px rgba(90,180,225,0.7);' : ''}"></span>`;
   }).join('');
 
-  const _eyeSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
   const _msLogo = `<svg class="auth-ms-logo" viewBox="0 0 21 21" width="18" height="18" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>`;
-  const _cardHtml = AUTH_SSO_AZURE ? `
+  // SSO uniquement : un seul chemin de connexion, aucun mot de passe géré par l'app
+  const _cardHtml = `
       <div class="auth-sso">
         <button class="auth-btn auth-btn-ms" type="button" id="authMsBtn"><span class="auth-spin"></span>${_msLogo}<span class="auth-btn-t">Se connecter avec Microsoft</span></button>
         <div class="auth-err" id="authErr" role="alert"></div>
-      </div>` : `
-      <form class="auth-card" id="authForm" autocomplete="on">
-        <div class="auth-field">
-          <div class="af-wrap"><span class="af-ic2">@</span>
-            <input class="auth-input af-fl" type="email" id="authEmail" required autocomplete="username" placeholder=" ">
-            <label class="af-float" for="authEmail">Adresse e-mail</label></div>
-        </div>
-        <div class="auth-field">
-          <div class="af-wrap"><span class="af-ic2">&#128274;</span>
-            <input class="auth-input af-fl" type="password" id="authPwd" required autocomplete="current-password" placeholder=" ">
-            <label class="af-float" for="authPwd">Mot de passe</label>
-            <button type="button" class="af-eye" id="authEye" aria-label="Afficher / masquer le mot de passe" tabindex="-1">${_eyeSvg}</button></div>
-          <div class="af-caps" id="authCaps" hidden>&#9650; Verrouillage majuscules activé</div>
-        </div>
-        <div class="auth-err" id="authErr" role="alert"></div>
-        <button class="auth-btn" type="submit" id="authBtn"><span class="auth-spin"></span><span class="auth-btn-t">Se connecter</span></button>
-      </form>`;
+      </div>`;
   ov.innerHTML = `
     <div class="auth-bg"></div>
     <div class="auth-grid"></div>
@@ -13629,43 +13590,10 @@ function showLoginOverlay(){
   document.body.appendChild(ov);
   document.body.style.overflow = 'hidden';
 
-  // Braises à la frappe : chaque caractère fait monter une étincelle depuis le champ
-  const spawnBurst = (input) => {
-    const r = input.getBoundingClientRect();
-    const b = document.createElement('span');
-    b.className = 'auth-burst';
-    b.style.left = (r.left + rnd(10, r.width - 10)) + 'px';
-    b.style.top = (r.top - 2) + 'px';
-    b.style.setProperty('--dx', rnd(-26, 26).toFixed(0) + 'px');
-    ov.appendChild(b);
-    setTimeout(() => b.remove(), 1300);
-  };
-  ov.querySelectorAll('.auth-input').forEach(inp => inp.addEventListener('input', () => spawnBurst(inp)));
-
-  // Afficher / masquer le mot de passe
-  const pwdInput = document.getElementById('authPwd');
-  const eyeBtn = document.getElementById('authEye');
-  if (eyeBtn && pwdInput) {
-    eyeBtn.addEventListener('click', () => {
-      const show = pwdInput.type === 'password';
-      pwdInput.type = show ? 'text' : 'password';
-      eyeBtn.classList.toggle('on', show);
-      pwdInput.focus();
-    });
-  }
-  // Alerte verrouillage majuscules (cause n°1 des échecs de mot de passe)
-  const capsHint = document.getElementById('authCaps');
-  if (pwdInput && capsHint) {
-    const check = (e) => { if (e.getModifierState) capsHint.hidden = !e.getModifierState('CapsLock'); };
-    pwdInput.addEventListener('keydown', check);
-    pwdInput.addEventListener('keyup', check);
-    pwdInput.addEventListener('blur', () => { capsHint.hidden = true; });
-  }
   // Parallaxe souris retirée (perf) : transforms continus sur le monolithe
   // géant + drop-shadows = trop cher, l'écran figé garde la même identité
-  let _authDone = false;
 
-  // Mode SSO : un seul bouton, redirection vers GoTrue -> Microsoft
+  // Un seul chemin de connexion : redirection vers GoTrue -> Microsoft
   const msBtn = document.getElementById('authMsBtn');
   if (msBtn) {
     if (AUTH_SSO_ERROR) {
@@ -13680,35 +13608,8 @@ function showLoginOverlay(){
       // e-mail ni nom -> GoTrue rejette avec "Error getting user email"
       location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=azure&scopes=${encodeURIComponent('email,profile')}`;
     });
+    setTimeout(() => msBtn.focus(), 60); // Entrée = se connecter
   }
-
-  const _authForm = document.getElementById('authForm');
-  if (_authForm) _authForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('authBtn');
-    const btnT = btn.querySelector('.auth-btn-t');
-    const err = document.getElementById('authErr');
-    err.textContent = '';
-    btn.disabled = true; btn.classList.add('loading'); btnT.textContent = 'Connexion…';
-    try {
-      await authLogin(document.getElementById('authEmail').value.trim(), document.getElementById('authPwd').value);
-      // Embrasement du monolithe puis fondu vers l'application
-      _authDone = true;
-      const st = ov.querySelector('.auth-stage'); if (st) st.style.transform = '';
-      btn.classList.remove('loading'); btnT.textContent = 'Bienvenue';
-      ov.classList.add('auth-sunrise');
-      bootAfterAuth();
-      setTimeout(() => ov.classList.add('auth-leave'), 650);
-      setTimeout(() => { ov.remove(); document.body.style.overflow = ''; }, 1250);
-    } catch (ex) {
-      err.textContent = ex.message || 'Échec de connexion';
-      const card = document.getElementById('authForm');
-      card.classList.add('shake');
-      setTimeout(() => card.classList.remove('shake'), 500);
-      btn.disabled = false; btn.classList.remove('loading'); btnT.textContent = 'Se connecter';
-    }
-  });
-  setTimeout(()=>{ const i=document.getElementById('authEmail'); if(i) i.focus(); }, 50);
 }
 
 // ============== RATTACHEMENT COMPTE -> PERSONNE + ADMIN ==============
@@ -13753,7 +13654,7 @@ function openAccountsAdmin(){
     <div class="acct-modal-head">
       <div>
         <div class="acct-modal-title">Administration des comptes</div>
-        <div class="acct-modal-sub">Comptes ${AUTH_SSO_AZURE ? 'Microsoft (SSO)' : '(e-mail)'}</div>
+        <div class="acct-modal-sub">Comptes Microsoft (SSO)</div>
       </div>
       <button class="acct-modal-close" id="acctModalClose" type="button">\u2715</button>
     </div>
@@ -13927,10 +13828,8 @@ async function acctCreate(email, personne){
 })();
 
 async function initAuthGate(){
-  if (AUTH_SSO_AZURE) {
-    const sso = authHandleSsoReturn();
-    if (sso) { bootAfterAuth(); return; }
-  }
+  const sso = authHandleSsoReturn();
+  if (sso) { bootAfterAuth(); return; }
   const s = authLoadSession();
   if (s && s.access_token && s.expires_at > Date.now() + 60000) {
     AUTH_TOKEN = s.access_token;
