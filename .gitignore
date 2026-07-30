@@ -1,0 +1,8 @@
+# Données réelles AXENTIA : JAMAIS versionnées (le dépôt est public).
+# Fichier de travail local uniquement, généré depuis la VM.
+data-local.js
+
+# Sauvegardes et exports
+*.sql.gz
+*.tar.gz
+deploy/.env

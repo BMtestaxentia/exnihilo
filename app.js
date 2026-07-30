@@ -13835,18 +13835,39 @@ const LOCAL_DEV = ['file:', 'null'].includes(location.protocol) ||
 
 async function initAuthGate(){
   if (LOCAL_DEV) {
-    // Garde-fou : aucune requête ne doit partir vers un backend distant depuis
-    // la maquette (l'ancien projet cloud existe encore). Les appels sont
-    // neutralisés et tracés en console, sans casser le code appelant.
+    // Garde-fou : aucune requête ne part vers un backend distant depuis la
+    // maquette. Les lectures sont servies par data-local.js s'il est présent
+    // (données réelles exportées de la VM, fichier non versionné), sinon vide ;
+    // les écritures sont acceptées sans effet.
     const _origFetch = window.fetch.bind(window);
+    const _local = window.LOCAL_DATA || null;
     window.fetch = (url, opts) => {
       if (typeof url === 'string' && url.indexOf(SUPABASE_URL) === 0) {
-        console.info('[maquette locale] requête ignorée :', (opts && opts.method) || 'GET', url.slice(SUPABASE_URL.length));
-        return Promise.resolve(new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+        const path = url.slice(SUPABASE_URL.length);
+        const m = path.match(/\/rest\/v1\/([a-z_]+)/);
+        const method = (opts && opts.method) || 'GET';
+        let body = '[]';
+        if (method === 'GET' && m && _local && Array.isArray(_local[m[1]])) body = JSON.stringify(_local[m[1]]);
+        else console.info('[maquette locale] requête sans effet :', method, path);
+        return Promise.resolve(new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } }));
       }
       return _origFetch(url, opts);
     };
     CURRENT_USER = 'Bastien MERCIER';
+    if (_local) {
+      // Chargement par le chemin normal : mêmes mappers, mêmes vues qu'en production
+      AUTH_TOKEN = 'local';
+      const s = document.getElementById('loadingSplash'); if (s) s.classList.add('hidden');
+      document.body.classList.add('local-dev');
+      const bd = document.createElement('div');
+      bd.className = 'localdev-badge';
+      bd.textContent = 'MAQUETTE LOCALE · données réelles (aucune modification n\'est enregistrée)';
+      const _add = () => document.body.appendChild(bd);
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _add); else _add();
+      try { addLogoutButton(); } catch (e) {}
+      loadFromSupabase();
+      return;
+    }
     document.body.classList.add('local-dev');
     const b = document.createElement('div');
     b.className = 'localdev-badge';
