@@ -13856,6 +13856,10 @@ async function initAuthGate(){
     try { addLogoutButton(); } catch (e) {}
     renderAll();
     if (typeof refreshDashboardKpis === 'function') try { refreshDashboardKpis(); } catch (e) {}
+    // L'écran de chargement est masqué par loadFromSupabase, qui ne tourne pas ici
+    const _hideSplash = () => { const s = document.getElementById('loadingSplash'); if (s) s.classList.add('hidden'); };
+    _hideSplash();
+    document.addEventListener('DOMContentLoaded', _hideSplash);
     return;
   }
   const sso = authHandleSsoReturn();
