@@ -13342,11 +13342,34 @@ function findTrancheSupabaseIdFromSuffix(op, suffix) {
   return t?._supabase_id || null;
 }
 
-// ============== AUTHENTIFICATION (Supabase Auth · email + mot de passe) ==============
+// ============== AUTHENTIFICATION (SSO Microsoft Entra ID) ==============
 const AUTH_STORE_KEY = 'exnihilo_auth';
-function authSaveSession(s){ try{ sessionStorage.setItem(AUTH_STORE_KEY, JSON.stringify(s)); }catch(e){} }
-function authLoadSession(){ try{ return JSON.parse(sessionStorage.getItem(AUTH_STORE_KEY) || 'null'); }catch(e){ return null; } }
+// Fermer la fenêtre déconnecte : la session vit en sessionStorage (vidée à la
+// fermeture de l'onglet) ET porte un horodatage rafraîchi tant que la fenêtre
+// est ouverte. À l'ouverture, une session « périmée » (fenêtre fermée puis
+// rouverte, y compris via la restauration d'onglets du navigateur) est rejetée.
+// Un simple rafraîchissement (F5) reste transparent car l'horodatage est récent.
+const AUTH_FRESH_MS = 45 * 1000; // au-delà de 45 s sans fenêtre ouverte -> reconnexion
+function authSaveSession(s){ try{ s = s || {}; s._seen = Date.now(); sessionStorage.setItem(AUTH_STORE_KEY, JSON.stringify(s)); }catch(e){} }
+function authLoadSession(){
+  try{
+    const s = JSON.parse(sessionStorage.getItem(AUTH_STORE_KEY) || 'null');
+    if (!s) return null;
+    if (!s._seen || (Date.now() - s._seen) > AUTH_FRESH_MS){ authClear(); return null; }
+    return s;
+  }catch(e){ return null; }
+}
 function authClear(){ try{ sessionStorage.removeItem(AUTH_STORE_KEY); }catch(e){} AUTH_TOKEN = SUPABASE_KEY; }
+// Battement de coeur : tant que la fenêtre est ouverte, on rafraîchit l'horodatage.
+(function authHeartbeat(){
+  const bump = () => { try{
+    const raw = sessionStorage.getItem(AUTH_STORE_KEY); if (!raw) return;
+    const s = JSON.parse(raw); s._seen = Date.now(); sessionStorage.setItem(AUTH_STORE_KEY, JSON.stringify(s));
+  }catch(e){} };
+  setInterval(bump, 15000);
+  window.addEventListener('focus', bump);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) bump(); });
+})();
 
 // --- Authentification : SSO Microsoft Entra ID UNIQUEMENT (décision du 31/07).
 // Le login e-mail + mot de passe a été retiré partout (provider GoTrue coupé côté VM).
