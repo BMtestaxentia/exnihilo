@@ -14115,11 +14115,23 @@ function _edSyncRailSpan() {
   const rail = c.querySelector(':scope > .edit-rail');
   const side = c.querySelector(':scope > .fin-side');
   if (!rail) return;
-  // Le rail et la colonne des ressources vivent dans leurs propres colonnes :
-  // seules les lignes de la colonne centrale comptent.
-  const n = [...c.children].filter(el => el !== rail && el !== side
-    && !el.classList.contains('cockpit-hidden') && el.offsetParent !== null).length;
-  const portee = '1 / span ' + Math.max(1, n);
+  // Placement explicite des rangées. L'auto-placement mettait le bandeau
+  // d'indicateurs et le bloc de saisie dans la même rangée en scope « Total »,
+  // d'où un chevauchement. Le rail et la colonne des ressources vivent dans
+  // leurs propres colonnes : seules les rangées du centre sont numérotées.
+  // Le bandeau d'indicateurs occupe seul la rangée 1, sur toute la largeur :
+  // partagé avec le rail, le dimensionnement de la piste devenait erratique et
+  // la saisie venait se superposer au bandeau.
+  const kpi = c.querySelector(':scope > .finc-kpis');
+  if (kpi) kpi.style.gridRow = '1';
+  let ligne = kpi ? 1 : 0;
+  [...c.children].forEach(el => {
+    if (el === rail || el === side || el === kpi) return;
+    if (el.classList.contains('cockpit-hidden') || el.offsetParent === null) { el.style.gridRow = ''; return; }
+    el.style.gridRow = String(++ligne);
+  });
+  const debut = kpi ? 2 : 1;
+  const portee = debut + ' / span ' + Math.max(1, ligne - (kpi ? 1 : 0));
   rail.style.gridRow = portee;
   if (side) side.style.gridRow = portee;
 }
@@ -14219,6 +14231,18 @@ function initEditCockpit() {
   c.classList.add('edit-cockpit');
   c.classList.toggle('only-missing', EDIT_ONLY_MISSING);
   c.classList.toggle('fin-cockpit', OPS_TAB === 'fin');   // 3e colonne : origine des ressources
+  // Financements : la colonne centrale est regroupée dans un conteneur dédié et
+  // la mise en page passe en flex. En grille, la rangée du bandeau d'indicateurs
+  // refusait de se dimensionner et la saisie venait se superposer au bandeau.
+  if (OPS_TAB === 'fin' && !c.querySelector(':scope > .fin-center')) {
+    const centre = document.createElement('div');
+    centre.className = 'fin-center';
+    const aDeplacer = [...c.children].filter(el =>
+      !el.classList.contains('edit-rail') && !el.classList.contains('fin-side')
+      && !el.classList.contains('finc-kpis'));
+    c.insertBefore(centre, aDeplacer[0] || null);
+    aDeplacer.forEach(el => centre.appendChild(el));
+  }
   // Focus initial : première section avec des champs vides
   if (EDIT_FOCUS_ID === '__auto__') {
     const first = entries.find(en => _edStats(en.els).empty > 0) || entries[0];

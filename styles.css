@@ -5114,7 +5114,10 @@
   .ops-shell[data-tab="bilan"] .op-detail > [data-grp]:not([data-grp~="bilan"]),
   .ops-shell[data-tab="suivi"] .op-detail > [data-grp]:not([data-grp~="suivi"]),
   .ops-shell[data-tab="tr"] .tranche-detail > [data-grp]:not([data-grp~="tr"]),
-  .ops-shell[data-tab="fin"] .tranche-detail > [data-grp]:not([data-grp~="fin"]) { display: none !important; }
+  .ops-shell[data-tab="fin"] .tranche-detail > [data-grp]:not([data-grp~="fin"]),
+  /* En saisie des financements les blocs sont regroupes dans .fin-center :
+     sans cette ligne, les sections de l'onglet tranche reapparaissent. */
+  .ops-shell[data-tab="fin"] .tranche-detail > .fin-center > [data-grp]:not([data-grp~="fin"]) { display: none !important; }
 
   /* Consultation (accueil) : seul le tableau de bord "home" est visible dans
      #opDetail ; les groupes op (syn/dos/bilan/suivi) restent en DOM comme source
@@ -5619,12 +5622,20 @@
 /* ===== Cockpit financements : 3 colonnes (rail / saisie / ressources) ===== */
 /* .fin-cockpit ajoute une specificite : les regles generiques ci-dessus posent
    grid-column en !important sur tous les enfants du conteneur. */
+/* Mise en page en flex et non en grille : le dimensionnement de la rangee du
+   bandeau d'indicateurs y etait erratique (piste de 2 px pour un contenu de
+   80 px), la saisie se superposait au bandeau. */
 .ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit.fin-cockpit {
-  grid-template-columns: 240px minmax(0, 1fr) 216px;
+  display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px;
 }
-.ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit.fin-cockpit > *:not(.edit-rail):not(.fin-side) {
-  grid-column: 2 !important;
+/* L'ordre visuel ne suit pas l'ordre du DOM : le rail est insere en premier par
+   le cockpit, or le bandeau doit coiffer toute la largeur. */
+.ops-shell[data-tab="fin"] .fin-cockpit > .finc-kpis { order: 0; flex: 0 0 100%; width: 100%; }
+.ops-shell[data-tab="fin"] .fin-cockpit > .edit-rail { order: 1; flex: 0 0 240px; position: sticky; top: 8px; }
+.ops-shell[data-tab="fin"] .fin-cockpit > .fin-center {
+  order: 2; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 14px;
 }
+.ops-shell[data-tab="fin"] .fin-cockpit > .fin-side { order: 3; flex: 0 0 216px; position: sticky; top: 8px; }
 .ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit.fin-cockpit > .fin-side {
   grid-column: 3 !important; align-self: start; position: sticky; top: 8px;
 }
@@ -5671,8 +5682,7 @@
 .fin-cockpit .section#sec-tr-fp { border-left: 3px solid var(--cat-5); }
 
 @media (max-width: 1100px) {
-  .ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit.fin-cockpit { grid-template-columns: 240px minmax(0, 1fr); }
-  .ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit.fin-cockpit > .fin-side { grid-column: 2 !important; position: static; }
+  .ops-shell[data-tab="fin"] .fin-cockpit > .fin-side { flex: 1 1 100%; position: static; }
   .finc-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .only-missing .is-filled { display: none !important; }
