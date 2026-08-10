@@ -5988,6 +5988,7 @@ function renderSubvCardEdit(i, op) {
         <button type="button" class="fin-expand" onclick="toggleFinRow(this)" title="Déplier / replier"><i class="ti ti-chevron-down"></i></button>
         <button type="button" class="fin-del danger" onclick="deleteEntityRow('subventions', ${i._originalIdx})" title="Supprimer"><i class="ti ti-trash"></i></button>
       </div>
+      ${subvChipsHtml(i)}
       <div class="fin-edetail">
         <div class="card-edit-grid">
           <div class="card-edit-field"><label>Montant validé CA (€)</label><input type="number" min="0" class="card-input" data-field="montant_valide_ca" value="${i.montant_valide_ca || ''}"></div>
@@ -6289,6 +6290,7 @@ function renderPretCardEdit(i, op) {
         <button type="button" class="fin-expand" onclick="toggleFinRow(this)" title="Déplier / replier le détail"><i class="ti ti-chevron-down"></i></button>
         <button type="button" class="fin-del danger" onclick="deleteEntityRow('prets', ${i._originalIdx})" title="Supprimer le prêt"><i class="ti ti-trash"></i></button>
       </div>
+      ${pretChipsHtml(i)}
 
       <!-- Détail replié : ligne de vie éditable (3 cartes d'étape) + conditions -->
       <div class="fin-edetail">
@@ -6391,6 +6393,43 @@ function renderPretCardEdit(i, op) {
 }
 
 // Déplie / replie le détail d'une ligne de financement en édition.
+// Pastilles de rappel : ce que contient le détail replié, sans avoir à l'ouvrir.
+// Une entrée { l, v } affiche une valeur ; { l, manque: true } signale un champ
+// clé non renseigné, en pointillé.
+function finChipsHtml(items) {
+  const html = items.filter(Boolean).map(c => c.manque
+    ? `<span class="fin-chip miss"><span class="fin-chip-l">${escapeHtml(c.l)}</span><b>à saisir</b></span>`
+    : `<span class="fin-chip"><span class="fin-chip-l">${escapeHtml(c.l)}</span><b>${escapeHtml(String(c.v))}</b></span>`
+  ).join('');
+  return html ? `<div class="fin-chips">${html}</div>` : '';
+}
+
+function pretChipsHtml(p) {
+  const t = (typeof parseTaux === 'function') ? (parseTaux(p.taux) || {}) : {};
+  const marge = (p.marge != null && p.marge !== '') ? p.marge : t.spread;
+  const pct = v => (Number(v) * 100).toFixed(2).replace('.', ',').replace(/,00$/, '') + ' %';
+  return finChipsHtml([
+    p.duree ? { l: 'Durée', v: p.duree + ' ans' } : { l: 'Durée', manque: true },
+    (p.index_taux || t.index) ? { l: 'Indice', v: p.index_taux || t.index } : null,
+    (marge != null && marge !== '') ? { l: 'Marge', v: (Number(marge) > 0 ? '+' : '') + pct(marge) } : null,
+    p.revision ? { l: 'Révision', v: p.revision } : null,
+    p.duree_prefi ? { l: 'Préfi', v: p.duree_prefi + ' mois' } : null,
+    p.n_contrat ? { l: 'N° contrat', v: p.n_contrat }
+      : (p.montant_contrat || p.date_contrat ? { l: 'N° contrat', manque: true } : null),
+    (!p.montant_contrat && !p.date_contrat) ? { l: 'Contrat', manque: true } : null,
+  ]);
+}
+
+function subvChipsHtml(s) {
+  return finChipsHtml([
+    s.montant_demande ? { l: 'Demandé', v: fmtMontant(s.montant_demande) } : null,
+    s.n_arrete ? { l: 'Référence', v: s.n_arrete } : null,
+    s.date_conv_signature ? { l: 'Convention', v: s.date_conv_signature } : { l: 'Convention', manque: true },
+    s.montant_verse ? { l: 'Versé', v: fmtMontant(s.montant_verse) }
+      : (s.date_versement_prevue ? { l: 'Versement prévu', v: s.date_versement_prevue } : { l: 'Versement', manque: true }),
+  ]);
+}
+
 function toggleFinRow(btn) {
   const row = btn.closest('.fin-erow');
   if (row) row.classList.toggle('open');
