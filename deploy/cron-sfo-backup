@@ -1,0 +1,14 @@
+# Sauvegardes SFO. A deposer en /etc/cron.d/sfo-backup (root:root, chmod 644).
+# Remplace la ligne d'origine, qui ne detectait pas l'echec de pg_dump.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Sauvegarde quotidienne a 02:00
+0 2 * * * root /opt/sfo/sfo-backup.sh
+
+# Test de restauration hebdomadaire, le dimanche a 03:00, dans une base jetable
+0 3 * * 0 root /opt/sfo/sfo-restore-test.sh
+
+# Rattrapage : si la VM etait eteinte a 02:00, sauvegarder au demarrage des que
+# la pile est prete (c'est ce qui a manque les 6 et 7 aout, VM arretee).
+@reboot root sleep 180 && /opt/sfo/sfo-backup.sh
