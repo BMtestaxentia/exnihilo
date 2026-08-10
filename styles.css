@@ -5897,3 +5897,8 @@
   background: repeating-linear-gradient(45deg, #b8860b, #b8860b 12px, #96700a 12px, #96700a 24px);
   color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-align: center;
   padding: 3px 0; text-transform: uppercase; pointer-events: none; opacity: .92; }
+
+/* Code court de tranche, desormais saisi dans la section Identite (le bandeau
+   permanent occupait trop de place en edition). */
+.tr-code-edit { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.tr-code-pre { color: var(--text-tertiary); font-size: 12px; flex: none; }

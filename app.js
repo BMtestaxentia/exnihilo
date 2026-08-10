@@ -4895,7 +4895,7 @@ function renderTrancheDetail() {
     // En saisie des financements, l'identité de la tranche et ses indicateurs
     // formaient un bandeau permanent que le focus ne pouvait pas masquer (ce ne
     // sont pas des sections). Ils restent saisissables dans « Saisie de la tranche ».
-    const enteteTranche = (editMode && OPS_TAB === 'fin') ? '' : `
+    const enteteTranche = editMode ? '' : `
       <div class="detail-header">
         <div style="flex:1; min-width: 0;">
           <div class="detail-eyebrow">${escapeHtml(t.code_full || op.code + '-' + t.id)}</div>
@@ -4936,6 +4936,20 @@ function renderTrancheDetail() {
       ${finHeadHtml}
       <div class="section" id="sec-tr-id" data-grp="tr">
         <div class="section-label id"><i class="ti ti-building-skyscraper"></i>Identité & simulation</div>
+        ${editMode ? `
+        <div class="kv-row"><span class="kv-key">Type d'établissement</span>
+          <input type="text" class="editable-input" list="types-structure-list" data-edit-tranche-field="type_structure" value="${escapeHtml(t.type_structure || '')}" placeholder="FJT, EHPAD, MAS…">
+          <datalist id="types-structure-list">${getRef('types_structure').map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist>
+        </div>
+        <div class="kv-row"><span class="kv-key">Code court</span>
+          <span class="tr-code-edit"><span class="tr-code-pre">${escapeHtml(op.code || '')}-</span>
+          <input type="text" class="editable-input" data-edit-tranche-code data-original-code="${escapeHtml(trCode)}" value="${escapeHtml(trCode)}" placeholder="RSJA, T1…"></span>
+        </div>
+        ${editableKV('Année de programmation', t.annee_prog, 'annee_prog', 'text', 'tranche-field')}
+        <div class="kv-row"><span class="kv-key">Logements</span><span class="kv-value">${liveLogements || '-'} <span class="auto-tag">auto · somme volumétrie</span></span></div>
+        <div class="kv-row"><span class="kv-key">Supprimer</span>
+          <span><button class="icon-btn danger-btn" onclick="deleteTranche()" title="Supprimer cette tranche"><i class="ti ti-trash"></i>&nbsp;Supprimer la tranche</button></span>
+        </div>` : ''}
         ${editableKV('Gestionnaire nom', t.gestionnaire, 'gestionnaire', 'text', 'tranche-field')}
         ${editableKV('Gestionnaire statut', t.gestionnaire_statut, 'gestionnaire_statut', 'text', 'tranche-field')}
         ${editableKV('Capacité HAS / totale', t.capacite_has, 'capacite_has', 'text', 'tranche-field')}
