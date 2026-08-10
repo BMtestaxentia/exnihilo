@@ -3429,7 +3429,7 @@ function collectEditsFromDom(op) {
     document.querySelectorAll('[data-edit-tranche-field]').forEach(el => {
       const field = el.dataset.editTrancheField;
       let val = el.value;
-      const numFields = ['logements','budget_ttc','fonds_propres','accord_redevance','duree_reconstitution_fp','taux_remuneration_fp','injection_pgerc','nb_droits_etat','logts_lli','logts_rhvs','logts_libre','locaux_libre'];
+      const numFields = ['logements','budget_ttc','fonds_propres','accord_redevance','duree_reconstitution_fp','taux_remuneration_fp','injection_pgerc','nb_droits_etat','logts_lli','logts_rhvs','logts_libre','locaux_libre','places_ars'];
       if (numFields.includes(field)) {
         val = val === '' ? null : parseFloat(val);
       }
@@ -4885,10 +4885,12 @@ function renderTrancheDetail() {
       <div class="op-anchor tr-stack6" id="sec-tr-hcl" data-grp="tr">
         <div class="section" id="sec-tr-horsagr">
           <div class="section-label vol"><i class="ti ti-home-2"></i>Hors agrément</div>
+          ${editableKV("Places arrêté d'autorisation ARS", t.places_ars, 'places_ars', 'number', 'tranche-field')}
+          ${editableKV("Date arrêté d'autorisation ARS", t.date_arrete_ars, 'date_arrete_ars', 'text', 'tranche-field')}
+          ${editableKV('Places arrêté préfectoral RHVS', t.logts_rhvs, 'logts_rhvs', 'number', 'tranche-field')}
+          ${editableKV('Date arrêté préfectoral RHVS', t.date_arrete_rhvs, 'date_arrete_rhvs', 'text', 'tranche-field')}
           ${editableKV('Logements LLI (nombre)', t.logts_lli, 'logts_lli', 'number', 'tranche-field')}
           ${editableKV('Date déclaration LLI', t.date_decl_lli, 'date_decl_lli', 'text', 'tranche-field')}
-          ${editableKV('Logements RHVS (nombre)', t.logts_rhvs, 'logts_rhvs', 'number', 'tranche-field')}
-          ${editableKV('Date arrêté préfectoral RHVS', t.date_arrete_rhvs, 'date_arrete_rhvs', 'text', 'tranche-field')}
           ${editableKV('Logements LIBRE (nombre)', t.logts_libre, 'logts_libre', 'number', 'tranche-field')}
           ${editableKV('Locaux LIBRE (nombre)', t.locaux_libre, 'locaux_libre', 'number', 'tranche-field')}
         </div>
@@ -12430,6 +12432,8 @@ function mapTrancheFromSupabase(t) {
     date_decl_lli: t.date_decl_lli || '',
     logts_rhvs: t.logts_rhvs,
     date_arrete_rhvs: t.date_arrete_rhvs || '',
+    places_ars: t.places_ars,
+    date_arrete_ars: t.date_arrete_ars || '',
     logts_libre: t.logts_libre,
     locaux_libre: t.locaux_libre,
     famille_agrement: t.famille_agrement || '',
@@ -13231,6 +13235,10 @@ function buildTranchePayload(t, operationId) {
     date_arrete_rhvs: t.date_arrete_rhvs || null,
     logts_libre: (t.logts_libre === '' || t.logts_libre == null) ? null : Number(t.logts_libre),
     locaux_libre: (t.locaux_libre === '' || t.locaux_libre == null) ? null : Number(t.locaux_libre),
+    // Arrêté d'autorisation ARS (places médico-sociales) : hors agrément, non compté
+    // dans le total logements (les places sont déjà couvertes par l'agrément PLS).
+    places_ars: (t.places_ars === '' || t.places_ars == null) ? null : Number(t.places_ars),
+    date_arrete_ars: t.date_arrete_ars || null,
     notes: t.notes || '',
     surfaces: t.surfaces || {},
     batiment: t.batiment || {},
@@ -13945,7 +13953,7 @@ let EDIT_ONLY_MISSING = false;    // filtre champs vides uniquement
 
 const _ED_INPUT_SEL = 'input.editable-input:not([type="checkbox"]), select.editable-input, textarea.editable-input, input.card-input, select.card-input, textarea.card-input';
 // Champs de comptage entiers qui reçoivent des boutons -/+ (en plus de la saisie clavier)
-const _ED_STEP_SEL = '[data-edit-tranche-volagree], input[data-edit-tranche-field="logts_lli"], input[data-edit-tranche-field="logts_rhvs"], input[data-edit-tranche-field="logts_libre"], input[data-edit-tranche-field="locaux_libre"], input[data-edit-tranche-field="nb_chambres"]';
+const _ED_STEP_SEL = '[data-edit-tranche-volagree], input[data-edit-tranche-field="logts_lli"], input[data-edit-tranche-field="logts_rhvs"], input[data-edit-tranche-field="logts_libre"], input[data-edit-tranche-field="locaux_libre"], input[data-edit-tranche-field="places_ars"], input[data-edit-tranche-field="nb_chambres"]';
 
 // Conteneur actif selon l'onglet : détail/financements de tranche ou Informations op
 function _edContainer() {
