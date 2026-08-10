@@ -44,7 +44,6 @@ const REFERENTIELS = {
 
   // Agrément
   familles_agrement: { label: "Familles d'agrément", items: [] },
-  uls_rhvs: { label: 'ULS / RHVS', items: [] },
 
   // Loyer
   type_redevance: { label: 'Types de redevance', items: [] },
@@ -4867,7 +4866,6 @@ function renderTrancheDetail() {
         ${editableKV('Date DFA', t.date_dfa, 'date_dfa', 'text', 'tranche-field')}
         ${editableKV('Date butoir de clôture', t.date_cloture_agrement, 'date_cloture_agrement', 'text', 'tranche-field')}
         ${editableSelect('Famille agrément', t.famille_agrement, 'famille_agrement', getRef('familles_agrement'), 'tranche-field')}
-        ${editableSelect('ULS / RHVS', t.uls_rhvs, 'uls_rhvs', getRef('uls_rhvs'), 'tranche-field')}
         ${editableSelect('Nature', t.nature, 'nature', (t.nature && !getRef('nature').includes(t.nature)) ? [t.nature, ...getRef('nature')] : getRef('nature'), 'tranche-field')}
         ${editableSelect('Public', t.public_cible, 'public_cible', (t.public_cible && !getRef('public').includes(t.public_cible)) ? [t.public_cible, ...getRef('public')] : getRef('public'), 'tranche-field')}
         ${(t.vol_agree && Number(t.vol_agree.plai) > 0) ? editableKV('PLAI adapté (nb logts)', t.plai_adapte, 'plai_adapte', 'number', 'tranche-field') : ''}
@@ -12437,7 +12435,6 @@ function mapTrancheFromSupabase(t) {
     logts_libre: t.logts_libre,
     locaux_libre: t.locaux_libre,
     famille_agrement: t.famille_agrement || '',
-    uls_rhvs: t.uls_rhvs || '',
     date_butoir_depot: t.date_butoir_depot || '',
     date_depot_agr: t.date_depot_agr || '',
     plai_adapte: t.plai_adapte,
@@ -13219,7 +13216,6 @@ function buildTranchePayload(t, operationId) {
     vol_agree: t.vol_agree || {},
     date_cloture_agrement: t.date_cloture_agrement || null,
     famille_agrement: t.famille_agrement || '',
-    uls_rhvs: t.uls_rhvs || '',
     date_butoir_depot: t.date_butoir_depot || null,
     date_depot_agr: t.date_depot_agr || null,
     plai_adapte: t.plai_adapte,
