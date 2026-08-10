@@ -4361,20 +4361,23 @@
     border-top: 1px solid var(--border-color);
   }
   .bilan-line {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
     padding: 4px 0; font-size: 12.5px;
     border-bottom: 1px dotted var(--border-color);
   }
   .bilan-line:last-of-type { border-bottom: none; }
   .bilan-line-empty .bilan-line-label,
   .bilan-line-empty .bilan-line-value { color: var(--text-tertiary); }
-  .bilan-line-label { flex: 1; color: var(--text-secondary); }
+  .bilan-line-label { flex: 1; min-width: 0; color: var(--text-secondary); }
   .bilan-line-value {
     font-variant-numeric: tabular-nums;
     color: var(--text-primary); padding-left: 12px;
   }
-  .bilan-line-input {
-    width: 140px; text-align: right; font-size: 12px; padding: 3px 8px;
+  /* Sélecteur qualifié (input.xxx) volontaire : .editable-input impose width:100%
+     et est déclarée plus bas dans la feuille ; à spécificité égale elle gagnait,
+     le champ occupait toute la ligne et le libellé se repliait sur trois lignes. */
+  input.bilan-line-input {
+    flex: 0 0 150px; width: 150px; text-align: right; font-size: 12px; padding: 3px 8px;
   }
   .bilan-line-subtotal {
     padding-top: 6px; margin-top: 4px;
@@ -5606,7 +5609,10 @@
 .ops-shell[data-tab="dos"] .op-detail.edit-cockpit > *:not(.edit-rail) { grid-column: 2 / -1 !important; }
 .ops-shell[data-tab="tr"] .tranche-detail.edit-cockpit > .edit-rail,
 .ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit > .edit-rail,
-.ops-shell[data-tab="dos"] .op-detail.edit-cockpit > .edit-rail { grid-column: 1; grid-row: 1 / span 99; align-self: start; position: sticky; top: 8px; }
+/* La hauteur de rail est posee en JS (_edSyncRailSpan) : un "span 99" en dur
+   creait 99 lignes implicites, donc un vide defilable sous le contenu des qu'une
+   seule categorie etait affichee. */
+.ops-shell[data-tab="dos"] .op-detail.edit-cockpit > .edit-rail { grid-column: 1; grid-row: 1; align-self: start; position: sticky; top: 8px; }
 .ops-shell:not([data-tab="tr"]):not([data-tab="fin"]):not([data-tab="dos"]) .edit-rail { display: none; }
 .cockpit-hidden { display: none !important; }
 .only-missing .is-filled { display: none !important; }

@@ -4801,7 +4801,10 @@ function renderTrancheDetail() {
 
     const liveLogements = trancheLogements(t);
 
-    detailHtml = `
+    // En saisie des financements, l'identité de la tranche et ses indicateurs
+    // formaient un bandeau permanent que le focus ne pouvait pas masquer (ce ne
+    // sont pas des sections). Ils restent saisissables dans « Saisie de la tranche ».
+    const enteteTranche = (editMode && OPS_TAB === 'fin') ? '' : `
       <div class="detail-header">
         <div style="flex:1; min-width: 0;">
           <div class="detail-eyebrow">${escapeHtml(t.code_full || op.code + '-' + t.id)}</div>
@@ -4835,8 +4838,10 @@ function renderTrancheDetail() {
             ? `<input type="text" class="editable-input" style="text-align:left;font-size:18px;font-weight:600;padding:2px 6px;width:100%;min-width:0;" data-edit-tranche-field="annee_prog" value="${t.annee_prog || ''}">`
             : `<div class="metric-value">${t.annee_prog || '-'}</div>`}
         </div>
-      </div>
+      </div>`;
 
+    detailHtml = `
+      ${enteteTranche}
       <div class="section" id="sec-tr-id" data-grp="tr">
         <div class="section-label id"><i class="ti ti-building-skyscraper"></i>Identité & simulation</div>
         ${editableKV('Gestionnaire nom', t.gestionnaire, 'gestionnaire', 'text', 'tranche-field')}
@@ -4902,7 +4907,7 @@ function renderTrancheDetail() {
       </div>
 
       ${(editMode && TR_SCOPE == null)
-        ? `<div class="op-anchor" data-grp="fin">${renderAllTranchesFinEdit(op, trancheSource)}</div>`
+        ? `<div class="finop-all" data-grp="fin">${renderAllTranchesFinEdit(op, trancheSource)}</div>`
         : `
       <div class="op-anchor" id="sec-tr-prets" data-grp="fin">${renderPretsSection(prets, op)}</div>
       <div class="op-anchor" id="sec-tr-gar" data-grp="fin">${renderGarantiesSection(garanties, op)}</div>
@@ -13958,49 +13963,88 @@ function _edContainer() {
   return null;
 }
 let _edSecSeq = 0;
-function _edEntries() {
+// Toutes les sections de premier niveau du conteneur, avec ou sans champ de saisie.
+// Le focus doit pouvoir les masquer TOUTES : une section sans champ (typiquement
+// « Garanties d'emprunt · 0 ») restait sinon affichée quelle que soit la catégorie
+// choisie dans le rail.
+// Une section masquée PAR LE COCKPIT (cockpit-hidden) reste candidate, sinon le
+// rail ne peut plus jamais la ré-afficher après un premier focus (ni « Tout afficher »).
+function _edSections() {
   const c = _edContainer();
   if (!c) return [];
-  // Candidats : toute section/ancre VISIBLE contenant au moins un champ de saisie.
-  // Une section masquée PAR LE COCKPIT (cockpit-hidden) reste candidate, sinon le
-  // rail ne peut plus jamais la ré-afficher après un premier focus (ni « Tout afficher »).
   const all = [...c.querySelectorAll('.section, .op-anchor')]
     .filter(el => !el.closest('.edit-rail'))
-    .filter(el => el.querySelector(_ED_INPUT_SEL))
     .filter(el => el.offsetParent !== null || el.classList.contains('cockpit-hidden'));
   // Ne garder que le plus haut niveau (pas d'entrée imbriquée dans une autre)
-  const tops = all.filter(el => !all.some(o => o !== el && o.contains(el)));
-  return tops.map(el => {
-    if (!el.id) el.id = 'edsec-' + (++_edSecSeq);
-    const lab = el.querySelector('.section-label, .subent-header .subent-title');
-    let label = lab ? osnLabelText(lab).replace(/·.*$/, '').trim() : el.id;
-    if (el.id === 'sec-tr-hcl') label = 'Hors agrément & convention';
-    return { el, id: el.id, label };
-  });
+  return all.filter(el => !all.some(o => o !== el && o.contains(el)));
 }
-function _edStats(el) {
-  const inputs = [...el.querySelectorAll(_ED_INPUT_SEL)];
-  const empty = inputs.filter(i => String(i.value || '').trim() === '').length;
-  const total = inputs.length;
+function _edEntries() {
+  // Une section identifiable = une catégorie du rail, même sans champ de saisie :
+  //  - une sous-entité vide (« Garanties d'emprunt · 0 ») doit rester atteignable
+  //    pour y créer le premier élément ;
+  //  - une section dont les champs n'apparaissent qu'une fois dépliée (Prix de
+  //    revient, Notes libres) ne doit pas devenir inaccessible, puisque le focus
+  //    masque désormais tout le reste.
+  const groupes = new Map();
+  _edSections()
+    .filter(el => el.querySelector(_ED_INPUT_SEL) || el.querySelector('.subent-header') || el.querySelector('.section-label'))
+    .forEach(el => {
+      if (!el.id) el.id = 'edsec-' + (++_edSecSeq);
+      const lab = el.querySelector('.section-label, .subent-header .subent-title');
+      let label = lab ? osnLabelText(lab).replace(/·.*$/, '').trim() : el.id;
+      if (el.id === 'sec-tr-hcl') label = 'Hors agrément & convention';
+      // Regroupement par libellé : en scope « Total », chaque tranche répète les
+      // mêmes sections (Prêts, Garanties...). Le rail doit proposer UNE catégorie
+      // qui les affiche toutes, pas une entrée par tranche.
+      const id = 'edcat-' + label.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-');
+      if (!groupes.has(id)) groupes.set(id, { id, label, els: [] });
+      groupes.get(id).els.push(el);
+    });
+  return [...groupes.values()];
+}
+// Accepte une section ou une liste de sections (une catégorie peut en regrouper
+// plusieurs quand toutes les tranches sont affichées).
+function _edStats(els) {
+  const liste = Array.isArray(els) ? els : [els];
+  let total = 0, empty = 0;
+  liste.forEach(el => {
+    const inputs = [...el.querySelectorAll(_ED_INPUT_SEL)];
+    total += inputs.length;
+    empty += inputs.filter(i => String(i.value || '').trim() === '').length;
+  });
   return { total, empty, pct: total ? Math.round((total - empty) / total * 100) : 100 };
+}
+// Le rail est sticky : il doit couvrir toutes les lignes de la grille, mais pas
+// plus, sinon la grille crée des lignes implicites vides (vide défilable).
+function _edSyncRailSpan() {
+  const c = _edContainer();
+  if (!c) return;
+  const rail = c.querySelector(':scope > .edit-rail');
+  if (!rail) return;
+  const n = [...c.children].filter(el => el !== rail && !el.classList.contains('cockpit-hidden') && el.offsetParent !== null).length;
+  rail.style.gridRow = '1 / span ' + Math.max(1, n);
 }
 
 function edFocus(id) {
   EDIT_FOCUS_ID = id;
-  const entries = _edEntries();
-  entries.forEach(en => en.el.classList.toggle('cockpit-hidden', !!id && en.id !== id));
+  const cible = id ? _edEntries().find(e => e.id === id) : null;
+  // On masque TOUTES les sections de premier niveau, pas seulement celles qui ont
+  // des champs : une catégorie sélectionnée doit être seule à l'écran.
+  _edSections().forEach(el => el.classList.toggle('cockpit-hidden', !!cible && !cible.els.includes(el)));
   const rail = document.getElementById('editRail');
   if (rail) {
     rail.querySelectorAll('[data-ed-sec]').forEach(b => b.classList.toggle('active', b.dataset.edSec === (id || '')));
     const all = rail.querySelector('.er-all');
     if (all) all.classList.toggle('active', !id);
   }
-  if (id) { const en = entries.find(e => e.id === id); if (en) en.el.scrollIntoView({ block: 'nearest' }); }
+  if (cible && cible.els[0]) cible.els[0].scrollIntoView({ block: 'nearest' });
+  _edSyncRailSpan();
 }
 function edToggleMissing(on) {
   EDIT_ONLY_MISSING = on;
   const c = _edContainer();
   if (c) c.classList.toggle('only-missing', on);
+  _edSyncRailSpan();   // le filtre masque des sections : la hauteur du rail change
 }
 
 // Marque les enveloppes de champs remplies (pour le filtre « manquants seulement »)
@@ -14028,6 +14072,9 @@ function _edEnhanceSteppers(root) {
 }
 
 function _edRingHtml(st) {
+  // Section sans aucun champ (sous-entité vide) : anneau neutre. Afficher « ✓ »
+  // laisserait croire qu'elle est complète alors qu'elle ne contient rien.
+  if (!st.total) return '<span class="er-ring" style="background: var(--border-color);"><span>·</span></span>';
   const color = st.pct >= 100 ? 'var(--success-accent, #2fbf8f)' : 'var(--info-accent)';
   return '<span class="er-ring" style="background: conic-gradient(' + color + ' ' + st.pct + '%, var(--border-color) 0);"><span>' + (st.pct >= 100 ? '✓' : st.pct) + '</span></span>';
 }
@@ -14036,7 +14083,7 @@ function updateEditCockpitCounts() {
   if (!rail) return;
   let tot = 0, emp = 0;
   _edEntries().forEach(en => {
-    const st = _edStats(en.el);
+    const st = _edStats(en.els);
     tot += st.total; emp += st.empty;
     const btn = rail.querySelector('[data-ed-sec="' + en.id + '"]');
     if (!btn) return;
@@ -14044,16 +14091,19 @@ function updateEditCockpitCounts() {
     if (ring) ring.outerHTML = _edRingHtml(st);
     const m = btn.querySelector('.er-miss');
     if (m) {
-      m.textContent = st.empty ? st.empty + ' vide' + (st.empty > 1 ? 's' : '') : '✓';
-      m.classList.toggle('done', !st.empty);
+      // Sous-entité vide : le compte figure déjà dans le titre de la section
+      // (« Garanties d'emprunt · 0 »), inutile d'annoncer un faux « ✓ ».
+      m.textContent = !st.total ? '' : (st.empty ? st.empty + ' vide' + (st.empty > 1 ? 's' : '') : '✓');
+      m.classList.toggle('done', !!st.total && !st.empty);
     }
-    en.el.classList.toggle('all-filled', !st.empty);
+    en.els.forEach(el => el.classList.toggle("all-filled", !st.empty));
   });
   const pct = tot ? Math.round((tot - emp) / tot * 100) : 100;
   const pctEl = rail.querySelector('.er-total-pct');
   if (pctEl) pctEl.textContent = pct + ' %';
   const bar = rail.querySelector('.er-bar i');
   if (bar) bar.style.width = pct + '%';
+  _edSyncRailSpan();
 }
 
 function initEditCockpit() {
@@ -14071,14 +14121,14 @@ function initEditCockpit() {
   c.classList.toggle('only-missing', EDIT_ONLY_MISSING);
   // Focus initial : première section avec des champs vides
   if (EDIT_FOCUS_ID === '__auto__') {
-    const first = entries.find(en => _edStats(en.el).empty > 0) || entries[0];
+    const first = entries.find(en => _edStats(en.els).empty > 0) || entries[0];
     EDIT_FOCUS_ID = first.id;
   } else if (EDIT_FOCUS_ID && !entries.some(en => en.id === EDIT_FOCUS_ID)) {
     EDIT_FOCUS_ID = entries[0].id;
   }
   const secBtns = entries.map(en =>
     '<button type="button" class="er-sec" data-ed-sec="' + en.id + '" onclick="edFocus(\'' + en.id + '\')">'
-    + _edRingHtml(_edStats(en.el)) + '<span class="er-lab">' + escapeHtml(en.label) + '</span><span class="er-miss"></span></button>'
+    + _edRingHtml(_edStats(en.els)) + '<span class="er-lab">' + escapeHtml(en.label) + '</span><span class="er-miss"></span></button>'
   ).join('');
   const rail = document.createElement('aside');
   rail.className = 'edit-rail';
