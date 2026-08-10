@@ -4289,6 +4289,82 @@ const FINOP_TR_COLORS = ['var(--cat-1)', 'var(--cat-2)', 'var(--cat-3)', 'var(--
 // comme en consultation (mêmes cadres colorés), avec les cartes de saisie.
 // Le mousedown sur un groupe cale selectedTrancheIdx pour que les boutons
 // « Ajouter ... » créent la ligne dans la bonne tranche.
+// ============== COCKPIT FINANCEMENTS (édition) ==============
+// Indicateurs de tête + colonne « origine des ressources ». Le périmètre suit le
+// sélecteur de tranches : une tranche seule, ou le total de l'opération.
+
+function finScopeFigures(op, tranches, prets, subventions) {
+  const nb = v => Number(v) || 0;
+  const prixRevient = tranches.reduce((a, t) => a + nb(trancheBudgetTTC(t)), 0);
+  const mPrets = prets.reduce((a, p) => a + nb(bestPretAmountOrNull(p)), 0);
+  const mSubv = subventions.reduce((a, s) => a + nb(bestSubvAmountOrNull(s)), 0);
+  const mFp = tranches.reduce((a, t) => a + nb(t.fonds_propres), 0);
+  const ressources = mPrets + mSubv + mFp;
+  // Un prêt marqué « sans garantie requise » ne compte pas comme à couvrir.
+  const aCouvrir = prets.filter(p => !p.non_garanti);
+  const couverts = aCouvrir.filter(p =>
+    typeof ctrlGarantieCoverage === 'function' && ctrlGarantieCoverage(op, p) >= 100).length;
+  return { prixRevient, mPrets, mSubv, mFp, ressources, reste: prixRevient - ressources,
+           aCouvrir: aCouvrir.length, couverts };
+}
+
+function renderFinCockpitHead(f, scopeLabel) {
+  // Sans prix de revient saisi, annoncer « couvert » n'aurait aucun sens.
+  let etat = '<span class="finc-v">-</span><span class="finc-s">prix de revient non saisi</span>';
+  if (f.prixRevient > 0) {
+    const pct = Math.round(f.ressources / f.prixRevient * 100);
+    const cls = pct >= 100 ? 'ok' : (pct >= 80 ? '' : 'warn');
+    etat = `<span class="finc-v ${cls}">${pct >= 100 ? 'couvert' : pct + ' %'}</span>`
+         + `<span class="finc-s">${fmtMontant(f.ressources)} de ressources</span>`;
+  }
+  const resteCls = f.prixRevient <= 0 ? '' : (f.reste > 0 ? 'warn' : 'ok');
+  const resteTxt = f.prixRevient <= 0 ? '-' : (f.reste > 0 ? fmtMontant(f.reste) : '0 €');
+  const garCls = f.aCouvrir === 0 ? '' : (f.couverts >= f.aCouvrir ? 'ok' : 'warn');
+  return `
+    <div class="finc-kpis">
+      <div class="finc-k"><div class="finc-l">Prix de revient</div>
+        <span class="finc-v">${f.prixRevient > 0 ? fmtMontant(f.prixRevient) : '-'}</span>
+        <span class="finc-s">TTC · ${escapeHtml(scopeLabel)}</span></div>
+      <div class="finc-k"><div class="finc-l">Financement</div>${etat}</div>
+      <div class="finc-k"><div class="finc-l">Reste à financer</div>
+        <span class="finc-v ${resteCls}">${resteTxt}</span>
+        <span class="finc-s">ressources − emplois</span></div>
+      <div class="finc-k"><div class="finc-l">Garanties</div>
+        <span class="finc-v ${garCls}">${f.couverts} / ${f.aCouvrir}</span>
+        <span class="finc-s">${f.aCouvrir ? 'prêts à couvrir' : 'aucun prêt à couvrir'}</span></div>
+    </div>`;
+}
+
+function renderFinRessources(f, prets, subventions) {
+  const nb = v => Number(v) || 0;
+  const lignes = [];
+  prets.forEach(p => { const m = nb(bestPretAmountOrNull(p));
+    if (m) lignes.push({ m, nom: p.ligne || 'Prêt', sous: p.financeur || '', c: 'var(--cat-1)' }); });
+  subventions.forEach(s => { const m = nb(bestSubvAmountOrNull(s));
+    if (m) lignes.push({ m, nom: s.financeur || 'Subvention', sous: s.type || '', c: 'var(--cat-2)' }); });
+  if (f.mFp) lignes.push({ m: f.mFp, nom: 'Fonds propres', sous: '', c: 'var(--cat-5)' });
+  lignes.sort((a, b) => b.m - a.m);
+  const max = lignes.length ? lignes[0].m : 1;
+  const corps = lignes.length
+    ? lignes.map(l => `<div class="finr-seg">
+        <span class="finr-sw" style="background:${l.c}; height:${Math.max(10, Math.round(l.m / max * 34))}px"></span>
+        <span class="finr-tx"><b>${fmtMontant(l.m)}</b><span>${escapeHtml(l.nom)}${l.sous ? ' · ' + escapeHtml(l.sous) : ''}</span></span>
+      </div>`).join('')
+    : '<div class="finr-vide">Aucune ressource saisie sur ce périmètre.</div>';
+  let bilan = '';
+  if (f.prixRevient > 0) {
+    const ok = f.reste <= 0;
+    bilan = `<div class="finr-ecart ${ok ? 'ok' : 'warn'}"><span>${ok ? '●' : '▲'}</span><span>${
+      ok ? 'Équilibré avec le prix de revient' : fmtMontant(f.reste) + ' à financer'}</span></div>`;
+  }
+  return `<aside class="fin-side">
+      <div class="finr-h">Origine des ressources</div>
+      <div class="finr-bar">${corps}</div>
+      <div class="finr-tot"><span>Total ressources</span><b>${fmtMontant(f.ressources)}</b></div>
+      ${bilan}
+    </aside>`;
+}
+
 function renderAllTranchesFinEdit(op, src) {
   const trs = ((src || op).tranches) || [];
   if (!trs.length) return '<div class="subent-empty">Aucune tranche sur cette opération.</div>';
@@ -4795,6 +4871,21 @@ function renderTrancheDetail() {
     const reservataires = (op.reservataires || []).map((s, idx) => ({...s, _originalIdx: idx})).filter(x => x.tranche === trancheKey);
     const avenants = (op.avenants || []).map((s, idx) => ({...s, _originalIdx: idx})).filter(x => x.tranche === trancheKey);
 
+    // Cockpit financements : le périmètre des chiffres suit le sélecteur de
+    // tranches (une tranche seule, ou le total de l'opération).
+    const finEdit = editMode && OPS_TAB === 'fin';
+    let finHeadHtml = '', finSideHtml = '';
+    if (finEdit) {
+      const totalScope = TR_SCOPE == null;
+      const trs = totalScope ? (trancheSource.tranches || []) : [t];
+      const cles = trs.map(tt => tt.code_full ? tt.code_full.split('-').slice(1).join('-') : tt.id);
+      const dans = arr => (arr || []).filter(x => cles.includes(x.tranche));
+      const fPrets = dans(op.prets), fSubv = dans(op.subventions);
+      const f = finScopeFigures(op, trs, fPrets, fSubv);
+      finHeadHtml = renderFinCockpitHead(f, totalScope ? 'toutes tranches' : trCode);
+      finSideHtml = renderFinRessources(f, fPrets, fSubv);
+    }
+
     const titleHtml = editMode
       ? `<input type="text" class="editable-input" style="font-size:17px;font-weight:600;text-align:left;width:100%;min-width:0;" list="types-structure-list" data-edit-tranche-field="type_structure" value="${escapeHtml(t.type_structure || '')}" placeholder="Type d'établissement (FJT, EHPAD, MAS…)"><datalist id="types-structure-list">${getRef('types_structure').map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist>`
       : escapeHtml(t.type_structure || trCode);
@@ -4842,6 +4933,7 @@ function renderTrancheDetail() {
 
     detailHtml = `
       ${enteteTranche}
+      ${finHeadHtml}
       <div class="section" id="sec-tr-id" data-grp="tr">
         <div class="section-label id"><i class="ti ti-building-skyscraper"></i>Identité & simulation</div>
         ${editableKV('Gestionnaire nom', t.gestionnaire, 'gestionnaire', 'text', 'tranche-field')}
@@ -4922,6 +5014,7 @@ function renderTrancheDetail() {
       <div class="op-anchor" id="sec-tr-res" data-grp="fin">${renderReservatairesSection(reservataires, op)}</div>
       <div class="op-anchor" id="sec-tr-prefi" data-grp="fin">${renderPrefinSection(prefin, op)}</div>
       <div class="op-anchor" id="sec-tr-avenants" data-grp="fin">${renderAvenantsSection(avenants, op)}</div>`}
+      ${finSideHtml}
     `;
   }
 
@@ -14020,9 +14113,15 @@ function _edSyncRailSpan() {
   const c = _edContainer();
   if (!c) return;
   const rail = c.querySelector(':scope > .edit-rail');
+  const side = c.querySelector(':scope > .fin-side');
   if (!rail) return;
-  const n = [...c.children].filter(el => el !== rail && !el.classList.contains('cockpit-hidden') && el.offsetParent !== null).length;
-  rail.style.gridRow = '1 / span ' + Math.max(1, n);
+  // Le rail et la colonne des ressources vivent dans leurs propres colonnes :
+  // seules les lignes de la colonne centrale comptent.
+  const n = [...c.children].filter(el => el !== rail && el !== side
+    && !el.classList.contains('cockpit-hidden') && el.offsetParent !== null).length;
+  const portee = '1 / span ' + Math.max(1, n);
+  rail.style.gridRow = portee;
+  if (side) side.style.gridRow = portee;
 }
 
 function edFocus(id) {
@@ -14111,7 +14210,7 @@ function initEditCockpit() {
   document.querySelectorAll('.edit-rail').forEach(r => r.remove());
   ['trancheDetail', 'opDetail'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) { el.classList.remove('edit-cockpit', 'only-missing'); el.querySelectorAll('.cockpit-hidden').forEach(x => x.classList.remove('cockpit-hidden')); }
+    if (el) { el.classList.remove('edit-cockpit', 'only-missing', 'fin-cockpit'); el.querySelectorAll('.cockpit-hidden').forEach(x => x.classList.remove('cockpit-hidden')); }
   });
   const c = _edContainer();
   if (!c || !editMode) return;
@@ -14119,6 +14218,7 @@ function initEditCockpit() {
   if (!entries.length) return;
   c.classList.add('edit-cockpit');
   c.classList.toggle('only-missing', EDIT_ONLY_MISSING);
+  c.classList.toggle('fin-cockpit', OPS_TAB === 'fin');   // 3e colonne : origine des ressources
   // Focus initial : première section avec des champs vides
   if (EDIT_FOCUS_ID === '__auto__') {
     const first = entries.find(en => _edStats(en.els).empty > 0) || entries[0];

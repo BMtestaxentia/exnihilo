@@ -5615,6 +5615,66 @@
 .ops-shell[data-tab="dos"] .op-detail.edit-cockpit > .edit-rail { grid-column: 1; grid-row: 1; align-self: start; position: sticky; top: 8px; }
 .ops-shell:not([data-tab="tr"]):not([data-tab="fin"]):not([data-tab="dos"]) .edit-rail { display: none; }
 .cockpit-hidden { display: none !important; }
+
+/* ===== Cockpit financements : 3 colonnes (rail / saisie / ressources) ===== */
+/* .fin-cockpit ajoute une specificite : les regles generiques ci-dessus posent
+   grid-column en !important sur tous les enfants du conteneur. */
+.ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit.fin-cockpit {
+  grid-template-columns: 240px minmax(0, 1fr) 216px;
+}
+.ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit.fin-cockpit > *:not(.edit-rail):not(.fin-side) {
+  grid-column: 2 !important;
+}
+.ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit.fin-cockpit > .fin-side {
+  grid-column: 3 !important; align-self: start; position: sticky; top: 8px;
+}
+
+/* Indicateurs de tete */
+.finc-kpis {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px;
+  background: var(--border-color); border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.finc-k { background: var(--bg-primary); padding: 9px 13px; display: flex; flex-direction: column; }
+.finc-l { font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-tertiary); }
+.finc-v { font-size: 18px; font-weight: 700; margin-top: 2px; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.finc-v.ok { color: var(--success-text); }
+.finc-v.warn { color: var(--warning-text); }
+.finc-s { font-size: 11px; color: var(--text-secondary); }
+
+/* Colonne « origine des ressources » */
+.fin-side {
+  background: var(--bg-primary); border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg); padding: 11px 12px;
+}
+.finr-h { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 9px; }
+.finr-bar { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.finr-seg { display: flex; align-items: center; gap: 8px; }
+.finr-sw { width: 11px; border-radius: 2px; flex: none; }
+.finr-tx { flex: 1; min-width: 0; font-size: 10.5px; color: var(--text-tertiary); line-height: 1.35; }
+.finr-tx b { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.finr-tx span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.finr-vide { font-size: 11.5px; color: var(--text-tertiary); }
+.finr-tot { border-top: 1px solid var(--border-color); padding-top: 8px; display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; color: var(--text-secondary); }
+.finr-tot b { font-size: 13.5px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.finr-ecart { margin-top: 7px; font-size: 11px; font-weight: 600; padding: 5px 8px; border-radius: var(--radius-md); display: flex; gap: 6px; align-items: center; }
+.finr-ecart.ok { background: var(--success-bg); color: var(--success-text); }
+.finr-ecart.warn { background: var(--warning-bg); color: var(--warning-text); }
+
+/* Liseres par nature de ressource. La couleur ne porte jamais seule
+   l'information : le titre de la section reste ecrit en toutes lettres. */
+.fin-cockpit .section:has(> .subent-header .subent-title.prets) { border-left: 3px solid var(--cat-1); }
+.fin-cockpit .section:has(> .subent-header .subent-title.gar) { border-left: 3px solid var(--cat-4); }
+.fin-cockpit .section:has(> .subent-header .subent-title.subv) { border-left: 3px solid var(--cat-2); }
+.fin-cockpit .section:has(> .subent-header .subent-title.prefin) { border-left: 3px solid var(--cat-3); }
+.fin-cockpit .section:has(> .subent-header .subent-title.res) { border-left: 3px solid var(--cat-6); }
+.fin-cockpit .section#sec-tr-fp { border-left: 3px solid var(--cat-5); }
+
+@media (max-width: 1100px) {
+  .ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit.fin-cockpit { grid-template-columns: 240px minmax(0, 1fr); }
+  .ops-shell[data-tab="fin"] .tranche-detail.edit-cockpit.fin-cockpit > .fin-side { grid-column: 2 !important; position: static; }
+  .finc-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .only-missing .is-filled { display: none !important; }
 .only-missing .all-filled { display: none !important; }
 
