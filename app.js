@@ -4084,7 +4084,7 @@ function setTrScope(i) {
   }
   TR_SCOPE = i;
   if (i != null) selectedTrancheIdx = i;
-  let focusBilan = false;
+
   if (i == null) {
     // Retour au Total : le détail de tranche redevient l'onglet Informations ;
     // 'fin' reste 'fin' (en édition il affiche alors toutes les tranches).
@@ -4093,18 +4093,17 @@ function setTrScope(i) {
     if (OPS_TAB === 'home' || OPS_TAB === 'suivi' || OPS_TAB === 'dos' || OPS_TAB === 'syn') {
       // Choisir une tranche ouvre son détail (parallèle d'Informations)
       OPS_TAB = 'tr';
-    } else if (OPS_TAB === 'bilan' && editMode) {
-      // Bilan d'une tranche en édition = cockpit focalisé sur son prix de revient
-      OPS_TAB = 'tr';
-      focusBilan = true;
     }
+    // L'onglet Bilan reste l'onglet Bilan, en édition comme en consultation : le
+    // prix de revient y vit désormais. Il renvoyait avant vers la saisie de
+    // tranche, ce qui donnait l'impression que cliquer sur « Bilan » ne faisait rien.
     // consultation : bilan / finop restent (contenu re-scopé au render) ; tr / fin restent
   }
   try { sessionStorage.setItem('exnihilo_ops_tab', OPS_TAB); } catch (e) {}
   renderAll(); // re-scope bilan / financements / détail
   applyOpsTab();
   _syncOpsNav();
-  if (focusBilan && typeof edFocus === 'function') edFocus('sec-tr-bilan');
+
 }
 
 // Ouvre directement le détail d'une tranche (bouton des cartes Financements)
@@ -4128,17 +4127,11 @@ function opsNavClick(tab) {
 }
 
 // Clic nav en édition : même parallèle qu'en lecture - avec une tranche active,
-// Informations ouvre son détail (cockpit) et Bilan focalise sa section Prix de
-// revient ; en Total, les onglets montrent le niveau opération ('fin' = toutes tranches).
+// Informations ouvre son détail (cockpit). Bilan reste Bilan : le prix de revient
+// y a été déplacé, le rediriger vers la saisie de tranche donnait l'impression
+// que le clic ne faisait rien.
 function editNavClick(tab) {
-  if (TR_SCOPE != null) {
-    if (tab === 'dos') { switchOpsTab('tr'); return; }
-    if (tab === 'bilan') {
-      switchOpsTab('tr');
-      if (typeof edFocus === 'function') edFocus('sec-tr-bilan');
-      return;
-    }
-  }
+  if (TR_SCOPE != null && tab === 'dos') { switchOpsTab('tr'); return; }
   switchOpsTab(tab);
 }
 
