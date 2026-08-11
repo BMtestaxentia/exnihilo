@@ -3737,6 +3737,30 @@ function applyOpsTab() {
   const sh = document.getElementById('opsShell');
   if (sh) sh.dataset.tab = OPS_TAB;
 }
+// ===== Navigation : une seule entree, un seul etat visible =====
+// Un ecran = un onglet. Les tranches sont des onglets comme les autres ('tr:2').
+// Avant, trois variables se croisaient (OPS_TAB x TR_SCOPE x editMode) avec des
+// regles de rattrapage ecrites a la main : c'est ce qui produisait les clics morts.
+function goEcran(id) {
+  // Moissonner la saisie en cours AVANT le re-render, sinon perte de frappe.
+  if (editMode && typeof collectEditsFromDom === 'function') {
+    const _op = findOp(selectedOpCode);
+    if (_op) collectEditsFromDom(_op);
+  }
+  if (String(id).startsWith('tr:')) {
+    const i = parseInt(String(id).slice(3), 10);
+    TR_SCOPE = i; selectedTrancheIdx = i; OPS_TAB = 'tr';
+  } else {
+    TR_SCOPE = null; OPS_TAB = id;
+  }
+  try { sessionStorage.setItem('exnihilo_ops_tab', OPS_TAB); } catch (e) {}
+  applyOpsTab();
+  renderAll();
+  if (typeof _syncOpsNav === 'function') _syncOpsNav();
+  const c = document.getElementById((OPS_TAB === 'tr' || OPS_TAB === 'fin') ? 'trancheDetail' : 'opDetail');
+  if (c) c.scrollTop = 0;
+}
+
 function switchOpsTab(t) {
   OPS_TAB = t;
   try { sessionStorage.setItem('exnihilo_ops_tab', t); } catch (e) {}
@@ -4118,7 +4142,10 @@ function openTrancheDetail(i) {
 }
 
 // Pill de tranche : même geste dans les deux modes = changer le scope.
-function opsPillClick(i) { setTrScope(i); }
+// Une tranche est un ecran comme un autre : meme entree que les onglets.
+function opsPillClick(i) { goEcran('tr:' + i); }
+// « Total » : retour au niveau operation, sans changer d'ecran de contenu.
+function opsTotalClick() { goEcran(OPS_TAB === 'tr' ? (editMode ? 'dos' : 'home') : OPS_TAB); }
 
 // Clic nav en consultation : Informations avec un scope tranche = détail de la tranche
 function opsNavClick(tab) {
@@ -4152,10 +4179,18 @@ function opsUnifiedBarHtml(op, displayedOp, editing) {
   // onglets changent (Vue d'ensemble/finop en lecture, Synthèse/fin par tranche en édition).
   const nAlerts = (editing && typeof computeAlerts === 'function')
     ? computeAlerts(op).filter(al => al.level === 'expired' || al.level === 'critical').length : 0;
-  const opNav = editing
-    ? [['syn', `Synthèse${nAlerts ? ` <span class="ops-tab-n ops-tab-alert">${nAlerts}</span>` : ''}`], ['dos', 'Informations'], ['bilan', 'Bilan'], ['fin', 'Financements'], ['suivi', 'Comités & suivi']]
-    : [['home', 'Vue d\'ensemble'], ['dos', 'Informations'], ['bilan', 'Bilan'], ['finop', 'Financements'], ['suivi', 'Comités & suivi']];
-  const navClick = (tab) => editing ? `editNavClick('${tab}')` : `opsNavClick('${tab}')`;
+  // Memes ecrans en lecture et en edition : l'edition ne remplace que les valeurs
+  // par des champs, jamais la navigation. Elle reacheminait les onglets, d'ou les
+  // clics sans effet sur « Bilan ».
+  const opNav = [
+    [editing ? 'syn' : 'home', (editing ? 'Synthèse' : "Vue d'ensemble")
+      + (nAlerts ? ` <span class="ops-tab-n ops-tab-alert">${nAlerts}</span>` : '')],
+    ['dos', 'Informations'],
+    ['bilan', 'Prix de revient'],
+    [editing ? 'fin' : 'finop', 'Financements'],
+    ['suivi', 'Comités & suivi'],
+  ];
+  const navClick = (tab) => `goEcran('${tab}')`;
   const vBtn = ([tab, label]) =>
     `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="${navClick(tab)}">${label}</button>`;
   const trs = displayedOp.tranches || [];
@@ -4181,7 +4216,7 @@ function opsUnifiedBarHtml(op, displayedOp, editing) {
   // de CETTE tranche (le détail de tranche remplace Informations).
   const totalPill = `<button type="button" class="ops-tpill ops-tpill-total${TR_SCOPE == null ? ' active' : ''}" data-tranche-pill="op"
       title="${editing ? "Édition au niveau de l'opération (toutes tranches)" : "Vue consolidée de l'opération (toutes tranches)"}"
-      onclick="setTrScope(null)">
+      onclick="opsTotalClick()">
       <span class="ops-tpill-top"><i class="ti ti-sum"></i>Total</span></button>`;
   // Zone tranches visuellement distincte des vues opération (encart dédié)
   return `<div class="ops-tbar ops-unibar">
@@ -4369,7 +4404,7 @@ function renderAllTranchesFinEdit(op, src) {
       <div class="finop-tr-head">
         <span class="ops-tpill-top" style="color:${col}">${escapeHtml(code)}</span>
         <span class="finop-tr-name">${escapeHtml(tt.type_structure || '')}</span>
-        <button type="button" class="ops-dn" style="margin-left:auto" onclick="setTrScope(${ti})">Cette tranche seule →</button>
+        <button type="button" class="ops-dn" style="margin-left:auto" onclick="goEcran('tr:${ti}')">Cette tranche seule →</button>
       </div>
       ${renderPretsSection(w(op.prets), op)}
       ${renderGarantiesSection(w(op.garanties), op)}
