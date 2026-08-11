@@ -5189,17 +5189,17 @@ function isBilanExpanded(op, trCode, sectionKey) {
 function toggleBilanSection(opCode, trCode, sectionKey) {
   const k = `${opCode}|${trCode}|${sectionKey}`;
   bilanExpanded[k] = !bilanExpanded[k];
-  if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail();
+  renderOpDetail();   // le prix de revient vit desormais dans opDetail (onglet Bilan)
   replaceTablerIcons();
 }
 function expandAllBilanSections(opCode, trCode) {
   BILAN_SECTIONS.forEach(s => { bilanExpanded[`${opCode}|${trCode}|${s.key}`] = true; });
-  if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail();
+  renderOpDetail();   // le prix de revient vit desormais dans opDetail (onglet Bilan)
   replaceTablerIcons();
 }
 function collapseAllBilanSections(opCode, trCode) {
   BILAN_SECTIONS.forEach(s => { bilanExpanded[`${opCode}|${trCode}|${s.key}`] = false; });
-  if (trCode === '__op__') renderOpDetail(); else renderTrancheDetail();
+  renderOpDetail();   // le prix de revient vit desormais dans opDetail (onglet Bilan)
   replaceTablerIcons();
 }
 
