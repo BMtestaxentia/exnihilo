@@ -5902,3 +5902,46 @@
    permanent occupait trop de place en edition). */
 .tr-code-edit { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .tr-code-pre { color: var(--text-tertiary); font-size: 12px; flex: none; }
+
+/* ===== Prix de revient en tableau (grammaire du moteur de simulation) ===== */
+/* La cellule EST le champ : sans chrome propre, le quadrillage vient du tableau.
+   Une saisie ou chaque case porte sa bordure se lit comme une pile de
+   formulaires, pas comme un tableau ou l'on compare une colonne. */
+.tableau { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tableau th {
+  text-align: left; padding: 4px 9px 6px; white-space: nowrap;
+  font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+.tableau th.num { text-align: right; }
+.tableau td { padding: 5px 9px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); }
+.tableau tbody tr:last-child td { border-bottom: none; }
+.tableau tbody tr:hover td { background: var(--bg-secondary); }
+.tableau .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tableau tfoot td {
+  border-top: 1px solid var(--border-color); border-bottom: none;
+  font-weight: 700; padding-top: 7px;
+}
+.tableau--saisie td { padding: 3px 5px; }
+.tableau--saisie th { padding: 4px 5px 6px; }
+.grille--saisie td { border-right: 1px solid var(--border-color); }
+.grille--saisie td:last-child, .grille--saisie tfoot td { border-right: none; }
+
+.bilan-tbl { table-layout: fixed; }
+.bilan-tbl .bl-num { width: 38px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; font-size: 11px; }
+.bilan-tbl .bl-saisie { width: 140px; }
+.bilan-tbl .bl-part { width: 62px; color: var(--text-tertiary); font-size: 11px; }
+.bilan-tbl tr.bl-vide td { color: var(--text-tertiary); }
+.bilan-tbl .bl-tiret { color: var(--text-tertiary); }
+/* Le champ occupe la cellule, sans bordure propre : le quadrillage suffit. */
+.bilan-tbl input.bilan-line-input {
+  width: 100%; border: none; background: transparent; text-align: right;
+  font-variant-numeric: tabular-nums; padding: 3px 4px; border-radius: var(--radius-xs);
+}
+.bilan-tbl input.bilan-line-input:focus { background: var(--bg-primary); outline: 2px solid var(--info-accent); outline-offset: -2px; }
+.bl-hors {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--warning-text); background: var(--warning-bg);
+  padding: 1px 5px; border-radius: var(--radius-pill); margin-left: 6px;
+}

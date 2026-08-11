@@ -4774,7 +4774,7 @@ function renderOpDetail() {
     ${(op.notes_libres || editMode) ? `<div class="section" id="sec-op-notes"><div class="section-label notes"><i class="ti ti-message"></i>Notes libres</div>${editableNotes(op.notes_libres, 'notes_libres')}</div>` : ''}
     </div>
 
-    <div class="op-anchor" id="sec-op-bilan" data-grp="bilan">${(!effectiveEditMode && TR_SCOPE != null && displayedOp.tranches[TR_SCOPE])
+    <div class="op-anchor" id="sec-op-bilan" data-grp="bilan">${(TR_SCOPE != null && displayedOp.tranches[TR_SCOPE])
       ? renderBilanSection(displayedOp.tranches[TR_SCOPE], op, (displayedOp.tranches[TR_SCOPE].code_full ? displayedOp.tranches[TR_SCOPE].code_full.split('-').slice(1).join('-') : displayedOp.tranches[TR_SCOPE].id))
       : renderBilanOpSection(displayedOp)}</div>
 
@@ -4962,7 +4962,9 @@ function renderTrancheDetail() {
         <div class="volumetrie-grid">${suCells}</div>
       </div>
 
-      <div class="op-anchor" id="sec-tr-bilan" data-grp="tr">${renderBilanSection(t, op, trCode)}</div>
+      <!-- Le prix de revient a rejoint l'onglet Bilan (sec-op-bilan) : il n'a
+           pas sa place dans la saisie de tranche, ou il occupait une categorie
+           entiere du rail pour un tableau qui se lit mieux en pleine largeur. -->
 
       ${editMode ? '' : `<div class="op-anchor" id="sec-tr-pf" data-grp="tr">${renderPlanFinancementSection(t, op, trCode, trancheSource)}</div>`}
 
@@ -5223,26 +5225,41 @@ function renderBilanSection(t, op, trCode) {
     const horsCat = Object.keys(t.bilan[sec.key]).filter(k => !catalogue.includes(k) && Number(t.bilan[sec.key][k]));
     const lines = catalogue.concat(horsCat);
 
+    let noPoste = 0;
     const linesHtml = expanded ? `
       <div class="bilan-lines">
+        <table class="tableau tableau--saisie grille--saisie bilan-tbl">
+        <thead><tr>
+          <th class="bl-num">N°</th>
+          <th>Poste</th>
+          <th class="num">Montant${editMode ? ' (€)' : ''}</th>
+          <th class="num">Part</th>
+        </tr></thead>
+        <tbody>
         ${lines.map(line => {
           const v = Number(t.bilan[sec.key][line]) || 0;
-          const extraMark = horsCat.includes(line) ? ' title="Poste hors catalogue SFO" style="font-style:italic"' : '';
-          if (editMode) {
-            return `<div class="bilan-line">
-              <span class="bilan-line-label"${extraMark}>${escapeHtml(line)}</span>
-              <input type="number" min="0" step="100" class="editable-input bilan-line-input" data-bilan-section="${sec.key}" data-bilan-line="${escapeHtml(line)}" value="${v || ''}" placeholder="€">
-            </div>`;
-          }
-          return `<div class="bilan-line${v === 0 ? ' bilan-line-empty' : ''}">
-            <span class="bilan-line-label"${extraMark}>${escapeHtml(line)}</span>
-            <span class="bilan-line-value">${v ? fmtMontant(v) : '-'}</span>
-          </div>`;
+          // Poste saisi mais absent du catalogue SFO : signale par un libelle,
+          // pas seulement par l'italique.
+          const hors = horsCat.includes(line);
+          const marque = hors ? ' <span class="bl-hors" title="Poste hors catalogue SFO">hors catalogue</span>' : '';
+          const part = sectionTotal ? Math.round(v / sectionTotal * 100) : 0;
+          return `<tr${v === 0 ? ' class="bl-vide"' : ''}>
+            <td class="bl-num">${String(++noPoste).padStart(2, '0')}</td>
+            <td class="bl-lab">${escapeHtml(line)}${marque}</td>
+            <td class="num bl-saisie">${editMode
+              ? `<input type="number" min="0" step="100" class="editable-input bilan-line-input" data-bilan-section="${sec.key}" data-bilan-line="${escapeHtml(line)}" value="${v || ''}" placeholder="0">`
+              : (v ? fmtMontant(v) : '<span class="bl-tiret">-</span>')}</td>
+            <td class="num bl-part">${v ? part + ' %' : ''}</td>
+          </tr>`;
         }).join('')}
-        <div class="bilan-line bilan-line-subtotal">
-          <span class="bilan-line-label">Sous-total ${escapeHtml(sec.label)}</span>
-          <span class="bilan-line-value" data-bilan-subtotal="${sec.key}">${fmtMontant(sectionTotal)}</span>
-        </div>
+        </tbody>
+        <tfoot><tr>
+          <td></td>
+          <td>Sous-total ${escapeHtml(sec.label)}</td>
+          <td class="num" data-bilan-subtotal="${sec.key}">${fmtMontant(sectionTotal)}</td>
+          <td class="num">${totalGlobal ? Math.round(sectionTotal / totalGlobal * 100) + ' %' : ''}</td>
+        </tr></tfoot>
+        </table>
       </div>
     ` : '';
 
