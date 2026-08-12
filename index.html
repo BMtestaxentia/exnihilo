@@ -17,7 +17,7 @@
   })();
 </script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/[email protected]/iconfont/tabler-icons.min.css">
-<link rel="stylesheet" href="styles.css?v=132">
+<link rel="stylesheet" href="styles.css?v=163">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -420,7 +420,7 @@
 <!-- Données réelles pour la maquette locale : fichier non versionné, absent en
      production (le 404 est sans effet, l'app bascule sur le jeu de démonstration). -->
 <script src="data-local.js" onerror="void 0"></script>
-<script src="app.js?v=132"></script>
+<script src="app.js?v=163"></script>
 
 <div id="cmdpResults" class="cmdp-dropdown" style="display:none;"></div>
 
@@ -436,6 +436,18 @@
     </div>
     <div class="timeline-modal-body" id="timelineModalBody"></div>
   </div>
+</div>
+
+<!-- Il n'y a plus de mode edition : ce bandeau est le seul signal d'etat, et il
+     n'apparait que lorsqu'une modification attend d'etre enregistree.
+     Enfant direct de <body> et non de #opsShell : ce dernier est en
+     overflow:hidden, et tout ancetre porteur d'un transform ou d'un contain
+     rognerait un position:fixed. -->
+<div class="save-bar" id="saveBar" aria-hidden="true" aria-live="polite">
+  <i class="ti ti-pencil"></i>
+  <span class="save-bar-txt">Modifications non enregistrées</span>
+  <button type="button" class="btn-edit" onclick="cancelOpEdits()"><i class="ti ti-arrow-back-up"></i>Annuler</button>
+  <button type="button" class="btn-edit primary" id="saveOpBtn" onclick="saveOpEdits()"><i class="ti ti-check"></i>Enregistrer</button>
 </div>
 </body>
 </html>

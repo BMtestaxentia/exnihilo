@@ -5105,12 +5105,8 @@
   .ops-shell[data-tab="bilan"] .tranche-detail, .ops-shell[data-tab="suivi"] .tranche-detail { display: none; }
   .ops-shell[data-tab="syn"] .op-detail, .ops-shell[data-tab="dos"] .op-detail,
   .ops-shell[data-tab="bilan"] .op-detail, .ops-shell[data-tab="suivi"] .op-detail { grid-column: 2 / 4; }
-  /* Financements est repasse au niveau operation : son ecran vit desormais dans
-     .op-detail, avec toutes les tranches dans le meme tableau. Seul le detail
-     d'une tranche ('tr') utilise encore .tranche-detail. */
-  .ops-shell[data-tab="tr"] .op-detail { display: none; }
-  .ops-shell[data-tab="fin"] .tranche-detail { display: none; }
-  .ops-shell[data-tab="tr"] .tranche-detail { grid-column: 2 / 4; }
+  .ops-shell[data-tab="tr"] .op-detail, .ops-shell[data-tab="fin"] .op-detail { display: none; }
+  .ops-shell[data-tab="tr"] .tranche-detail, .ops-shell[data-tab="fin"] .tranche-detail { grid-column: 2 / 4; }
 
   /* Visibilité des blocs selon l'onglet (les blocs sans data-grp restent toujours visibles) */
   .ops-shell[data-tab="syn"] .op-detail > [data-grp]:not([data-grp~="syn"]),
@@ -5128,8 +5124,7 @@
      du tiroir. #trancheDetail (source tr/fin) est masqué. */
   .ops-shell[data-tab="home"] .tranche-detail { display: none; }
   .ops-shell[data-tab="home"] .op-detail { grid-column: 2 / 4; }
-  .ops-shell[data-tab="home"] .op-detail > [data-grp]:not([data-grp~="home"]),
-  .ops-shell[data-tab="fin"] .op-detail > [data-grp]:not([data-grp~="fin"]) { display: none !important; }
+  .ops-shell[data-tab="home"] .op-detail > [data-grp]:not([data-grp~="home"]) { display: none !important; }
 
 
   /* Impression : la fiche complète, sans les onglets */
@@ -5163,8 +5158,7 @@
   /* --- Grilles par onglet (base : pleine largeur) --- */
   .ops-shell[data-tab="syn"] .op-detail, .ops-shell[data-tab="dos"] .op-detail,
   .ops-shell[data-tab="bilan"] .op-detail, .ops-shell[data-tab="suivi"] .op-detail,
-  .ops-shell[data-tab="home"] .op-detail, .ops-shell[data-tab="fin"] .op-detail,
-  .ops-shell[data-tab="tr"] .tranche-detail {
+  .ops-shell[data-tab="tr"] .tranche-detail, .ops-shell[data-tab="fin"] .tranche-detail {
     display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 14px; align-content: start;
   }
@@ -5398,9 +5392,6 @@
 /* Vue "Financements de l'operation" (contenu genere, pleine zone centrale) */
 .ops-shell[data-tab="finop"] .tranche-detail { display: none; }
 .ops-shell[data-tab="finop"] .op-detail { grid-column: 2 / 4; }
-/* Financements occupe toute la largeur de contenu : la colonne qui restait
-   reservee au panneau de tranche n'a plus d'occupant. */
-.ops-shell[data-tab="fin"] .op-detail { grid-column: 2 / 4; }
 .ops-shell[data-tab="finop"] .op-detail > [data-grp]:not([data-grp~="finop"]) { display: none !important; }
 .op-finop { padding: 16px 0 48px; max-width: 1400px; }
 
@@ -5937,344 +5928,20 @@
 .grille--saisie td { border-right: 1px solid var(--border-color); }
 .grille--saisie td:last-child, .grille--saisie tfoot td { border-right: none; }
 
-/* ===== Financements : un tableau par entite, toutes tranches a la fois =====
-   Meme grammaire que la matrice du prix de revient : la cellule EST le champ,
-   le quadrillage du tableau tient lieu de chrome. */
-.fin-ecran { display: flex; flex-direction: column; gap: 14px; }
-.fin-twrap {
-  overflow-x: auto; max-width: 100%;
-  border: 1px solid var(--border-color); border-radius: var(--radius-sm);
-  background: var(--bg-primary);
-}
-.fin-tbl { min-width: 100%; }
-.fin-tbl th, .fin-tbl td { padding: 2px 6px; white-space: nowrap; }
-.fin-tbl .fin-td { vertical-align: middle; }
-.fin-tbl input.fin-tcell, .fin-tbl select.fin-tcell {
-  width: 100%; min-width: 84px; border: 1px solid transparent; background: transparent;
-  border-radius: var(--radius-xs); padding: 3px 5px; font-size: 12.5px;
-  font-family: inherit; color: var(--text-primary);
-}
-.fin-tbl input.fin-tcell { text-align: left; }
-.fin-tbl td.num input.fin-tcell { text-align: right; font-variant-numeric: tabular-nums; }
-/* Le champ ne se signale qu'au survol et au focus : une grille de 40 boites
-   bordees se lit comme un formulaire, pas comme un tableau que l'on compare. */
-.fin-tbl input.fin-tcell:hover, .fin-tbl select.fin-tcell:hover { border-color: var(--border-color); }
-.fin-tbl input.fin-tcell:focus, .fin-tbl select.fin-tcell:focus {
-  outline: none; background: var(--bg-primary);
-  border-color: var(--info-accent); box-shadow: 0 0 0 2px rgba(24, 95, 165, .15);
-}
-.fin-tbl input.fin-tcell::placeholder { color: var(--text-tertiary); }
-.fin-tbl input.fin-tcell[type="number"] { -moz-appearance: textfield; appearance: textfield; }
-.fin-tbl input.fin-tcell[type="number"]::-webkit-outer-spin-button,
-.fin-tbl input.fin-tcell[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-/* La tranche : le code en toutes lettres porte l'information, le liseré de
-   couleur ne fait que la doubler. */
-.fin-tbl .fin-td-tr select.fin-tcell {
-  font-weight: 700; color: var(--tr-c, var(--text-primary));
-  box-shadow: inset 3px 0 0 var(--tr-c, transparent); min-width: 74px;
-}
-.fin-tbl .fin-td-act { width: 58px; text-align: right; white-space: nowrap; }
-.fin-tbl tr.fin-tr:hover td { background: var(--bg-secondary); }
-.fin-tbl tr.fin-tr-open td { background: var(--info-bg); }
-.fin-tbl .fin-vide { color: var(--text-tertiary); text-align: center; padding: 14px; }
-.fin-tbl tfoot td { background: var(--bg-secondary); font-weight: 700; }
-.fin-detail-row > td { background: var(--bg-secondary); padding: 10px 12px; white-space: normal; }
-.fin-sec .qadd { margin-top: 8px; }
-
-/* ===== Bandeau d'enregistrement =====
-   Il n'y a plus de mode edition : tout est saisissable en permanence. Ce
-   bandeau est le seul etat qui subsiste, et il ne dit qu'une chose - il reste
-   quelque chose a enregistrer. Il flotte pour ne rien voler a la hauteur utile,
-   contrairement a la rangee fixe qu'il remplace. */
-.save-bar {
-  position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 140%);
-  z-index: 80; display: flex; align-items: center; gap: 10px;
-  padding: 9px 12px 9px 15px; border-radius: var(--radius-pill);
-  background: var(--bg-primary); color: var(--text-primary);
-  border: 1px solid var(--warning-accent);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, .18);
-  opacity: 0; pointer-events: none;
-  transition: transform .18s ease, opacity .18s ease;
-}
-.save-bar.on { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
-@media (prefers-reduced-motion: reduce) { .save-bar { transition: none; } }
-/* L'etat est double par le texte : la teinte ambre seule ne doit rien porter. */
-.save-bar > i, .save-bar > .tabler-svg-icon { color: var(--warning-text); font-size: 15px; }
-.save-bar-txt { font-size: 12.5px; font-weight: 600; white-space: nowrap; margin-right: 4px; }
-.icon-btn.danger-hover:hover { color: var(--danger-text); border-color: var(--danger-accent); background: var(--danger-bg); }
-
-/* ===== Matrice du prix de revient : postes en lignes, tranches en colonnes =====
-   Le nombre de colonnes depend de l'operation : le tableau defile
-   horizontalement dans son propre cadre, jamais la page, et la colonne du
-   poste reste collee a gauche - sans elle on ne sait plus quelle ligne on lit
-   des la troisieme tranche. */
-.pdr-wrap {
-  overflow-x: auto; max-width: 100%;
-  border: 1px solid var(--border-color); border-radius: var(--radius-sm);
-  background: var(--bg-primary);
-}
-.pdr-tbl { min-width: 100%; }
-.pdr-tbl td, .pdr-tbl th { padding: 3px 9px; white-space: nowrap; }
-
-.pdr-tbl .pdr-num {
-  width: 34px; min-width: 34px; text-align: center;
-  color: var(--text-tertiary); font-variant-numeric: tabular-nums; font-size: 10.5px;
-}
-.pdr-tbl .pdr-poste {
-  position: sticky; left: 0; z-index: 2;
-  background: var(--bg-primary);
-  min-width: 210px; max-width: 320px;
-  white-space: normal;
-  border-right: 1px solid var(--border-color);
-}
-.pdr-tbl thead .pdr-poste, .pdr-tbl tfoot .pdr-poste { background: var(--bg-secondary); }
-.pdr-tbl .pdr-cell, .pdr-tbl .pdr-sub, .pdr-tbl .pdr-rowtotal { min-width: 118px; }
-
-/* En-tete de colonne : le code de la tranche PORTE l'information, le trait de
-   couleur ne fait que la doubler - il ne doit jamais etre seul a distinguer
-   deux colonnes. */
-.pdr-tbl th.pdr-colh { border-bottom-width: 2px; border-bottom-color: var(--tr-c, var(--border-color)); }
-.pdr-tbl th.pdr-rowtotal { color: var(--text-secondary); }
-
-/* Ligne de chapitre : c'est elle qui porte les sous-totaux, alignes sous leur
-   colonne. Un accordeon a part les aurait desalignes. */
-.pdr-tbl tr.pdr-chap td {
-  background: var(--bg-secondary); font-weight: 700;
-  border-top: 1px solid var(--border-color);
-}
-.pdr-tbl tr.pdr-chap .pdr-poste { background: var(--bg-secondary); }
-.pdr-tbl tr.pdr-chap:hover td { background: var(--bg-secondary); }
-.pdr-chap-num {
-  display: inline-block; min-width: 22px; margin-right: 7px;
-  color: var(--text-tertiary); font-size: 10.5px; letter-spacing: .04em;
-}
-.pdr-chevron {
-  border: none; background: transparent; cursor: pointer; padding: 2px;
-  color: var(--text-secondary); display: inline-flex; border-radius: var(--radius-xs);
-}
-.pdr-chevron:hover { background: var(--bg-tertiary); color: var(--text-primary); }
-.pdr-chevron i, .pdr-chevron .tabler-svg-icon { font-size: 13px; }
-
-/* Poste non renseigne : le tiret dit « vide », pas « zero ». */
-.pdr-tiret { color: var(--text-tertiary); }
-.pdr-tbl tr.pdr-row-vide .pdr-poste, .pdr-tbl tr.pdr-row-vide .pdr-num { color: var(--text-tertiary); }
-
+.bilan-tbl { table-layout: fixed; }
+.bilan-tbl .bl-num { width: 38px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; font-size: 11px; }
+.bilan-tbl .bl-saisie { width: 140px; }
+.bilan-tbl .bl-part { width: 62px; color: var(--text-tertiary); font-size: 11px; }
+.bilan-tbl tr.bl-vide td { color: var(--text-tertiary); }
+.bilan-tbl .bl-tiret { color: var(--text-tertiary); }
 /* Le champ occupe la cellule, sans bordure propre : le quadrillage suffit. */
-.pdr-tbl input.pdr-input {
+.bilan-tbl input.bilan-line-input {
   width: 100%; border: none; background: transparent; text-align: right;
   font-variant-numeric: tabular-nums; padding: 3px 4px; border-radius: var(--radius-xs);
-  font-size: 12.5px; color: var(--text-primary);
-  -moz-appearance: textfield; appearance: textfield;
 }
-/* Pas de fleches d'increment : un prix de revient se saisit, il ne se
-   feuillette pas pas de 100 en 100. Les fleches volaient en plus de la place a
-   un chiffre deja serre dans sa colonne. */
-.pdr-tbl input.pdr-input::-webkit-outer-spin-button,
-.pdr-tbl input.pdr-input::-webkit-inner-spin-button {
-  -webkit-appearance: none; margin: 0;
-}
-.pdr-tbl input.pdr-input:focus { background: var(--bg-primary); outline: 2px solid var(--info-accent); outline-offset: -2px; }
-.pdr-tbl input.pdr-input::placeholder { color: var(--text-tertiary); }
-
-.pdr-tbl tfoot td { background: var(--bg-secondary); }
-.pdr-note { font-size: 11px; color: var(--text-tertiary); margin: 0 0 8px; }
-.bilan-action-btn-on { background: var(--info-bg); color: var(--info-text); border-color: var(--info-accent); }
-
-.pdr-hors {
+.bilan-tbl input.bilan-line-input:focus { background: var(--bg-primary); outline: 2px solid var(--info-accent); outline-offset: -2px; }
+.bl-hors {
   font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
   color: var(--warning-text); background: var(--warning-bg);
   padding: 1px 5px; border-radius: var(--radius-pill); margin-left: 6px;
 }
-
-/* Financements est un ecran d'operation : le conteneur de tranche ne doit plus
-   cohabiter avec lui, sinon les deux se partagent la largeur et le tableau se
-   retrouve a l'etroit. Regle hors media query, contrairement a ses voisines. */
-.ops-shell[data-tab="fin"] .tranche-detail { display: none !important; }
-
-/* La colonne calculee (cycle de vie) n'est pas un champ : elle rend un etat.
-   Elle garde sa place dans la grille du tableau, sans chrome de saisie. */
-.fin-tbl .fin-td-calc { padding: 2px 8px; }
-.fin-tbl .fin-td-calc .fin-cyc { transform: scale(.92); transform-origin: left center; }
-/* Ligne de vie depliee : elle reprend telle quelle la carte de consultation,
-   qui porte les cinq etapes datees, les montants et les conditions. */
-.fin-detail-row .entity-card { border: none; background: transparent; margin: 0; }
-
-/* La ligne entiere deplie : le curseur doit l'annoncer, sauf sur ce qui se
-   saisit - la ou le curseur texte reste le bon signal. */
-.fin-tbl tr.fin-tr-cliquable > td { cursor: pointer; }
-.fin-tbl tr.fin-tr-cliquable input,
-.fin-tbl tr.fin-tr-cliquable select,
-.fin-tbl tr.fin-tr-cliquable button { cursor: auto; }
-.fin-tbl tr.fin-tr-cliquable select,
-.fin-tbl tr.fin-tr-cliquable button { cursor: pointer; }
-
-/* ===== Lignes de financement : neutraliser le chrome de carte =====
-   Les classes `entity-card editing` sont indispensables a la moisson de la
-   saisie (collectEditsFromDom les cible), mais elles ont ete dessinees pour une
-   carte <div> : lisere absolu, bordure bleue, fond, coins arrondis, padding.
-   Sur un <tr>, tout cela produit des barres verticales parasites et des
-   rangees qui ne s'alignent plus. On garde les classes, on retire le decor. */
-.fin-tbl tr.entity-card {
-  background: transparent; border: none; border-radius: 0;
-  padding: 0; font-size: inherit; position: static;
-}
-.fin-tbl tr.entity-card::before { content: none; display: none; }
-.fin-tbl tr.entity-card.editing {
-  border: none; background: transparent; padding: 0; border-width: 0;
-}
-/* Un seul filet horizontal par ligne, porte par les cellules : sur un <tr>,
-   border-bottom ne se peint pas en border-collapse. */
-.fin-tbl tbody tr.fin-tr > td { border-bottom: 1px solid var(--border-color); }
-.fin-tbl tbody tr.fin-tr:last-child > td { border-bottom: none; }
-
-/* La couleur de tranche : un filet net porte par la CELLULE, pas une ombre
-   interne sur le select - elle dessinait un crochet devant le code. */
-.fin-tbl .fin-td-tr { box-shadow: inset 3px 0 0 var(--tr-c, transparent); }
-.fin-tbl .fin-td-tr select.fin-tcell {
-  box-shadow: none; font-weight: 700; color: var(--tr-c, var(--text-primary));
-  padding-left: 8px;
-}
-
-/* Hauteur de ligne : les deux actions cote a cote, pas empilees - c'est leur
-   empilement qui donnait des rangees de 65 px. */
-.fin-tbl .fin-td-act {
-  width: auto; white-space: nowrap; text-align: right; padding-right: 8px;
-}
-.fin-tbl .fin-td-act .fin-expand,
-.fin-tbl .fin-td-act .fin-del {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; padding: 0; margin: 0 0 0 2px;
-  border: 1px solid transparent; border-radius: var(--radius-xs);
-  background: transparent; color: var(--text-tertiary); vertical-align: middle;
-}
-.fin-tbl .fin-td-act .fin-expand:hover { color: var(--info-accent); border-color: var(--border-color); }
-.fin-tbl .fin-td-act .fin-del:hover { color: var(--danger-text); border-color: var(--danger-accent); background: var(--danger-bg); }
-.fin-tbl tbody tr.fin-tr > td { padding-top: 1px; padding-bottom: 1px; }
-
-/* Largeurs : un statut doit pouvoir afficher « Lettre d'offre » en entier, un
-   libelle de produit « PLS foncier ». Le tableau defile, il n'a pas a serrer. */
-.fin-tbl select.fin-tcell { min-width: 112px; }
-.fin-tbl .fin-th-statut, .fin-tbl td:has(> select[data-field="statut"]) { min-width: 128px; }
-.fin-tbl .fin-th-ligne, .fin-tbl .fin-th-financeur { min-width: 108px; }
-.fin-tbl .fin-td-tr select.fin-tcell { min-width: 66px; }
-
-/* Le cycle de vie est dense : il n'a pas besoin de la largeur d'une colonne de
-   saisie, et ses libelles doivent rester lisibles. */
-.fin-tbl .fin-td-calc { padding-left: 10px; padding-right: 10px; }
-.fin-tbl th.fin-th-_cycle { padding-left: 10px; }
-
-/* ===== Detail deplie : le formulaire de saisie, pas une version en lecture =====
-   On reutilise les cartes d'edition existantes (renderPretCardEdit,
-   renderGarantieCardEdit) : elles portent deja tous les champs. Leur ligne
-   compacte fait doublon avec la ligne du tableau, et leur detail est replie par
-   defaut - on masque l'une et on deplie l'autre. */
-.fin-detail-row .fin-emain { display: none !important; }
-.fin-detail-row .fin-edetail { display: block !important; }
-.fin-detail-row .entity-card.fin-erow {
-  border: none !important; background: transparent !important;
-  padding: 0 !important; margin: 0 !important;
-}
-.fin-detail-row .entity-card.fin-erow::before { content: none !important; }
-.fin-detail-row .fin-expand, .fin-detail-row .fin-del { display: none !important; }
-
-/* ===== Detail d'un pret : le cycle en tableau, les conditions en lignes =====
-   Les trois cartes d'etape empilees et la grille d'etiquettes au-dessus des
-   champs doublaient la hauteur. Le cycle est une sequence d'etapes aux memes
-   attributs : c'est un tableau. Les conditions tiennent en cinq lignes
-   etiquetees, libelle A GAUCHE du champ. */
-.pd-cycle { margin-bottom: 10px; }
-.pd-cycle th { padding: 3px 8px; }
-.pd-cycle td { padding: 1px 8px; border-bottom: 1px solid var(--border-color); }
-.pd-cycle tbody tr:last-child td { border-bottom: none; }
-.pd-cycle .pd-etape { white-space: nowrap; font-weight: 600; min-width: 132px; }
-.pd-cycle input.card-input { width: 100%; min-width: 92px; border: 1px solid transparent; background: transparent; padding: 3px 5px; border-radius: var(--radius-xs); font-size: 12.5px; }
-.pd-cycle td.num input.card-input { text-align: right; font-variant-numeric: tabular-nums; }
-.pd-cycle input.card-input:hover { border-color: var(--border-color); }
-.pd-cycle input.card-input:focus { outline: none; background: var(--bg-primary); border-color: var(--info-accent); box-shadow: 0 0 0 2px rgba(24,95,165,.15); }
-.pd-cycle .pd-na { color: var(--text-tertiary); text-align: center; }
-/* L'etat de l'etape est porte par la pastille ET par l'intensite du libelle :
-   la couleur seule ne doit rien dire. */
-.pd-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: baseline; border: 2px solid var(--border-color-strong); background: transparent; }
-.pd-cycle tr.pd-done .pd-dot { background: var(--success-accent); border-color: var(--success-accent); }
-.pd-cycle tr.pd-current .pd-dot { border-color: var(--info-accent); background: var(--bg-primary); box-shadow: 0 0 0 2px var(--info-bg); }
-.pd-cycle tr.pd-future .pd-etape { color: var(--text-tertiary); font-weight: 500; }
-
-.pd-lignes { display: flex; flex-direction: column; gap: 4px; }
-.pd-ligne { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; padding: 4px 0; border-top: 1px dashed var(--border-color); }
-.pd-lab { flex: 0 0 108px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-tertiary); }
-.pd-f { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
-.pd-f > span { color: var(--text-secondary); white-space: nowrap; }
-.pd-f .card-input { border: 1px solid var(--border-color-strong); background: var(--bg-primary); border-radius: var(--radius-xs); padding: 3px 6px; font-size: 12.5px; }
-.pd-f .card-input:focus { outline: none; border-color: var(--info-accent); box-shadow: 0 0 0 2px rgba(24,95,165,.15); }
-.pd-w3 { width: 58px; } .pd-w4 { width: 76px; } .pd-w5 { width: 104px; }
-.pd-w6 { width: 124px; } .pd-w8 { width: 190px; }
-.pd-toggle { gap: 7px; cursor: pointer; }
-.pd-toggle input { width: 15px; height: 15px; accent-color: var(--info-accent); }
-.pd-ligne-notes { align-items: flex-start; }
-.pd-notes { flex: 1; min-width: 220px; resize: vertical; }
-
-/* ===== Aucun incrementeur de valeur dans le projet =====
-   Regle GLOBALE et volontairement sans portee : les fleches haut/bas des
-   champs numeriques ne servent a rien ici. Un montant, une duree, une quotite
-   se saisissent - on ne les feuillette pas d'un cran a la fois, et les fleches
-   volaient de la largeur a des colonnes deja serrees.
-   Toute nouvelle saisie numerique herite de cette regle : ne pas la redefinir
-   au cas par cas. */
-input[type="number"] {
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* ===== Groupe d'entite : la ligne ET son detail dans un meme <tbody> =====
-   Un seul porteur de data-section par entite, et un cadre qui montre ou
-   commence et ou finit le pret qu'on a ouvert. */
-.fin-tbl tbody.fin-groupe { background: transparent; border: none; }
-.fin-tbl tbody.fin-groupe::before { content: none; }
-/* Le cadre est un CONTOUR pose sur le groupe entier, pas des bordures posees
-   cellule par cellule : en border-collapse, celles-ci fusionnent avec les
-   filets du tableau et laissaient un trait parasite en haut du groupe. */
-.fin-tbl tbody.fin-groupe-open {
-  outline: 2px solid var(--info-accent);
-  outline-offset: -2px;
-}
-.fin-tbl tbody.fin-groupe-open > tr > td { background: var(--info-bg); }
-/* Les filets internes du groupe ouvert s'effacent : c'est un bloc, pas deux
-   rangees qui se suivent. */
-.fin-tbl tbody.fin-groupe-open > tr.fin-tr > td { border-bottom: none; }
-.fin-tbl tbody.fin-groupe-open > tr.fin-detail-row > td { border-top: none; }
-.fin-tbl tbody.fin-groupe-open > tr:hover > td { background: var(--info-bg); }
-
-/* Fleche : une rotation pilotee par aria-expanded, pas une icone reconstruite. */
-.fin-expand > i, .fin-expand > .tabler-svg-icon { transition: transform .15s ease; }
-.fin-expand[aria-expanded="true"] > i,
-.fin-expand[aria-expanded="true"] > .tabler-svg-icon { transform: rotate(180deg); }
-@media (prefers-reduced-motion: reduce) { .fin-expand > i, .fin-expand > .tabler-svg-icon { transition: none; } }
-
-/* ===== Largeurs calees sur la donnee attendue, pas sur une grille uniforme ===== */
-.fin-tbl .fin-td-tr select.fin-tcell { min-width: 62px; width: 62px; }        /* T1, T12 */
-.fin-tbl td:has(> input[data-euro]) { width: 120px; }
-/* Calibre sur le plus grand montant plausible - « 12 345 678 € » - et non sur
-   le contenu courant : une colonne qui se retrecit des qu elle est vide se
-   retrouve trop etroite des qu on y tape quelque chose. */
-.fin-tbl input[data-euro] {
-  min-width: 116px; width: 116px; text-align: right;
-  font-variant-numeric: tabular-nums; white-space: nowrap;
-}
-.fin-tbl select.fin-tcell[data-field="ligne"] { min-width: 104px; width: 104px; }
-.fin-tbl select.fin-tcell[data-field="financeur"] { min-width: 96px; width: 96px; }
-/* « En cours de versement » est le libelle de statut le plus long du referentiel. */
-.fin-tbl select.fin-tcell[data-field="statut"] { min-width: 158px; width: 158px; }
-.fin-tbl select.fin-tcell[data-field="pret_lie"] { min-width: 168px; }
-.fin-tbl input.fin-tcell[data-field^="date_"] { min-width: 92px; width: 92px; }
-/* La colonne d appoint absorbe tout le reste : chaque autre colonne se cale
-   alors sur la largeur de sa donnee. */
-/* La colonne d appoint ne porte pas de contenu, mais elle porte les MEMES
-   filets que les autres : lui retirer ses bordures interrompait le trait sous
-   l en-tete et sous chaque ligne, juste avant la colonne d actions. */
-.fin-tbl .fin-filler { width: 100%; padding: 0; }
-.fin-tbl td.fin-td, .fin-tbl th:not(.fin-filler) { width: 1%; white-space: nowrap; }

@@ -76,95 +76,6 @@ const REFERENTIELS = {
 };
 function getRef(key) { return REFERENTIELS[key]?.items || []; }
 
-// =========== Nomenclature du prix de revient ===========
-// Reprise de la maquette LEON REWORK (onglet PDR) : 5 chapitres, 46 postes.
-// Deux règles héritées, à ne pas « corriger » :
-//  - la numérotation comporte des trous (17 à 19 et 28 sont absents) : elle est
-//    réservée par chapitre, ce n'est pas une simple séquence, et la conserver
-//    telle quelle garde la saisie comparable à la maquette ;
-//  - le `code` est STABLE et indépendant du numéro comme du rang d'affichage.
-//    C'est lui la clé de stockage, jamais le libellé : le même poste s'appelle
-//    « Terrain » sur un dossier et « Acquisition VEFA » sur un autre.
-const NOMENCLATURE_PDR = {
-  bilan_charge_fonciere: [
-    { code: 'cf_acquisition',         numero: 1,  libelle: 'Acquisition / Terrain' },
-    { code: 'cf_sondages',            numero: 2,  libelle: 'Sondages / Études de sols' },
-    { code: 'cf_demolition',          numero: 3,  libelle: 'Démolition' },
-    { code: 'cf_vrd',                 numero: 4,  libelle: 'Travaux VRD' },
-    { code: 'cf_vrd_actualisation',   numero: 5,  libelle: 'Actualisation VRD' },
-    { code: 'cf_vrd_revision',        numero: 6,  libelle: 'Révision VRD' },
-    { code: 'cf_branchements',        numero: 7,  libelle: 'Branchements' },
-    { code: 'cf_taxe_assainissement', numero: 8,  libelle: 'Taxe assainissement' },
-    { code: 'cf_notaire',             numero: 9,  libelle: 'Frais de notaire' },
-    { code: 'cf_commission_achat',    numero: 10, libelle: 'Commission achat' },
-    { code: 'cf_taxes_amenagement',   numero: 11, libelle: 'Taxes aménagement & VSD' },
-    { code: 'cf_fondations_speciales',numero: 12, libelle: 'Fondations spéciales' },
-    { code: 'cf_desamiantage',        numero: 13, libelle: 'Désamiantage' },
-    { code: 'cf_divers_1',            numero: 14, libelle: 'Divers foncier 1' },
-    { code: 'cf_divers_2',            numero: 15, libelle: 'Divers foncier 2' },
-    { code: 'cf_divers_3',            numero: 16, libelle: 'Divers foncier 3' },
-  ],
-  bilan_batiment: [
-    { code: 'bat_travaux',        numero: 20, libelle: 'Travaux de construction' },
-    { code: 'bat_actualisation',  numero: 21, libelle: 'Actual. bâtiment' },
-    { code: 'bat_revision',       numero: 22, libelle: 'Révision bâtiment' },
-    { code: 'bat_aleas',          numero: 23, libelle: 'Aléas' },
-    { code: 'bat_divers_1',       numero: 24, libelle: 'Divers bât. 1' },
-    { code: 'bat_divers_2',       numero: 25, libelle: 'Divers bât. 2' },
-    { code: 'bat_divers_3',       numero: 26, libelle: 'Divers bât. 3' },
-    { code: 'bat_divers_4',       numero: 27, libelle: 'Divers bât. 4' },
-  ],
-  bilan_honoraires: [
-    { code: 'hon_vrd',                    numero: 29, libelle: 'Honoraires VRD' },
-    { code: 'hon_architecte',             numero: 30, libelle: 'Architecte' },
-    { code: 'hon_bureau_etudes',          numero: 31, libelle: "Bureau d'études" },
-    { code: 'hon_amo',                    numero: 32, libelle: 'AMO' },
-    { code: 'hon_geometre',               numero: 33, libelle: 'Géomètre' },
-    { code: 'hon_opc',                    numero: 34, libelle: 'OPC / Pilotage' },
-    { code: 'hon_controleur',             numero: 35, libelle: 'Contrôleur technique' },
-    { code: 'hon_assurances',             numero: 36, libelle: 'Assurances (DO/TRC)' },
-    { code: 'hon_sps',                    numero: 37, libelle: 'SPS / Coord. sécurité' },
-    { code: 'hon_labellisation',          numero: 38, libelle: 'Labellisation / Certif.' },
-    { code: 'hon_conduite_operation',     numero: 39, libelle: "Conduite d'opération" },
-    { code: 'hon_dir_investissement',     numero: 40, libelle: "Dir. d'investissement" },
-    { code: 'hon_etudes',                 numero: 41, libelle: 'Études' },
-    { code: 'hon_faisabilite',            numero: 42, libelle: 'Étude de faisabilité' },
-    { code: 'hon_interets_immobilisables',numero: 43, libelle: 'Intérêts immobilisables' },
-    { code: 'hon_divers_1',               numero: 44, libelle: 'Divers hon. 1' },
-    { code: 'hon_divers_2',               numero: 45, libelle: 'Divers hon. 2' },
-  ],
-  bilan_frais_divers: [
-    { code: 'fd_actualisation_hon', numero: 46, libelle: 'Actual./Rév. hon.' },
-    { code: 'fd_divers_1',          numero: 47, libelle: 'Divers frais 1' },
-    { code: 'fd_divers_2',          numero: 48, libelle: 'Divers frais 2' },
-  ],
-  bilan_frais_financiers: [
-    { code: 'ff_interets_prefi', numero: 49, libelle: 'Intérêts préfin.' },
-    { code: 'ff_divers',         numero: 50, libelle: 'Frais fin. divers' },
-  ],
-};
-
-// Code stable synthétisé pour un poste ajouté à la main dans l'administration
-// des référentiels : sans lui, la clé de stockage de ce poste redeviendrait son
-// libellé, et le renommer perdrait les montants déjà saisis.
-function slugPoste(libelle) {
-  const DIACRITIQUES = new RegExp('[\\u0300-\\u036f]', 'g');
-  const s = String(libelle || '').normalize('NFD').replace(DIACRITIQUES, '')
-    .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
-  return 'x_' + (s || 'poste');
-}
-
-// Postes d'un chapitre du prix de revient.
-// Le référentiel Supabase ne fait autorité que s'il porte de vrais codes : sans
-// eux (maquette locale, ou production tant que sql/nomenclature_pdr_leon.sql
-// n'a pas été exécuté), c'est la nomenclature embarquée qui sert de référence.
-// L'app rend donc le même écran avant et après le SQL.
-function getRefPostes(refKey) {
-  const p = REFERENTIELS[refKey]?.postes;
-  if (p && p.length && p.some(x => x.hasCode)) return p;
-  return NOMENCLATURE_PDR[refKey] || [];
-}
-
 // =========== Taux nomenclature helpers ===========
 // Parse a taux string like "TLA -0,20%" or "Livret A +1,11%" into {index, spread}
 // Returns null if format doesn't match a known index
@@ -613,9 +524,13 @@ function opBilanTotal(op) {
 function opBilanSectionTotal(op, sectionKey) {
   return (op.tranches || []).reduce((s, t) => s + bilanSectionTotal(t, sectionKey), 0);
 }
-// (Le total d'un poste toutes tranches confondues est désormais calculé par la
-// matrice, qui indexe par code de poste et non plus par libellé : voir pdrSum
-// et renderPdrMatrice.)
+// Op-level: sum of a specific line across all tranches
+function opBilanLineTotal(op, sectionKey, lineName) {
+  return (op.tranches || []).reduce((s, t) => {
+    const v = t.bilan && t.bilan[sectionKey] && t.bilan[sectionKey][lineName];
+    return s + (Number(v) || 0);
+  }, 0);
+}
 // ============== END REFERENTIELS ==============
 
 // ============== PERSISTANCE (localStorage) ==============
@@ -634,22 +549,7 @@ function storageSet(key, value) {
 
 let selectedOpCode = DATA[0]?._uid || null;
 let selectedTrancheIdx = 0;
-// Il n'y a plus de « mode édition » : chaque champ est saisissable en
-// permanence, et rien ne part en base tant qu'on n'a pas cliqué sur
-// « Enregistrer » - un bandeau qui n'apparaît que lorsqu'une modification est
-// en cours (voir syncSaveBar).
-//
-// L'indicateur reste sous ce nom parce qu'une centaine de rendus s'en servent
-// pour choisir entre « afficher la valeur » et « afficher le champ ». Il vaut
-// desormais toujours vrai, sauf le temps de rendre un snapshot de phase figee,
-// qui est par nature en lecture seule.
-let editMode = true;
-
-// Le rail de saisie est retiré (voir initEditCockpit). L'indicateur est laissé
-// en évidence plutôt que d'effacer d'un bloc la machinerie du cockpit : la
-// complétude par domaine qu'il calculait doit revenir en pastille d'onglet.
-// Déclaré ici, et non près du cockpit : initEditCockpit tourne dès l'init.
-const RAIL_RETIRE = true;
+let editMode = false;
 let AAPS = [];
 let editingAapLid = null;
 let comitesCalMonth = null;
@@ -2226,8 +2126,15 @@ function deleteOp() {
 function createTranche() {
   const op = findOp(selectedOpCode);
   if (!op) return;
-  // Ne pas perdre la saisie en cours au re-render qui suit la création.
-  if (typeof collectEditsFromDom === 'function') collectEditsFromDom(op);
+  if (!editMode) {
+    // Entrée en édition par ce chemin : créer le snapshot AVANT le push de la
+    // tranche, sinon Annuler ne pourrait pas la retirer.
+    editSessionSnap = JSON.parse(JSON.stringify(op));
+    editMode = true;
+    if (typeof EDIT_FOCUS_ID !== 'undefined') EDIT_FOCUS_ID = '__auto__';
+  } else if (typeof collectEditsFromDom === 'function') {
+    collectEditsFromDom(op); // ne pas perdre la saisie en cours au re-render
+  }
   // Find next integer id
   const ids = op.tranches
     .map(t => parseInt(String(t.id || '').match(/^\d+/)?.[0] || '0', 10))
@@ -3367,60 +3274,20 @@ function showToast(msg, icon = 'check') {
 // Session snapshot for highlighting modified fields during current edit session
 let editSessionSnap = null;
 
-// Point de reference de la saisie : la photo de l'operation telle qu'elle est
-// en base. C'est elle qui dit s'il reste quelque chose a enregistrer, et c'est
-// vers elle que « Annuler » ramene.
-// Témoin de frappe. La saisie vit dans le DOM jusqu'à la moisson : comparer
-// l'objet au snapshot ne voit donc rien tant qu'on n'a pas changé d'onglet.
-// Ce drapeau fait apparaître le bandeau dès la première touche, ce qui est le
-// seul comportement honnête - l'utilisateur a modifié quelque chose.
-let SAISIE_TOUCHEE = false;
-
-function armEditSession(op, moissonner) {
-  // Moissonner AVANT de photographier, quand le DOM affiché est bien celui de
-  // cette opération. Sans cela, la première navigation d'onglet déclenchait à
-  // elle seule le bandeau : la moisson normalise la saisie ('' devient null, un
-  // texte devient un nombre), et cette normalisation passait pour une
-  // modification de l'utilisateur.
-  if (moissonner && op && typeof collectEditsFromDom === 'function') {
-    try { collectEditsFromDom(op); } catch (e) {}
-  }
-  editSessionSnap = op ? JSON.parse(JSON.stringify(op)) : null;
-  SAISIE_TOUCHEE = false;
-}
-
-// Conserve pour les rares appels historiques (CTA d'etats vides) : il n'y a
-// plus de mode a basculer, on se contente de reafficher.
 function toggleEditMode() {
+  editMode = !editMode;
+  if (editMode) {
+    if (typeof EDIT_FOCUS_ID !== 'undefined') EDIT_FOCUS_ID = '__auto__'; // cockpit : focus sur la 1re section incomplète
+    const op = findOp(selectedOpCode);
+    if (op) {
+      // Deep clone (strip _uid etc are fine, full structure)
+      editSessionSnap = JSON.parse(JSON.stringify(op));
+    }
+  } else {
+    editSessionSnap = null;
+  }
   renderAll();
 }
-
-// Affiche ou masque le bandeau d'enregistrement selon qu'une modification est
-// en attente. C'est le seul signal d'etat qui subsiste : pas de mode, pas de
-// bascule, juste « il y a quelque chose a enregistrer » ou rien.
-function syncSaveBar() {
-  const bar = document.getElementById('saveBar');
-  if (!bar) return;
-  // Le bandeau vit hors de #opsShell : il doit donc vérifier lui-même qu'on est
-  // bien sur la fiche opération, sinon il flotterait au-dessus du Gantt.
-  const shell = document.getElementById('opsShell');
-  const surLaFiche = !!shell && shell.offsetParent !== null;
-  const sale = surLaFiche && typeof hasUnsavedChanges === 'function' && hasUnsavedChanges();
-  bar.classList.toggle('on', !!sale);
-  bar.setAttribute('aria-hidden', sale ? 'false' : 'true');
-}
-
-// La frappe vit dans le DOM avant d'etre moissonnee : on ecoute au niveau du
-// document, une fois pour toutes, plutot que de rebrancher a chaque rendu.
-['input', 'change'].forEach(ev => document.addEventListener(ev, e => {
-  const t = e.target;
-  // Tout ce qui se saisit dans la fiche opération compte, quel que soit le type
-  // de contrôle : restreindre aux INPUT/SELECT/TEXTAREA laissait passer les
-  // zones editables et les contrôles maison.
-  if (!t || !t.closest || !t.closest('#opsShell')) return;
-  SAISIE_TOUCHEE = true;
-  syncSaveBar();
-}, true));
 
 // Returns true if (current value of field) differs from session snapshot
 function isFieldModifiedInSession(scope, fieldName, opOrTr) {
@@ -3555,23 +3422,6 @@ function collectEditsFromDom(op) {
     if (el.classList.contains('reel')) op.jalons_reel[f] = true;
     else delete op.jalons_reel[f];
   });
-  // Prix de revient : la matrice couvre TOUTES les tranches à la fois, chaque
-  // cellule dit dans laquelle elle se range (`data-bilan-tranche`). La collecte
-  // est donc au niveau opération, hors du bloc de la tranche sélectionnée -
-  // sinon la saisie d'une colonne se recopierait dans toutes les autres.
-  document.querySelectorAll('[data-bilan-section][data-bilan-line][data-bilan-tranche]').forEach(el => {
-    const tr = op.tranches[Number(el.dataset.bilanTranche)];
-    if (!tr) return;
-    pdrEnsure(tr);
-    const sec = el.dataset.bilanSection;
-    const code = el.dataset.bilanLine;
-    const v = el.value === '' ? 0 : parseFloat(el.value);
-    // Un poste remis à vide disparaît de l'objet : on ne stocke pas des zéros,
-    // qui se liraient ensuite comme « chiffré à zéro ».
-    if (v) tr[sec][code] = v;
-    else delete tr[sec][code];
-  });
-
   // Tranche-level fields
   const t = op.tranches[selectedTrancheIdx];
   if (t) {
@@ -3595,6 +3445,16 @@ function collectEditsFromDom(op) {
     document.querySelectorAll('[data-edit-tranche-surface]').forEach(el => {
       const key = el.dataset.editTrancheSurface;
       t.surfaces[key] = el.value === '' ? null : parseFloat(el.value);
+    });
+    // Save bilan line inputs (LEON-style)
+    if (!t.bilan) t.bilan = { charge_fonciere:{}, batiment:{}, honoraires:{}, frais_divers:{}, frais_financiers:{} };
+    document.querySelectorAll('[data-bilan-section][data-bilan-line]').forEach(el => {
+      const sec = el.dataset.bilanSection;
+      const line = el.dataset.bilanLine;
+      if (!t.bilan[sec]) t.bilan[sec] = {};
+      const v = el.value === '' ? 0 : parseFloat(el.value);
+      if (v) t.bilan[sec][line] = v;
+      else delete t.bilan[sec][line];
     });
     // Resync du scalaire logements : agréés + hors agrément (SFO), fallback volumétrie legacy.
     { const n = trancheLogements(t); if (n !== null) t.logements = n; }
@@ -3621,12 +3481,6 @@ function collectEditsFromDom(op) {
   // Sub-entity cards: each card has data-section + data-row-idx (original index in op[section])
   ['subventions','prets','garanties','prefinancements','reservataires','avenants'].forEach(section => {
     document.querySelectorAll(`.entity-card.editing[data-section="${section}"]`).forEach(card => {
-      // Un conteneur masqué porte un rendu périmé : le moissonner écraserait la
-      // saisie en cours avec des valeurs d'avant. On ne récolte que dans le
-      // conteneur réellement affiché. (Le repli d'une ligne de détail, lui,
-      // reste récolté : c'est le CONTENEUR qu'on teste, pas la ligne.)
-      const hote = card.closest('#opDetail, #trancheDetail');
-      if (hote && hote.offsetParent === null) return;
       const idx = parseInt(card.dataset.rowIdx, 10);
       if (!op[section] || !op[section][idx]) return;
       const item = op[section][idx];
@@ -3634,11 +3488,7 @@ function collectEditsFromDom(op) {
       card.querySelectorAll('[data-field]:not(.pieces-multiselect):not([data-bool])').forEach(el => {
         const field = el.dataset.field;
         let v = el.value;
-        // Champ monétaire formaté : il faut retirer les séparateurs et le
-        // symbole avant de convertir, sinon « 568 000 € » vaut 568.
-        if (el.hasAttribute('data-euro')) {
-          v = parseEuroSaisie(v);
-        } else if (NUMERIC_FIELDS.has(field)) {
+        if (NUMERIC_FIELDS.has(field)) {
           v = v === '' ? null : parseFloat(v);
         }
         item[field] = (v === '' || v === undefined) ? null : v;
@@ -3655,14 +3505,6 @@ function collectEditsFromDom(op) {
       }
       // Special: prêt taux nomenclature → compose taux from index+spread+libre
       if (section === 'prets') {
-        // Marge saisie en pourcentage, stockée en fraction. Sans cette
-        // conversion, -0,20 % partirait en base comme -0,20 au lieu de -0,002 :
-        // un facteur 100 sur tous les prêts qu'on ouvrirait.
-        if ('marge_pct' in item) {
-          const p = item.marge_pct;
-          item.marge = (p === '' || p == null || isNaN(Number(p))) ? null : Number(p) / 100;
-          delete item.marge_pct;
-        }
         const idx = item.taux_index;
         if (idx) {
           item.taux = composeTaux(idx, item.taux_spread, item.taux_libre);
@@ -3760,14 +3602,9 @@ async function _saveOpEditsTail(op, _beforeSnap) {
   } else {
     showToast('Modifications enregistrées (mémoire locale - mockup)');
   }
-  // Enregistré : ce qui est à l'écran devient le nouveau point de référence.
-  // On ne « sort » plus de rien - la saisie reste ouverte, le bandeau se retire.
-  // Deux photos : la première pour que le rendu ne signale plus de champ
-  // modifié, la seconde pour absorber ce que le rendu normalise au passage.
-  armEditSession(findOp(selectedOpCode));
+  editMode = false;
+  editSessionSnap = null;
   renderAll();
-  armEditSession(findOp(selectedOpCode), true);
-  syncSaveBar();
 }
 
 function _showSaveErrorBanner() {
@@ -3791,13 +3628,10 @@ function cancelOpEdits() {
     revertOpEdits(); // rollback mémoire depuis le snapshot de session
     showToast('Modifications abandonnées', 'arrow-back-up');
   }
-  // On reste sur la fiche, champs ouverts : « Annuler » ramène à l'état
-  // enregistré, il ne ferme rien.
-  armEditSession(findOp(selectedOpCode));
+  editMode = false;
+  editSessionSnap = null;
   _hideSaveErrorBanner();
   renderAll();
-  armEditSession(findOp(selectedOpCode), true);
-  syncSaveBar();
 }
 
 function renderSidebar() {
@@ -3909,7 +3743,7 @@ function applyOpsTab() {
 // regles de rattrapage ecrites a la main : c'est ce qui produisait les clics morts.
 function goEcran(id) {
   // Moissonner la saisie en cours AVANT le re-render, sinon perte de frappe.
-  if (typeof collectEditsFromDom === "function") {
+  if (editMode && typeof collectEditsFromDom === 'function') {
     const _op = findOp(selectedOpCode);
     if (_op) collectEditsFromDom(_op);
   }
@@ -3923,7 +3757,7 @@ function goEcran(id) {
   applyOpsTab();
   renderAll();
   if (typeof _syncOpsNav === 'function') _syncOpsNav();
-  const c = document.getElementById((OPS_TAB === 'tr') ? 'trancheDetail' : 'opDetail');
+  const c = document.getElementById((OPS_TAB === 'tr' || OPS_TAB === 'fin') ? 'trancheDetail' : 'opDetail');
   if (c) c.scrollTop = 0;
 }
 
@@ -4253,9 +4087,9 @@ const _DOMAIN_TO_TAB = { home: 'home', syn: 'syn', dos: 'dos', bilan: 'bilan', s
 function openOpsDomain(id) {
   const tab = _DOMAIN_TO_TAB[id] || 'home';
   // Arrivée sur le détail de tranche par un chemin indirect : adopter le scope
-  if (tab === "tr" && typeof TR_SCOPE !== "undefined" && TR_SCOPE == null) TR_SCOPE = selectedTrancheIdx;
+  if (!editMode && tab === 'tr' && typeof TR_SCOPE !== 'undefined' && TR_SCOPE == null) TR_SCOPE = selectedTrancheIdx;
   switchOpsTab(tab);
-  const c = document.getElementById((tab === 'tr') ? 'trancheDetail' : 'opDetail');
+  const c = document.getElementById((tab === 'tr' || tab === 'fin') ? 'trancheDetail' : 'opDetail');
   if (c) c.scrollTop = 0;
 }
 function closeOpsDrawer() { switchOpsTab('home'); } // compat : « fermer » = retour vue d'ensemble
@@ -4268,7 +4102,7 @@ let TR_SCOPE = null; // null = Total ; sinon index de tranche
 
 function setTrScope(i) {
   // En édition : moissonner la saisie en cours AVANT le re-render, sinon perte
-  if (typeof collectEditsFromDom === "function") {
+  if (editMode && typeof collectEditsFromDom === 'function') {
     const _op = findOp(selectedOpCode);
     if (_op) collectEditsFromDom(_op);
   }
@@ -4311,11 +4145,11 @@ function openTrancheDetail(i) {
 // Une tranche est un ecran comme un autre : meme entree que les onglets.
 function opsPillClick(i) { goEcran('tr:' + i); }
 // « Total » : retour au niveau operation, sans changer d'ecran de contenu.
-function opsTotalClick() { goEcran(OPS_TAB === "tr" ? "home" : OPS_TAB); }
+function opsTotalClick() { goEcran(OPS_TAB === 'tr' ? (editMode ? 'dos' : 'home') : OPS_TAB); }
 
 // Clic nav en consultation : Informations avec un scope tranche = détail de la tranche
 function opsNavClick(tab) {
-  if (tab === "dos" && TR_SCOPE != null) { switchOpsTab("tr"); return; }
+  if (!editMode && tab === 'dos' && TR_SCOPE != null) { switchOpsTab('tr'); return; }
   openOpsDomain(tab);
 }
 
@@ -4339,18 +4173,21 @@ function _syncOpsNav() {
   });
 }
 
-// Bandeau unique : nav de vues + pastilles de tranches.
-// Cinq écrans, les mêmes en permanence. Il n'y a plus de mode, donc plus de
-// jeu d'onglets alternatif ni de réacheminement - c'est ce réacheminement qui
-// produisait les clics sans effet.
+// Bandeau unique (consultation) : nav de vues + pastilles de tranches + sous-vues.
 function opsUnifiedBarHtml(op, displayedOp, editing) {
-  const nAlerts = (typeof computeAlerts === 'function')
+  // Un seul bandeau, même gabarit en consultation et en édition ; seuls les
+  // onglets changent (Vue d'ensemble/finop en lecture, Synthèse/fin par tranche en édition).
+  const nAlerts = (editing && typeof computeAlerts === 'function')
     ? computeAlerts(op).filter(al => al.level === 'expired' || al.level === 'critical').length : 0;
+  // Memes ecrans en lecture et en edition : l'edition ne remplace que les valeurs
+  // par des champs, jamais la navigation. Elle reacheminait les onglets, d'ou les
+  // clics sans effet sur « Bilan ».
   const opNav = [
-    ['home', "Vue d'ensemble" + (nAlerts ? ` <span class="ops-tab-n ops-tab-alert">${nAlerts}</span>` : '')],
+    [editing ? 'syn' : 'home', (editing ? 'Synthèse' : "Vue d'ensemble")
+      + (nAlerts ? ` <span class="ops-tab-n ops-tab-alert">${nAlerts}</span>` : '')],
     ['dos', 'Informations'],
     ['bilan', 'Prix de revient'],
-    ['fin', 'Financements'],
+    [editing ? 'fin' : 'finop', 'Financements'],
     ['suivi', 'Comités & suivi'],
   ];
   const navClick = (tab) => `goEcran('${tab}')`;
@@ -4358,12 +4195,7 @@ function opsUnifiedBarHtml(op, displayedOp, editing) {
     `<button type="button" class="ops-dn${OPS_TAB === tab ? ' active' : ''}" data-view="${tab}" onclick="${navClick(tab)}">${label}</button>`;
   const trs = displayedOp.tranches || [];
   const pillActive = TR_SCOPE != null ? TR_SCOPE : -1; // même scope dans les deux modes
-  // Triées par code : elles sortaient dans l'ordre des lignes en base, ce qui
-  // donnait « T2, T3, T1 » sur A2405. L'index d'origine est conservé, c'est lui
-  // qui adresse la tranche partout ailleurs.
-  const pills = trs.map((t, i) => ({ t, i }))
-    .sort((a, b) => String(trCodeOf(a.t)).localeCompare(String(trCodeOf(b.t)), 'fr', { numeric: true }))
-    .map(({ t, i }) => {
+  const pills = trs.map((t, i) => {
     const suffix = t.code_full ? t.code_full.split('-').slice(1).join('-') : (t.id || ('T' + (i + 1)));
     const agr = t.statut_agrement || '';
     const dot = /sign|obtenu|acquis|dfa/i.test(agr) ? 'good' : (agr ? 'warn' : 'neutral');
@@ -4397,11 +4229,7 @@ function opsUnifiedBarHtml(op, displayedOp, editing) {
 
 // Échap : retour à la vue d'ensemble (consultation uniquement)
 document.addEventListener('keydown', e => {
-  // Échap ne ferme plus un mode (il n'y en a plus) : il ramène à la vue
-  // d'ensemble. Sauf si l'on est dans un champ, où Échap sert à autre chose.
-  if (e.key !== 'Escape') return;
-  const a = document.activeElement;
-  if (a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return;
+  if (e.key !== 'Escape' || editMode) return;
   const sh = document.getElementById('opsShell');
   if (sh && sh.offsetParent !== null && OPS_TAB !== 'home') switchOpsTab('home');
 });
@@ -4661,13 +4489,13 @@ function renderOpDetail() {
   // consultation (accueil, financements op) basculent sur Synthèse.
   // Garde-fou : scope pointant sur une tranche disparue -> retour au Total
   if (TR_SCOPE != null && !(displayedOp.tranches || [])[TR_SCOPE]) TR_SCOPE = null;
-  // Un écran = un onglet, point. Le remappage qui existait ici traduisait les
-  // vues d'un mode vers l'autre ('home'<->'syn', 'finop'<->'fin') ; sans mode,
-  // il n'y a plus qu'un jeu de vues. Les anciens noms sont encore acceptés
-  // parce qu'ils dorment dans sessionStorage d'une session à l'autre.
-  if (OPS_TAB === 'syn') OPS_TAB = 'home';
-  if (OPS_TAB === 'finop') OPS_TAB = 'fin';
-  if (!OPS_TAB) OPS_TAB = 'home';
+  OPS_TAB = effectiveEditMode
+    // Édition : mêmes vues qu'en lecture (le scope Total/tranche s'applique
+    // pareil) ; seule la Vue d'ensemble devient Synthèse.
+    ? (OPS_TAB === 'home' ? 'syn' : (OPS_TAB === 'finop' ? 'fin' : ((OPS_TAB === 'bilan' && TR_SCOPE != null) ? 'tr' : OPS_TAB)))
+    // Consultation : Synthèse n'existe plus, et les financements de tranche sont
+    // fusionnés dans la vue Financements op.
+    : ((OPS_TAB === 'syn' ? 'home' : (OPS_TAB === 'fin' ? 'finop' : OPS_TAB)) || 'home');
   // Cohérence scope/vue : si on affiche un détail de tranche sans scope (session
   // restaurée), le scope adopte la tranche courante - dans les deux modes.
   if (OPS_TAB === 'tr' && TR_SCOPE == null) TR_SCOPE = selectedTrancheIdx;
@@ -4812,11 +4640,17 @@ function renderOpDetail() {
   // .ops-hd-mid) pour alléger le bandeau ; ne reste ici que la bannière snapshot.
   const stickyExtrasHtml = `${snapshotBanner}`;
 
-  // Plus de bandeau de mode : il occupait une rangée entière pour répéter une
-  // consigne apprise dès le premier jour. Enregistrer et Annuler vivent
-  // desormais dans le bandeau flottant, qui ne se montre que s'il y a
-  // quelque chose a enregistrer (#saveBar).
-  const editToolbar = '';
+  const editToolbar = effectiveEditMode ? `
+    <div class="edit-toolbar">
+      <i class="ti ti-pencil"></i>
+      <span>Mode édition · les modifications sont enregistrées dans la base au clic sur « Enregistrer »</span>
+      <div class="btn-bar">
+        <button class="btn-edit danger" onclick="deleteOp()"><i class="ti ti-trash"></i>Supprimer</button>
+        <button class="btn-edit" onclick="cancelOpEdits()"><i class="ti ti-x"></i>Annuler</button>
+        <button class="btn-edit primary" id="saveOpBtn" onclick="saveOpEdits()"><i class="ti ti-check"></i>Enregistrer</button>
+      </div>
+    </div>
+  ` : '';
 
   const html = `
     <div class="op-sticky-top">
@@ -4842,22 +4676,17 @@ function renderOpDetail() {
           </div>`
           : `<h1 class="detail-title">${escapeHtml(displayedOp.display_name || op.display_name)}</h1>`}
         <div class="detail-badges">
-          ${/* Rappels de contexte, pas des champs : ils se saisissent dans
-              Informations. Ils restent affichés en permanence - la fiche ne
-              bascule plus entre deux états, il n'y a plus de raison de les
-              faire disparaître. */''}
-          ${displayedOp.zone_abc ? `<span class="badge-secondary">Zone ${escapeHtml(displayedOp.zone_abc)}</span>` : ''}
-          ${displayedOp.vefa_mod ? `<span class="badge-secondary">${escapeHtml(displayedOp.vefa_mod)}</span>` : ''}
-          ${displayedOp.type_travaux ? `<span class="badge-secondary">${escapeHtml(displayedOp.type_travaux)}</span>` : ''}
+          ${displayedOp.zone_abc && !effectiveEditMode ? `<span class="badge-secondary">Zone ${escapeHtml(displayedOp.zone_abc)}</span>` : ''}
+          ${displayedOp.vefa_mod && !effectiveEditMode ? `<span class="badge-secondary">${escapeHtml(displayedOp.vefa_mod)}</span>` : ''}
+          ${displayedOp.type_travaux && !effectiveEditMode ? `<span class="badge-secondary">${escapeHtml(displayedOp.type_travaux)}</span>` : ''}
           ${renderOpTags(op, effectiveEditMode)}
         </div>
       </div>
       <div class="ops-hd-mid">${compareSelector}${phaseStepperHtml}</div>
       <div class="ops-hd-actions">
-        <button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-fold-all"></i></button>
-        ${op.phases_history.length > 0 ? `<button class="icon-btn${compareWithIdx != null ? ' cmp-on' : ''}" onclick="toggleCompareFold()" title="Comparer avec une phase figée"><i class="ti ti-arrows-left-right"></i></button>` : ''}
-        <button class="icon-btn" onclick="showOpHistory()" title="Historique des modifications"><i class="ti ti-history"></i></button>
-        <button class="icon-btn danger-hover" onclick="deleteOp()" title="Supprimer cette opération"><i class="ti ti-trash"></i></button>
+        ${effectiveEditMode ? `<button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-fold-all"></i></button>` : ''}
+        ${(!effectiveEditMode && op.phases_history.length > 0) ? `<button class="icon-btn${compareWithIdx != null ? ' cmp-on' : ''}" onclick="toggleCompareFold()" title="Comparer avec une phase figée"><i class="ti ti-arrows-left-right"></i></button>` : ''}
+        ${!effectiveEditMode ? `<button class="icon-btn" onclick="showOpHistory()" title="Historique des modifications"><i class="ti ti-history"></i></button>` : ''}
         ${op.lien_sharepoint && !effectiveEditMode ? `<a href="${escapeHtml(op.lien_sharepoint)}" target="_blank" class="icon-btn sharepoint-btn" title="Ouvrir dans SharePoint">
           <svg width="14" height="14" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
             <circle cx="11" cy="14" r="8" fill="#036C70"/>
@@ -4866,33 +4695,27 @@ function renderOpDetail() {
             <text x="11" y="18.5" font-family="Segoe UI,Arial,sans-serif" font-weight="700" font-size="11" fill="white" text-anchor="middle">S</text>
           </svg>
         </a>` : ''}
+        ${!isViewingSnapshot && !effectiveEditMode ? `<button class="icon-btn" onclick="toggleEditMode()" title="Modifier la fiche"><i class="ti ti-pencil"></i></button>` : ''}
       </div>
       </div>
-      ${opsKpiStripHtml(op, displayedOp)}
+      ${!effectiveEditMode ? opsKpiStripHtml(op, displayedOp) : ''}
       ${stickyExtrasHtml}
       ${editToolbar}
     </div><!-- /op-sticky-top -->
 
-    ${/* Le tableau de bord n'existait qu'en consultation, et disparaissait dès
-        qu'on voulait saisir. Il n'a aucune raison de s'effacer : ce sont des
-        agrégats, ils se lisent pendant qu'on saisit ailleurs. */''}
-    <div class="op-home" data-grp="home">${renderOpHomeDashboard(op, displayedOp)}</div>
+    ${!effectiveEditMode ? `<div class="op-home" data-grp="home">${renderOpHomeDashboard(op, displayedOp)}</div>
+    <div class="op-anchor op-finop" data-grp="finop">${renderOpFinancementsDrawer(op)}</div>` : ''}
 
-    ${/* Financements : un seul écran d'opération, toutes tranches dans le même
-        tableau. Il vivait dans le conteneur de tranche, ce qui obligeait à
-        choisir un périmètre avant de pouvoir lire quoi que ce soit. */''}
-    <div class="op-anchor" id="sec-op-fin" data-grp="fin">${renderFinancementsEcran(displayedOp)}</div>
-
-    <div class="metric-row" data-grp="home" style="--cols: 4;">
+    <div class="metric-row" data-grp="syn" style="--cols: 4;">
       <div class="metric-card"><div class="metric-label">Logements</div><div class="metric-value" id="op-total-lgts-live">${diffWrap(String(totalLgts(displayedOp) || '-'), totalLgts(displayedOp), compareWithIdx != null ? totalLgtsFromSnap(op) : null)}</div></div>
       <div class="metric-card"><div class="metric-label">Surface utile</div><div class="metric-value">${fmtSurface(opTotalSurface(displayedOp))}</div></div>
       <div class="metric-card"><div class="metric-label">Prix de revient TTC</div><div class="metric-value">${diffWrap(fmtMontant(totalBudget(displayedOp)), totalBudget(displayedOp), compareWithIdx != null ? totalBudgetFromSnap(op) : null)}</div></div>
       <div class="metric-card"><div class="metric-label">Tranches</div><div class="metric-value">${displayedOp.tranches.length}</div></div>
     </div>
 
-    <div class="op-anchor" id="sec-op-alerts" data-grp="home">${renderAlertsPanel(displayedOp)}</div>
+    ${!effectiveEditMode ? `<div class="op-anchor" id="sec-op-alerts" data-grp="syn">${renderAlertsPanel(displayedOp)}</div>` : ''}
 
-    <div class="section" id="sec-op-vol" data-grp="home">
+    <div class="section" id="sec-op-vol" data-grp="syn">
       <div class="section-label vol"><i class="ti ti-home"></i>Volumétrie consolidée</div>
       <div class="volumetrie-grid">${volCells}</div>
     </div>
@@ -4979,9 +4802,9 @@ function renderOpDetail() {
     ${(op.notes_libres || editMode) ? `<div class="section" id="sec-op-notes"><div class="section-label notes"><i class="ti ti-message"></i>Notes libres</div>${editableNotes(op.notes_libres, 'notes_libres')}</div>` : ''}
     </div>
 
-    <!-- Prix de revient : une seule matrice, qui gère elle-même le scope de
-         tranche (TR_SCOPE) en réduisant ses colonnes. -->
-    <div class="op-anchor" id="sec-op-bilan" data-grp="bilan">${renderPdrMatrice(displayedOp)}</div>
+    <div class="op-anchor" id="sec-op-bilan" data-grp="bilan">${(TR_SCOPE != null && displayedOp.tranches[TR_SCOPE])
+      ? renderBilanSection(displayedOp.tranches[TR_SCOPE], op, (displayedOp.tranches[TR_SCOPE].code_full ? displayedOp.tranches[TR_SCOPE].code_full.split('-').slice(1).join('-') : displayedOp.tranches[TR_SCOPE].id))
+      : renderBilanOpSection(displayedOp)}</div>
 
     <div class="op-anchor" id="sec-op-pf" data-grp="bilan">${(!effectiveEditMode && TR_SCOPE != null && displayedOp.tranches[TR_SCOPE])
       ? renderPlanFinancementSection(displayedOp.tranches[TR_SCOPE], op, (displayedOp.tranches[TR_SCOPE].code_full ? displayedOp.tranches[TR_SCOPE].code_full.split('-').slice(1).join('-') : displayedOp.tranches[TR_SCOPE].id), displayedOp)
@@ -5006,8 +4829,6 @@ function renderOpDetail() {
   initOpLocationMap(op);
   // Wire comité edit inputs (so values are saved as user types)
   bindComiteEditInputs();
-  // Totaux du prix de revient recalculés à la frappe (la matrice vit ici)
-  bindPdrLive();
   if (typeof _syncOpsNav === 'function') _syncOpsNav();
 }
 
@@ -5221,21 +5042,22 @@ function renderTrancheDetail() {
         </div>
       </div>
 
-      ${/* Les financements ont quitté ce conteneur pour l'écran d'opération
-          (renderFinancementsEcran) : toutes les tranches y cohabitent dans un
-          même tableau. Les rendre encore ici produisait un SECOND jeu de cartes
-          de prêt, invisible et périmé. Comme #trancheDetail vient après
-          #opDetail dans le document, collectEditsFromDom les traitait en
-          dernier : elles réécrasaient, avec leurs valeurs d'origine, tout ce
-          que l'utilisateur venait de saisir dans le tableau visible. C'est ce
-          qui rendait la saisie d'un prêt sans effet. */''}
-      <div class="section" id="sec-tr-fp" data-grp="fin">
+      ${(editMode && TR_SCOPE == null)
+        ? `<div class="finop-all" data-grp="fin">${renderAllTranchesFinEdit(op, trancheSource)}</div>`
+        : `
+      <div class="op-anchor" id="sec-tr-prets" data-grp="fin">${renderPretsSection(prets, op)}</div>
+      <div class="op-anchor" id="sec-tr-gar" data-grp="fin">${renderGarantiesSection(garanties, op)}</div>
+      <div class="op-anchor" id="sec-tr-subv" data-grp="fin">${renderSubvSection(subv, op)}</div>
+      ${editMode ? `<div class="section" id="sec-tr-fp" data-grp="fin">
         <div class="section-label fin"><i class="ti ti-cash"></i>Fonds propres</div>
         ${editableKV('Montant fonds propres (€)', t.fonds_propres, 'fonds_propres', 'number', 'tranche-field')}
         ${editableSelect('Nature', t.nature_fonds_propres, 'nature_fonds_propres', ['NR-NR', 'ATR', 'NR-R'], 'tranche-field')}
         ${editableKV('Durée reconstitution (ans)', t.duree_reconstitution_fp, 'duree_reconstitution_fp', 'number', 'tranche-field')}
         ${editableKV('Taux rémunération (%)', t.taux_remuneration_fp, 'taux_remuneration_fp', 'number', 'tranche-field')}
-      </div>
+      </div>` : ''}
+      <div class="op-anchor" id="sec-tr-res" data-grp="fin">${renderReservatairesSection(reservataires, op)}</div>
+      <div class="op-anchor" id="sec-tr-prefi" data-grp="fin">${renderPrefinSection(prefin, op)}</div>
+      <div class="op-anchor" id="sec-tr-avenants" data-grp="fin">${renderAvenantsSection(avenants, op)}</div>`}
       ${finSideHtml}
     `;
   }
@@ -5269,6 +5091,32 @@ function renderTrancheDetail() {
     };
     c.querySelectorAll('[data-edit-tranche-volagree],[data-edit-tranche-field="logts_lli"],[data-edit-tranche-field="logts_rhvs"],[data-edit-tranche-field="logts_libre"]').forEach(el => el.addEventListener('input', updateLive));
 
+    // Live update for bilan inputs (section sub-totals and grand total)
+    const updateBilanLive = () => {
+      const sectionSums = {};
+      c.querySelectorAll('[data-bilan-section][data-bilan-line]').forEach(input => {
+        const sec = input.dataset.bilanSection;
+        const v = Number(input.value) || 0;
+        sectionSums[sec] = (sectionSums[sec] || 0) + v;
+      });
+      // Update each section header total + expanded subtotal
+      let grandTotal = 0;
+      ['charge_fonciere','batiment','honoraires','frais_divers','frais_financiers'].forEach(sec => {
+        const sum = sectionSums[sec] || 0;
+        grandTotal += sum;
+        const headerEl = c.querySelector(`[data-bilan-section-total="${sec}"]`);
+        if (headerEl) {
+          headerEl.textContent = fmtMontant(sum);
+          if (sum === 0) headerEl.classList.add('bilan-section-total-empty');
+          else headerEl.classList.remove('bilan-section-total-empty');
+        }
+        const subEl = c.querySelector(`[data-bilan-subtotal="${sec}"]`);
+        if (subEl) subEl.textContent = fmtMontant(sum);
+      });
+      const gtEl = c.querySelector('[data-bilan-grand-total]');
+      if (gtEl) gtEl.textContent = fmtMontant(grandTotal);
+    };
+    c.querySelectorAll('[data-bilan-section][data-bilan-line]').forEach(el => el.addEventListener('input', updateBilanLive));
 
     // Live update prêt / subv tranche totals as user edits card amounts
     const updateMonetaryLive = () => {
@@ -5366,616 +5214,117 @@ function renderTrancheDetail() {
   if (typeof _syncOpsNav === 'function') _syncOpsNav();
 }
 
-// ============== PRIX DE REVIENT : matrice postes x tranches ==============
-// Un seul tableau par opération : les postes de la nomenclature en lignes, les
-// tranches en colonnes. La saisie est MANUELLE, cellule par cellule : rien
-// n'est ventilé ni réparti au prorata. Un montant n'apparaît que là où
-// quelqu'un l'a mis.
-//
-// Règle reprise de la maquette LEON REWORK : une cellule vide reste VIDE et ne
-// vaut pas zéro. Un poste non renseigné n'est pas un poste à zéro, et c'est
-// cette nuance qui permet de masquer les lignes vides sans rien travestir.
-
-// État de dépliage des chapitres, porté par l'OPÉRATION et non par la tranche :
-// la matrice est un seul tableau, le même quelle que soit la tranche affichée.
-// C'est ce qui règle le dépliage qui rafraîchissait le mauvais conteneur.
-let bilanExpanded = {}; // { 'opCode|__pdr__|sectionKey': false }
-
-// Un chapitre s'ouvre DÉPLIÉ : les cinq chapitres ne sont plus cinq tableaux
-// mais cinq blocs d'un seul, et le masquage des lignes vides suffit à garder
-// l'écran court. `undefined` vaut donc « déplié ».
-function isPdrChapOpen(opCode, sectionKey) {
-  return bilanExpanded[`${opCode}|__pdr__|${sectionKey}`] !== false;
+// ============== BILAN D'OPÉRATION (LEON-style) ==============
+// Expanded state: which sections are currently expanded per tranche
+let bilanExpanded = {}; // { 'opCode|trancheIdx|sectionKey': true/false }
+function isBilanExpanded(op, trCode, sectionKey) {
+  const k = `${op.code}|${trCode}|${sectionKey}`;
+  return !!bilanExpanded[k];
 }
-function togglePdrChap(opCode, sectionKey) {
-  const k = `${opCode}|__pdr__|${sectionKey}`;
-  bilanExpanded[k] = (bilanExpanded[k] === false); // fermé -> ouvert, sinon fermé
-  renderOpDetail();
+function toggleBilanSection(opCode, trCode, sectionKey) {
+  const k = `${opCode}|${trCode}|${sectionKey}`;
+  bilanExpanded[k] = !bilanExpanded[k];
+  renderOpDetail();   // le prix de revient vit desormais dans opDetail (onglet Bilan)
   replaceTablerIcons();
 }
-function pdrToutDeplier(opCode, ouvrir) {
-  BILAN_SECTIONS.forEach(s => { bilanExpanded[`${opCode}|__pdr__|${s.key}`] = !!ouvrir; });
-  renderOpDetail();
+function expandAllBilanSections(opCode, trCode) {
+  BILAN_SECTIONS.forEach(s => { bilanExpanded[`${opCode}|${trCode}|${s.key}`] = true; });
+  renderOpDetail();   // le prix de revient vit desormais dans opDetail (onglet Bilan)
+  replaceTablerIcons();
+}
+function collapseAllBilanSections(opCode, trCode) {
+  BILAN_SECTIONS.forEach(s => { bilanExpanded[`${opCode}|${trCode}|${s.key}`] = false; });
+  renderOpDetail();   // le prix de revient vit desormais dans opDetail (onglet Bilan)
   replaceTablerIcons();
 }
 
-// Masquage des lignes vides. Jamais actif en édition : on ne peut pas saisir
-// dans une ligne qui n'est pas affichée. Persisté comme MONEY_FMT.
-let PDR_HIDE_EMPTY = (() => {
-  try { return localStorage.getItem('pdrHideEmpty') !== '0'; } catch (e) { return true; }
-})();
-function togglePdrHideEmpty() {
-  PDR_HIDE_EMPTY = !PDR_HIDE_EMPTY;
-  try { localStorage.setItem('pdrHideEmpty', PDR_HIDE_EMPTY ? '1' : '0'); } catch (e) {}
-  renderOpDetail();
-  replaceTablerIcons();
-}
+function renderBilanSection(t, op, trCode) {
+  // Ensure structure exists
+  if (!t.bilan) t.bilan = { charge_fonciere: {}, batiment: {}, honoraires: {}, frais_divers: {}, frais_financiers: {} };
 
-// Suffixe de tranche : le code court qui relie prêts, subventions et garanties
-// à leur tranche.
-function trCodeOf(t) {
-  if (!t) return '';
-  return t.code_full ? t.code_full.split('-').slice(1).join('-') : (t.id || '');
-}
+  const totalGlobal = bilanTotal(t);
 
-// Le stockage réel du prix de revient, ce sont les cinq objets JSONB portés par
-// la tranche (`t.charge_fonciere`, `t.batiment`...) : ce sont eux que
-// buildTranchePayload envoie et que trancheBudgetTTC additionne. `t.bilan`
-// n'est qu'un alias de confort, et il doit partager les MÊMES objets - sinon la
-// saisie atterrit dans un wrapper que personne n'enregistre.
-function pdrEnsure(t) {
-  if (!t) return t;
-  t.bilan = t.bilan || {};
-  BILAN_SECTIONS.forEach(sec => {
-    if (!t[sec.key] || typeof t[sec.key] !== 'object') t[sec.key] = {};
-    t.bilan[sec.key] = t[sec.key];
-  });
-  return t;
-}
+  const sectionsHtml = BILAN_SECTIONS.map(sec => {
+    const sectionTotal = bilanSectionTotal(t, sec.key);
+    const expanded = isBilanExpanded(op, trCode, sec.key);
+    if (!t.bilan[sec.key]) t.bilan[sec.key] = {};
+    // Postes saisis mais absents du référentiel : affichés quand même (ils comptent dans les totaux)
+    const catalogue = getRef(sec.refKey);
+    const horsCat = Object.keys(t.bilan[sec.key]).filter(k => !catalogue.includes(k) && Number(t.bilan[sec.key][k]));
+    const lines = catalogue.concat(horsCat);
 
-// Montant saisi pour un poste sur une tranche. null = non renseigné, à ne pas
-// confondre avec 0.
-function pdrCell(t, secKey, code) {
-  const o = t && t[secKey];
-  if (!o) return null;
-  const v = o[code];
-  if (v === undefined || v === null || v === '') return null;
-  const n = Number(v);
-  return isNaN(n) ? null : n;
-}
-
-// Somme d'une série de cellules : null tant qu'aucune n'est renseignée.
-function pdrSum(vals) {
-  let s = 0, has = false;
-  for (const v of vals) { if (v !== null && v !== undefined && !isNaN(v)) { s += v; has = true; } }
-  return has ? s : null;
-}
-
-// Montant affiché : le tiret dit « non renseigné », le zéro dirait « chiffré à
-// zéro ». Les deux ne veulent pas dire la même chose dans un prix de revient.
-function pdrFmt(v) {
-  return v === null ? '<span class="pdr-tiret">-</span>' : fmtMontant(v);
-}
-
-// Colonnes de la matrice.
-// Elles n'apparaissent par tranche qu'à partir de DEUX tranches : sur une
-// opération mono-produit elles ne feraient que recopier le total. Une tranche
-// sélectionnée au bandeau (TR_SCOPE) réduit la matrice à sa seule colonne.
-function pdrColonnes(op) {
-  const tranches = op.tranches || [];
-  if (TR_SCOPE != null && tranches[TR_SCOPE]) {
-    const t = tranches[TR_SCOPE];
-    return [{ t, idx: TR_SCOPE, label: trCodeOf(t) || 'Tranche', couleur: FINOP_TR_COLORS[TR_SCOPE % FINOP_TR_COLORS.length] }];
-  }
-  if (tranches.length === 1) {
-    return [{ t: tranches[0], idx: 0, label: 'Total', couleur: '' }];
-  }
-  return tranches.map((t, i) => ({
-    t, idx: i,
-    label: trCodeOf(t) || ('T' + (i + 1)),
-    couleur: FINOP_TR_COLORS[i % FINOP_TR_COLORS.length],
-  }));
-}
-
-// Postes d'un chapitre : le catalogue, puis les clés présentes en base mais
-// absentes de la nomenclature. Ces dernières restent affichées - elles portent
-// des montants, et les masquer les retirerait des totaux sans prévenir.
-function pdrPostes(op, secKey, refKey) {
-  const catalogue = getRefPostes(refKey);
-  const connus = new Set(catalogue.map(p => p.code));
-  const horsCat = [];
-  (op.tranches || []).forEach(t => {
-    const o = (t && t[secKey]) || {};
-    Object.keys(o).forEach(k => {
-      if (connus.has(k) || horsCat.some(h => h.code === k)) return;
-      if (Number(o[k])) horsCat.push({ code: k, numero: null, libelle: k, hors: true });
-    });
-  });
-  return catalogue.concat(horsCat);
-}
-
-// ============== FINANCEMENTS : un tableau par entité, toutes tranches ==============
-// Même grammaire que la matrice du prix de revient : un tableau dense, la
-// cellule EST le champ, aucun chrome tant qu'on ne la touche pas.
-//
-// Différence assumée avec la matrice : un prêt est une INSTANCE, pas un poste
-// d'une nomenclature figée. On ne peut donc pas mettre les tranches en colonnes
-// - c'est la tranche qui devient une colonne, et toutes les tranches cohabitent
-// dans le même tableau. Le résultat est le même que sur le prix de revient :
-// on voit l'opération entière d'un coup, sans jamais changer de périmètre.
-
-// Options de tranche, partagées par toutes les lignes de financement.
-function finTrancheOptions(op, courant) {
-  const opts = (op.tranches || []).map(t => {
-    const c = trCodeOf(t);
-    return `<option value="${escapeHtml(c)}"${c === courant ? ' selected' : ''}>${escapeHtml(c)}</option>`;
-  }).join('');
-  return `<option value=""${!courant ? ' selected' : ''}>-</option>${opts}`;
-}
-
-// Indices de taux réellement pratiqués sur le portefeuille. Le référentiel en
-// portait sept (TLA, Euribor 3M/6M/12M, Fixe, Autre) dont aucun n'est utilisé :
-// sur les 110 prêts renseignés, 109 sont en Livret A et 1 en Taux fixe.
-//
-// Liste tenue à part de `getRef('taux_index')`, que parseTaux continue
-// d'utiliser pour relire les anciennes chaînes `taux` : restreindre celle-là
-// casserait la relecture de l'historique.
-const INDICES_PRET = ['Livret A', 'Taux fixe'];
-
-// Prêteurs réellement mobilisés. Le référentiel en listait neuf (CIC, Crédit
-// Agricole, BPI, Crédit Mutuel, CEMP, CDC...) ; on s'en tient aux quatre qui
-// servent. Les valeurs déjà en base et absentes d'ici restent sélectionnables,
-// marquées « hors liste » - voir le garde-fou de finCellHtml.
-const BANQUES_PRET = ['BDT', "Caisse d'Épargne", 'Action Logement', 'Autre'];
-
-// Montant affiché dans un champ de saisie : groupes de milliers et symbole,
-// « 568 000 € ». L'espace est insécable, sinon le nombre se coupe en fin de
-// cellule.
-function fmtEuroSaisie(v) {
-  const n = Number(v);
-  if (v == null || v === '' || isNaN(n)) return '';
-  return Math.round(n).toLocaleString('fr-FR').replace(/ |\s/g, ' ') + ' €';
-}
-
-// Lecture inverse : on accepte tout ce qu'un humain tape - espaces, insécables,
-// symbole, virgule décimale - et on rend un nombre. `parseFloat` seul lisait
-// « 568 000 € » comme 568.
-function parseEuroSaisie(s) {
-  if (s == null) return null;
-  const net = String(s).replace(/[\s  €]/g, '').replace(',', '.');
-  if (net === '') return null;
-  const n = Number(net);
-  return isNaN(n) ? null : n;
-}
-
-// Prêts éligibles au rattachement d'une garantie : ceux de la même tranche.
-// La clé stockée reste `ligne` (c'est elle que garStripHtml compare), mais le
-// libellé affiché porte aussi la banque et le montant, sans quoi deux « PLS
-// bâti » de la même tranche seraient indiscernables dans la liste.
-function pretOptionsHtml(op, trancheCode, courant) {
-  const dedans = (op.prets || []).filter(p => !trancheCode || p.tranche === trancheCode);
-  const opts = dedans.map(p => {
-    const val = p.ligne || '';
-    const lbl = `${p.ligne || '?'} · ${p.financeur || '?'}${bestPretAmount(p) ? ' (' + fmtMontant(bestPretAmount(p)) + ')' : ''}`;
-    return `<option value="${escapeHtml(val)}"${val === courant ? ' selected' : ''}>${escapeHtml(lbl)}</option>`;
-  }).join('');
-  // Une valeur héritée qui ne correspond plus à aucun prêt de la tranche doit
-  // rester visible, sinon le menu la remplacerait en silence au prochain
-  // enregistrement.
-  const orpheline = courant && !dedans.some(p => (p.ligne || '') === courant)
-    ? `<option value="${escapeHtml(courant)}" selected>${escapeHtml(courant)} (prêt introuvable)</option>` : '';
-  return `<option value="">- Sans prêt rattaché -</option>${opts}${orpheline}`;
-}
-
-// Couleur de la tranche d'une ligne. Toujours doublée par le code en toutes
-// lettres dans la cellule : la teinte ne porte jamais l'information seule.
-function finTrancheCouleur(op, code) {
-  const i = (op.tranches || []).findIndex(t => trCodeOf(t) === code);
-  return i < 0 ? 'var(--text-tertiary)' : FINOP_TR_COLORS[i % FINOP_TR_COLORS.length];
-}
-
-// Une cellule = un champ. `col` décrit la colonne, `it` la ligne.
-function finCellHtml(col, it, op) {
-  const v = it[col.key];
-  const attrs = `class="card-input fin-tcell" data-field="${col.key}"`;
-  if (col.key === 'tranche') {
-    return `<select ${attrs} style="--tr-c:${finTrancheCouleur(op, v)}" title="Tranche de rattachement">${finTrancheOptions(op, v)}</select>`;
-  }
-  if (col.type === 'select') {
-    // `liste` restreint les choix sans toucher au référentiel ; sinon on prend
-    // le référentiel entier.
-    const choix = col.liste || getRef(col.ref);
-    // Une valeur déjà en base mais absente de la liste reste sélectionnable et
-    // marquée : sans ce garde-fou, restreindre une liste effacerait en silence
-    // la valeur de toutes les lignes qui ne s'y retrouvent plus - il y a 6 prêts
-    // « CDC » sur la seule opération A9109.
-    const horsListe = v && !choix.includes(v)
-      ? `<option value="${escapeHtml(v)}" selected>${escapeHtml(v)} (hors liste)</option>` : '';
-    return `<select ${attrs} title="${escapeHtml(col.label)}"><option value=""></option>` +
-      choix.map(s => `<option value="${escapeHtml(s)}"${v === s ? ' selected' : ''}>${escapeHtml(s)}</option>`).join('') +
-      horsListe + `</select>`;
-  }
-  // Colonne calculée : elle n'est pas un champ, elle rend un état. Le cycle de
-  // vie est ce qui se lit le plus vite sur une ligne de financement - le retirer
-  // au prétexte qu'il ne se saisit pas aurait appauvri le tableau.
-  if (col.type === 'calc') return col.rendu(it, op);
-  // Rattachement à un prêt : une garantie garantit toujours un prêt précis, et
-  // forcément un prêt de SA tranche. La liste suit donc la tranche de la ligne,
-  // pas une tranche « courante » - il n'y en a plus.
-  if (col.type === 'pret') {
-    return `<select ${attrs} title="Prêt rattaché">${pretOptionsHtml(op, it.tranche, v)}</select>`;
-  }
-  // Montant en euros : lisible d'abord. « 568 000 € » se relit d'un coup d'oeil,
-  // « 568000 » se compte au doigt. La saisie reste libre - espaces, points,
-  // virgules - et se renormalise à la moisson.
-  if (col.type === 'euro') {
-    return `<input inputmode="numeric" ${attrs} data-euro value="${v == null || v === '' ? '' : fmtEuroSaisie(v)}" placeholder="-" title="${escapeHtml(col.label)}">`;
-  }
-  if (col.type === 'num') {
-    return `<input type="number" step="any" inputmode="numeric" ${attrs} value="${v == null || v === '' ? '' : v}" placeholder="-" title="${escapeHtml(col.label)}">`;
-  }
-  if (col.type === 'date') {
-    return `<input ${attrs} value="${escapeHtml(v || '')}" placeholder="JJ/MM/AAAA" title="${escapeHtml(col.label)}">`;
-  }
-  return `<input ${attrs} value="${escapeHtml(v == null ? '' : String(v))}" placeholder="-" title="${escapeHtml(col.label)}">`;
-}
-
-// Tableau générique d'une entité de financement.
-// `lignes` porte les objets AVEC leur `_originalIdx` : c'est cet index qui
-// adresse l'entité dans op[section], et lui seul - jamais le rang d'affichage,
-// qui change dès qu'on trie.
-function finTableHtml(cfg) {
-  const { op, section, titre, icone, colonnes, lignes, totalCle, detail } = cfg;
-  const total = totalCle ? lignes.reduce((s, i) => s + (Number(i[totalCle]) || 0), 0) : null;
-
-  const corps = lignes.length ? lignes.map(it => {
-    const cellules = colonnes.map(c =>
-      `<td class="fin-td${c.type === 'num' ? ' num' : ''}${c.type === 'calc' ? ' fin-td-calc' : ''}${c.key === 'tranche' ? ' fin-td-tr' : ''}">${finCellHtml(c, it, op)}</td>`
-    ).join('');
-    const detailHtml = detail ? detail(it, op) : '';
-    // UN SEUL porteur de `data-section`/`data-row-idx` par entité, et il englobe
-    // la ligne ET son détail : c'est le <tbody>. Quand la ligne et la carte
-    // dépliée portaient toutes deux ces attributs, collectEditsFromDom voyait
-    // deux cartes pour le même prêt et la seconde ne prenait pas - la marge et
-    // l'indice saisis dans le détail étaient perdus en silence.
-    return `<tbody class="entity-card editing fin-groupe${diffEntityClass(section, it)}" data-section="${section}" data-row-idx="${it._originalIdx}">
-      <tr class="fin-tr${detailHtml ? ' fin-tr-cliquable' : ''}"${detailHtml ? ' onclick="finRowClick(event, this)"' : ''}>
-        ${cellules}
-        ${/* Colonne d'appoint : elle absorbe tout l'espace restant, ce qui
-            laisse chaque vraie colonne à la largeur de sa donnée. Sans elle, le
-            surplus d'un tableau en width:100% se déversait dans une colonne au
-            hasard - « Montant » se retrouvait large et vide. */''}
-        <td class="fin-filler"></td>
-        <td class="fin-td fin-td-act">
-          ${detailHtml ? `<button type="button" class="fin-expand" onclick="toggleFinTableRow(this)" aria-expanded="false" title="Déplier le détail"><i class="ti ti-chevron-down"></i></button>` : ''}
-          <button type="button" class="fin-del danger" onclick="deleteEntityRow('${section}', ${it._originalIdx})" title="Supprimer"><i class="ti ti-trash"></i></button>
-        </td>
-      </tr>
-      ${detailHtml ? `<tr class="fin-detail-row" hidden><td colspan="${colonnes.length + 2}">${detailHtml}</td></tr>` : ''}
-    </tbody>`;
-  }).join('') : `<tbody><tr><td class="fin-vide" colspan="${colonnes.length + 2}">Aucune ligne. Utilisez « Ajouter » ci-dessous.</td></tr></tbody>`;
-
-  return `
-    <div class="section fin-sec">
-      <div class="subent-header">
-        <div class="subent-title ${section}"><i class="ti ti-${icone}"></i>${escapeHtml(titre)} · ${lignes.length}</div>
-        ${total != null ? `<div class="subent-aggr">${fmtMontant(total)}</div>` : ''}
-      </div>
-      <div class="fin-twrap">
-        <table class="tableau fin-tbl">
-          <thead><tr>
-            ${colonnes.map(c => `<th class="${c.type === 'num' ? 'num ' : ''}fin-th-${c.key}">${escapeHtml(c.label)}</th>`).join('')}
-            <th class="fin-filler"></th>
-            <th class="fin-th-act"></th>
-          </tr></thead>
-          ${corps}
-          ${total != null && lignes.length ? `<tfoot><tr>
-            <td colspan="${colonnes.findIndex(c => c.key === totalCle)}"></td>
-            <td class="num">${fmtMontant(total)}</td>
-            <td colspan="${colonnes.length - colonnes.findIndex(c => c.key === totalCle) + 1}"></td>
-          </tr></tfoot>` : ''}
+    let noPoste = 0;
+    const linesHtml = expanded ? `
+      <div class="bilan-lines">
+        <table class="tableau tableau--saisie grille--saisie bilan-tbl">
+        <thead><tr>
+          <th class="bl-num">N°</th>
+          <th>Poste</th>
+          <th class="num">Montant${editMode ? ' (€)' : ''}</th>
+          <th class="num">Part</th>
+        </tr></thead>
+        <tbody>
+        ${lines.map(line => {
+          const v = Number(t.bilan[sec.key][line]) || 0;
+          // Poste saisi mais absent du catalogue SFO : signale par un libelle,
+          // pas seulement par l'italique.
+          const hors = horsCat.includes(line);
+          const marque = hors ? ' <span class="bl-hors" title="Poste hors catalogue SFO">hors catalogue</span>' : '';
+          const part = sectionTotal ? Math.round(v / sectionTotal * 100) : 0;
+          return `<tr${v === 0 ? ' class="bl-vide"' : ''}>
+            <td class="bl-num">${String(++noPoste).padStart(2, '0')}</td>
+            <td class="bl-lab">${escapeHtml(line)}${marque}</td>
+            <td class="num bl-saisie">${editMode
+              ? `<input type="number" min="0" step="100" class="editable-input bilan-line-input" data-bilan-section="${sec.key}" data-bilan-line="${escapeHtml(line)}" value="${v || ''}" placeholder="0">`
+              : (v ? fmtMontant(v) : '<span class="bl-tiret">-</span>')}</td>
+            <td class="num bl-part">${v ? part + ' %' : ''}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+        <tfoot><tr>
+          <td></td>
+          <td>Sous-total ${escapeHtml(sec.label)}</td>
+          <td class="num" data-bilan-subtotal="${sec.key}">${fmtMontant(sectionTotal)}</td>
+          <td class="num">${totalGlobal ? Math.round(sectionTotal / totalGlobal * 100) + ' %' : ''}</td>
+        </tr></tfoot>
         </table>
       </div>
-      ${quickAddHtml(section)}
-    </div>`;
-}
+    ` : '';
 
-// Toute la ligne déplie, pas seulement le chevron : viser une cible de 14 px
-// sur une ligne qui en fait mille de large n'a aucune raison d'être. On laisse
-// passer ce qui se saisit, se clique ou se sélectionne déjà pour autre chose -
-// sinon un clic dans un champ replierait la ligne qu'on est en train de lire.
-function finRowClick(ev, tr) {
-  if (ev.target.closest('input, select, textarea, button, a, label, option')) return;
-  // Sélectionner du texte à la souris ne doit pas déclencher le dépliage.
-  const sel = window.getSelection();
-  if (sel && String(sel).length > 0) return;
-  const btn = tr.querySelector('.fin-expand');
-  if (btn) toggleFinTableRow(btn);
-}
-
-// Déplie la ligne de détail qui suit immédiatement la ligne cliquée.
-function toggleFinTableRow(btn) {
-  const tr = btn.closest('tr');
-  const det = tr && tr.nextElementSibling;
-  if (!det || !det.classList.contains('fin-detail-row')) return;
-  det.hidden = !det.hidden;
-  tr.classList.toggle('fin-tr-open', !det.hidden);
-  // L'orientation de la flèche est portée par une rotation CSS, pilotée par
-  // aria-expanded. Reconstruire l'icône à chaque clic ne marchait qu'une fois
-  // sur deux : replaceTablerIcons remplace le <i> par un <svg>, que le sélecteur
-  // de la fois suivante ne retrouvait plus.
-  btn.setAttribute('aria-expanded', det.hidden ? 'false' : 'true');
-  btn.title = det.hidden ? 'Déplier le détail' : 'Replier le détail';
-  // Le groupe entier - ligne + détail - se cerne d'un cadre : sur un tableau
-  // dense, il faut voir d'un coup où commence et où finit le prêt qu'on ouvre.
-  const grp = btn.closest('tbody.fin-groupe');
-  if (grp) grp.classList.toggle('fin-groupe-open', !det.hidden);
-}
-
-// Toutes les entités d'une section, tranches confondues, dans l'ordre des
-// tranches puis de saisie. L'index d'origine est conservé.
-function finLignes(op, section) {
-  const ordre = {};
-  (op.tranches || []).forEach((t, i) => { ordre[trCodeOf(t)] = i; });
-  return (op[section] || [])
-    .map((x, i) => ({ ...x, _originalIdx: i }))
-    .sort((a, b) => {
-      const ra = ordre[a.tranche] == null ? 99 : ordre[a.tranche];
-      const rb = ordre[b.tranche] == null ? 99 : ordre[b.tranche];
-      return ra - rb || a._originalIdx - b._originalIdx;
-    });
-}
-
-function renderFinancementsEcran(op) {
-  // Les indicateurs portent sur l'opération entière : il n'y a plus de
-  // périmètre à choisir, donc plus de « scope » à passer.
-  const trs = op.tranches || [];
-  const f = (typeof finScopeFigures === 'function')
-    ? finScopeFigures(op, trs, op.prets || [], op.subventions || []) : null;
-  const tete = (f && typeof renderFinCockpitHead === 'function')
-    ? renderFinCockpitHead(f, 'toutes tranches') : '';
-
-  const prets = finTableHtml({
-    op, section: 'prets', titre: 'Prêts', icone: 'coin', totalCle: 'montant_valide_ca',
-    lignes: finLignes(op, 'prets'),
-    colonnes: [
-      { key: 'tranche',           label: 'Tranche' },
-      { key: 'ligne',             label: 'Ligne / produit', type: 'select', ref: 'lignes_prets' },
-      { key: 'financeur',         label: 'Banque',          type: 'select', liste: BANQUES_PRET },
-      { key: 'montant_valide_ca', label: 'Montant',         type: 'euro' },
-      { key: 'statut',            label: 'Statut',          type: 'select', ref: 'statuts_pret' },
-      { key: '_cycle',            label: 'Cycle de vie',    type: 'calc', rendu: i => pretCycleHtml(i) },
-    ],
-    // Déplié : exactement la ligne de vie de la consultation - les cinq étapes
-    // datées, les montants sous chacune, les pièces, puis les conditions
-    // (durée, préfi, source du montant) et les garanties rattachées.
-    // Déplié : le formulaire de saisie complet - étapes Demande / Lettre
-    // d'offre / Contrat, conditions financières, préfi, liens SharePoint, et le
-    // « sans garantie requise ». On réutilise la carte d'édition existante
-    // plutôt que d'en réécrire une version appauvrie ; sa ligne compacte est
-    // masquée, puisque c'est la ligne du tableau qui la remplace.
-    detail: (i, o) => garStripHtml(i, (o.garanties || []).filter(g => g.pret_lie === i.ligne))
-      + renderPretCardEdit(i, o, true),
-  });
-
-  const subventions = finTableHtml({
-    op, section: 'subventions', titre: 'Subventions', icone: 'gift', totalCle: 'montant_notifie',
-    lignes: finLignes(op, 'subventions'),
-    colonnes: [
-      { key: 'tranche',          label: 'Tranche' },
-      { key: 'financeur',        label: 'Financeur' },
-      { key: 'financement',      label: 'Type de financement' },
-      { key: 'montant_demande',  label: 'Demandé',  type: 'num' },
-      { key: 'montant_notifie',  label: 'Notifié',  type: 'num' },
-      { key: 'statut',           label: 'Statut',   type: 'select', ref: 'statuts_subv' },
-      { key: '_cycle',           label: 'Cycle de vie', type: 'calc', rendu: i => subvCycleHtml(i) },
-    ],
-    detail: i => renderSubvCard(i),
-  });
-
-  const garanties = finTableHtml({
-    op, section: 'garanties', titre: 'Garanties', icone: 'shield-check', totalCle: null,
-    lignes: finLignes(op, 'garanties'),
-    colonnes: [
-      { key: 'tranche',      label: 'Tranche' },
-      { key: 'garant',       label: 'Garant' },
-      { key: 'pret_lie',     label: 'Prêt rattaché', type: 'pret' },
-      { key: 'quotite',      label: 'Quotité (%)', type: 'num' },
-      { key: 'statut',       label: 'Statut',      type: 'select', ref: 'statuts_garantie' },
-      { key: '_cycle',       label: 'Cycle de vie', type: 'calc', rendu: i => garCycleHtml(i) },
-    ],
-    detail: (i, o) => renderGarantieCardEdit(i, o, true),
-  });
-
-  const reservataires = finTableHtml({
-    op, section: 'reservataires', titre: 'Réservataires', icone: 'users', totalCle: 'nb_logements',
-    lignes: finLignes(op, 'reservataires'),
-    colonnes: [
-      { key: 'tranche',      label: 'Tranche' },
-      { key: 'reservataire', label: 'Réservataire' },
-      { key: 'financement',  label: 'Financement' },
-      { key: 'nb_logements', label: 'Nb logts', type: 'num' },
-      { key: 'etape',        label: 'Étape' },
-      { key: '_cycle',       label: 'Cycle de vie', type: 'calc', rendu: i => resCycleHtml(i) },
-    ],
-    detail: i => renderReservataireCard(i),
-  });
-
-  const prefinancements = finTableHtml({
-    op, section: 'prefinancements', titre: 'Préfinancements', icone: 'clock-dollar', totalCle: 'montant',
-    lignes: finLignes(op, 'prefinancements'),
-    colonnes: [
-      { key: 'tranche',    label: 'Tranche' },
-      { key: 'financeur',  label: 'Financeur' },
-      { key: 'montant',    label: 'Montant', type: 'num' },
-      { key: 'date_debut', label: 'Début',   type: 'date' },
-      { key: 'date_fin',   label: 'Fin',     type: 'date' },
-      { key: 'statut',     label: 'Statut',  type: 'select', ref: 'statuts_prefin' },
-    ],
-  });
-
-  const avenants = finTableHtml({
-    op, section: 'avenants', titre: 'Avenants', icone: 'file-diff', totalCle: null,
-    lignes: finLignes(op, 'avenants'),
-    colonnes: [
-      { key: 'tranche', label: 'Tranche' },
-      { key: 'objet',   label: 'Objet' },
-      { key: 'statut',  label: 'Statut' },
-      { key: 'date',    label: 'Date', type: 'date' },
-    ],
-  });
-
-  return `
-    <div class="fin-ecran">
-      ${tete}
-      ${prets}
-      ${garanties}
-      ${subventions}
-      ${reservataires}
-      ${prefinancements}
-      ${avenants}
-    </div>`;
-}
-
-function renderPdrMatrice(op) {
-  const cols = pdrColonnes(op);
-  if (!cols.length) return ''; // aucune tranche : rien à saisir
-  cols.forEach(c => pdrEnsure(c.t));
-
-  const showTotal = cols.length > 1;
-  const hideEmpty = PDR_HIDE_EMPTY && !editMode;
-  const colTotals = cols.map(() => null);
-  const cumul = (arr, i, v) => { if (v !== null) arr[i] = (arr[i] === null ? 0 : arr[i]) + v; };
-  let nbVides = 0;
-
-  const chapitresHtml = BILAN_SECTIONS.map(sec => {
-    const postes = pdrPostes(op, sec.key, sec.refKey);
-    const ouvert = isPdrChapOpen(op.code, sec.key);
-    const sousTotaux = cols.map(() => null);
-    const lignes = [];
-
-    postes.forEach(p => {
-      const vals = cols.map(c => pdrCell(c.t, sec.key, p.code));
-      vals.forEach((v, i) => { cumul(sousTotaux, i, v); cumul(colTotals, i, v); });
-      const ligneTotal = pdrSum(vals);
-      const vide = ligneTotal === null;
-      if (vide) nbVides++;
-      if (hideEmpty && vide) return;
-
-      const cellules = cols.map((c, i) => `<td class="num pdr-cell">${editMode
-        ? `<input type="number" step="any" inputmode="numeric" class="editable-input pdr-input" data-bilan-section="${sec.key}" data-bilan-line="${escapeHtml(p.code)}" data-bilan-tranche="${c.idx}" value="${vals[i] === null ? '' : vals[i]}" placeholder="-">`
-        : pdrFmt(vals[i])}</td>`).join('');
-
-      lignes.push(`<tr class="pdr-row${vide ? ' pdr-row-vide' : ''}">
-        <td class="pdr-num">${p.numero == null ? '' : String(p.numero).padStart(2, '0')}</td>
-        <td class="pdr-poste">${escapeHtml(p.libelle)}${p.hors ? ' <span class="pdr-hors" title="Poste absent de la nomenclature du prix de revient">hors nomenclature</span>' : ''}</td>
-        ${cellules}
-        ${showTotal ? `<td class="num pdr-rowtotal" data-pdr-row="${sec.key}|${escapeHtml(p.code)}">${pdrFmt(ligneTotal)}</td>` : ''}
-      </tr>`);
-    });
-
-    const sousTotalLigne = pdrSum(sousTotaux);
-    const tete = `<tr class="pdr-chap${ouvert ? ' pdr-chap-open' : ''}">
-      <td class="pdr-num"><button class="pdr-chevron" type="button" aria-expanded="${ouvert}" title="${ouvert ? 'Replier' : 'Déplier'} ${escapeHtml(sec.label)}" onclick="togglePdrChap('${escapeHtml(op.code)}', '${sec.key}')"><i class="ti ti-${ouvert ? 'minus' : 'plus'}"></i></button></td>
-      <td class="pdr-poste"><span class="pdr-chap-num">${sec.num}</span><span class="pdr-chap-lab">${escapeHtml(sec.label)}</span></td>
-      ${cols.map((c, i) => `<td class="num pdr-sub" data-pdr-sub="${sec.key}|${c.idx}">${pdrFmt(sousTotaux[i])}</td>`).join('')}
-      ${showTotal ? `<td class="num pdr-sub pdr-sub-tot" data-pdr-subtot="${sec.key}">${pdrFmt(sousTotalLigne)}</td>` : ''}
-    </tr>`;
-
-    return `<tbody class="pdr-body">${tete}${ouvert ? lignes.join('') : ''}</tbody>`;
+    return `
+      <div class="bilan-section${expanded ? ' bilan-section-expanded' : ''}">
+        <button class="bilan-section-head" onclick="toggleBilanSection('${escapeHtml(op.code)}', '${escapeHtml(trCode)}', '${sec.key}')" type="button">
+          <span class="bilan-chevron"><i class="ti ti-${expanded ? 'minus' : 'plus'}"></i></span>
+          <span class="bilan-num">${sec.num}</span>
+          <span class="bilan-label">${escapeHtml(sec.label)}</span>
+          <span class="bilan-section-total${sectionTotal === 0 ? ' bilan-section-total-empty' : ''}" data-bilan-section-total="${sec.key}">${fmtMontant(sectionTotal)}</span>
+        </button>
+        ${linesHtml}
+      </div>
+    `;
   }).join('');
 
-  const grandTotal = pdrSum(colTotals);
-
-  const entetes = cols.map(c => `<th class="num pdr-colh"${c.couleur ? ` style="--tr-c:${c.couleur}"` : ''}>${escapeHtml(c.label)}</th>`).join('');
-
-  const actions = `
+  const expandAllBtn = `
     <div class="bilan-actions">
-      <button class="bilan-action-btn" type="button" onclick="pdrToutDeplier('${escapeHtml(op.code)}', true)"><i class="ti ti-plus"></i>Tout déplier</button>
-      <button class="bilan-action-btn" type="button" onclick="pdrToutDeplier('${escapeHtml(op.code)}', false)"><i class="ti ti-minus"></i>Tout replier</button>
-      ${editMode ? '' : `<button class="bilan-action-btn${PDR_HIDE_EMPTY ? ' bilan-action-btn-on' : ''}" type="button" onclick="togglePdrHideEmpty()" title="${PDR_HIDE_EMPTY ? 'Afficher tous les postes de la nomenclature' : 'Ne garder que les postes renseignés'}"><i class="ti ti-${PDR_HIDE_EMPTY ? 'eye' : 'eye-off'}"></i>${PDR_HIDE_EMPTY ? `Afficher les postes vides (${nbVides})` : 'Masquer les lignes vides'}</button>`}
-      <button class="bilan-action-btn bilan-action-leon" type="button" onclick="importLeonPlaceholder()" title="Importer le prix de revient depuis une simulation LEON"><i class="ti ti-cloud"></i>Importer depuis LEON</button>
+      <button class="bilan-action-btn" onclick="expandAllBilanSections('${escapeHtml(op.code)}', '${escapeHtml(trCode)}')" type="button"><i class="ti ti-plus"></i>Tout déplier</button>
+      <button class="bilan-action-btn" onclick="collapseAllBilanSections('${escapeHtml(op.code)}', '${escapeHtml(trCode)}')" type="button"><i class="ti ti-minus"></i>Tout replier</button>
+      <button class="bilan-action-btn bilan-action-leon" onclick="importLeonPlaceholder()" type="button" title="Importer le prix de revient depuis une simulation LEON"><i class="ti ti-cloud"></i>Importer depuis LEON</button>
     </div>
   `;
-
-  // En édition, tous les postes sont affichés : c'est le moment où l'on
-  // renseigne ceux qui sont encore vides.
-  const note = editMode
-    ? '<div class="pdr-note">Saisie manuelle, cellule par cellule. Aucun montant n\'est réparti automatiquement entre les tranches.</div>'
-    : '';
 
   return `
     <div class="section">
       <div class="section-label fin"><i class="ti ti-receipt"></i>Prix de revient</div>
-      ${actions}
-      ${note}
-      <div class="pdr-wrap">
-        <table class="tableau pdr-tbl">
-          <thead><tr>
-            <th class="pdr-num">N°</th>
-            <th class="pdr-poste">Poste</th>
-            ${entetes}
-            ${showTotal ? '<th class="num pdr-rowtotal">Total</th>' : ''}
-          </tr></thead>
-          ${chapitresHtml}
-          <tfoot><tr class="pdr-grand">
-            <td class="pdr-num"></td>
-            <td class="pdr-poste">Total prix de revient TTC</td>
-            ${cols.map((c, i) => `<td class="num" data-pdr-grand="${c.idx}">${pdrFmt(colTotals[i])}</td>`).join('')}
-            ${showTotal ? `<td class="num" data-pdr-grand-total>${pdrFmt(grandTotal)}</td>` : ''}
-          </tr></tfoot>
-        </table>
+      ${expandAllBtn}
+      <div class="bilan-container">
+        ${sectionsHtml}
+        <div class="bilan-grand-total">
+          <span class="bilan-grand-total-label">TOTAL PRIX DE REVIENT TTC</span>
+          <span class="bilan-grand-total-value" data-bilan-grand-total>${fmtMontant(totalGlobal)}</span>
+        </div>
       </div>
     </div>
   `;
-}
-
-// Totaux de la matrice recalculés à la frappe : total de ligne (le poste,
-// toutes tranches), sous-total de chapitre par colonne, sous-total de chapitre
-// en ligne, total de colonne et total général.
-//
-// La portée est le conteneur du prix de revient et non celui de la tranche : la
-// matrice vit dans l'onglet Bilan (`opDetail`) depuis qu'elle a quitté la fiche
-// tranche, et une écoute branchée sur `trancheDetail` ne trouverait rien.
-//
-// Une case laissée vide reste vide et n'entre dans aucune somme, sans quoi le
-// tiret deviendrait un zéro au premier caractère tapé.
-function bindPdrLive() {
-  const root = document.getElementById('sec-op-bilan');
-  if (!root) return;
-  const inputs = Array.from(root.querySelectorAll('[data-bilan-section][data-bilan-line][data-bilan-tranche]'));
-  if (!inputs.length) return;
-
-  const lu = el => (el.value === '' || isNaN(Number(el.value))) ? null : Number(el.value);
-  const cumul = (obj, k, v) => { obj[k] = (obj[k] === undefined ? 0 : obj[k]) + v; };
-  const poser = (el, v) => { if (el) el.innerHTML = (v === undefined || v === null) ? '<span class="pdr-tiret">-</span>' : fmtMontant(v); };
-
-  const recalc = () => {
-    const parLigne = {};   // 'sec|code'   -> total du poste
-    const parSousTot = {}; // 'sec|trIdx'  -> sous-total de chapitre par colonne
-    const parChap = {};    // 'sec'        -> sous-total de chapitre
-    const parCol = {};     // 'trIdx'      -> total de colonne
-    let total;
-
-    inputs.forEach(el => {
-      const v = lu(el);
-      if (v === null) return;
-      const sec = el.dataset.bilanSection;
-      cumul(parLigne, sec + '|' + el.dataset.bilanLine, v);
-      cumul(parSousTot, sec + '|' + el.dataset.bilanTranche, v);
-      cumul(parChap, sec, v);
-      cumul(parCol, el.dataset.bilanTranche, v);
-      total = (total === undefined ? 0 : total) + v;
-    });
-
-    root.querySelectorAll('[data-pdr-row]').forEach(el => poser(el, parLigne[el.dataset.pdrRow]));
-    root.querySelectorAll('[data-pdr-sub]').forEach(el => poser(el, parSousTot[el.dataset.pdrSub]));
-    root.querySelectorAll('[data-pdr-subtot]').forEach(el => poser(el, parChap[el.dataset.pdrSubtot]));
-    root.querySelectorAll('[data-pdr-grand]').forEach(el => poser(el, parCol[el.dataset.pdrGrand]));
-    poser(root.querySelector('[data-pdr-grand-total]'), total);
-  };
-
-  inputs.forEach(el => el.addEventListener('input', recalc));
 }
 
 function renderPlanFinancementSection(t, op, trCode, trancheSource) {
@@ -6127,6 +5476,68 @@ function importLeonPlaceholder() {
   alert(msg);
 }
 
+// Consolidated bilan at op-level (cumul of all tranches) - same layout as tranche bilan
+function renderBilanOpSection(op) {
+  const totalGlobal = opBilanTotal(op);
+  const trancheCount = (op.tranches || []).length;
+  if (totalGlobal === 0 && trancheCount === 0) return ''; // No tranches at all
+
+  const sectionsHtml = BILAN_SECTIONS.map(sec => {
+    const sectionTotal = opBilanSectionTotal(op, sec.key);
+    const expanded = isBilanExpanded(op, '__op__', sec.key);
+    // Postes hors catalogue présents sur au moins une tranche : affichés aussi
+    const catalogue = getRef(sec.refKey);
+    const horsCat = [...new Set((op.tranches || []).flatMap(t => Object.keys((t.bilan || {})[sec.key] || {})))]
+      .filter(k => !catalogue.includes(k) && opBilanLineTotal(op, sec.key, k));
+    const lines = catalogue.concat(horsCat);
+
+    const linesHtml = expanded ? `
+      <div class="bilan-lines">
+        ${lines.map(line => {
+          const v = opBilanLineTotal(op, sec.key, line);
+          const extraMark = horsCat.includes(line) ? ' title="Poste hors catalogue SFO" style="font-style:italic"' : '';
+          return `<div class="bilan-line${v === 0 ? ' bilan-line-empty' : ''}">
+            <span class="bilan-line-label"${extraMark}>${escapeHtml(line)}</span>
+            <span class="bilan-line-value">${v ? fmtMontant(v) : '-'}</span>
+          </div>`;
+        }).join('')}
+        <div class="bilan-line bilan-line-subtotal">
+          <span class="bilan-line-label">Sous-total ${escapeHtml(sec.label)}</span>
+          <span class="bilan-line-value">${fmtMontant(sectionTotal)}</span>
+        </div>
+      </div>
+    ` : '';
+
+    return `
+      <div class="bilan-section${expanded ? ' bilan-section-expanded' : ''}">
+        <button class="bilan-section-head" onclick="toggleBilanSection('${escapeHtml(op.code)}', '__op__', '${sec.key}')" type="button">
+          <span class="bilan-chevron"><i class="ti ti-${expanded ? 'minus' : 'plus'}"></i></span>
+          <span class="bilan-num">${sec.num}</span>
+          <span class="bilan-label">${escapeHtml(sec.label)}</span>
+          <span class="bilan-section-total${sectionTotal === 0 ? ' bilan-section-total-empty' : ''}">${fmtMontant(sectionTotal)}</span>
+        </button>
+        ${linesHtml}
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="section section-consolide">
+      <div class="section-label fin"><i class="ti ti-receipt"></i>Prix de revient consolidé</div>
+      <div class="bilan-actions">
+        <button class="bilan-action-btn" onclick="expandAllBilanSections('${escapeHtml(op.code)}', '__op__')" type="button"><i class="ti ti-plus"></i>Tout déplier</button>
+        <button class="bilan-action-btn" onclick="collapseAllBilanSections('${escapeHtml(op.code)}', '__op__')" type="button"><i class="ti ti-minus"></i>Tout replier</button>
+      </div>
+      <div class="bilan-container">
+        ${sectionsHtml}
+        <div class="bilan-grand-total">
+          <span class="bilan-grand-total-label">Total prix de revient TTC · consolidé</span>
+          <span class="bilan-grand-total-value">${fmtMontant(totalGlobal)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 // Consolidated plan de financement at op-level
 function renderPlanFinancementOpSection(op) {
@@ -6468,10 +5879,7 @@ const NUMERIC_FIELDS = new Set([
   'montant_demande','montant_notifie','montant_sim','montant_lo','montant_contrat',
   'quotite','montant_couvert','montant_tire','pct_tire','nb_logements','pct_reserve',
   'duree_emprunt','duree_prefi','taux_spread','commission','nb_droits_reserves',
-  'nouveau_montant','nouvelle_duree','gar_quotite',
-  // Marge saisie en pourcentage : convertie en fraction juste après, dans le
-  // bloc spécial des prêts de collectEditsFromDom.
-  'marge_pct','montant_valide_ca'
+  'nouveau_montant','nouvelle_duree','gar_quotite'
 ]);
 
 // ===== Création rapide « 3 champs » (prêts, subventions) =====
@@ -6907,22 +6315,8 @@ function updateFinCycle(el, type) {
   if (cyc) cyc.innerHTML = finCycleDots(labels, stage);
 }
 
-// `sansEntete` : la carte sert de détail sous une ligne de tableau, qui porte
-// déjà ligne / banque / montant / statut. Il ne faut pas seulement MASQUER
-// cette entête en double, il faut ne pas la rendre : masquée, elle restait dans
-// le DOM avec ses valeurs d'origine, et collectEditsFromDom la traitant après
-// la ligne du tableau, elle réécrasait le montant et la banque qu'on venait de
-// saisir.
-function renderPretCardEdit(i, op, sansEntete) {
+function renderPretCardEdit(i, op) {
   const parsed = parseTaux(i.taux);
-  // L'indice fait foi dans sa propre colonne ; la chaîne `taux` n'en est qu'une
-  // recomposition, souvent vide. On lit la colonne d'abord.
-  const indiceReel = i.index_taux || parsed.index || '';
-  // Marge : fraction en base, pourcentage à l'écran. toPrecision coupe la
-  // traînée binaire de -0,002 x 100, qui s'affichait -0,20000000000000004.
-  const _m = (i.marge != null && i.marge !== '') ? Number(i.marge) * 100
-    : (parsed.spread != null ? Number(parsed.spread) : null);
-  const margePct = (_m == null || isNaN(_m)) ? '' : Number(_m.toPrecision(12));
   const tauxIdx = parsed.index || 'TLA';
   const isLibre = tauxIdx === 'Autre';
   const isFixe = tauxIdx === 'Fixe';
@@ -6936,7 +6330,6 @@ function renderPretCardEdit(i, op, sansEntete) {
   const stageH = (label, s) => `<div class="pe-stage-h"><span class="pe-dot">${s === 'done' ? '✓' : ''}</span>${label}<span class="pe-state">${stTxt(s)}</span></div>`;
   return `
     <div class="entity-card editing fin-erow${diffEntityClass('prets', i)}" data-section="prets" data-row-idx="${i._originalIdx}">
-      ${sansEntete ? pretChipsHtml(i) : `
       <!-- Ligne compacte (toujours visible) -->
       <div class="fin-emain">
         <select class="card-input fin-cell" data-field="ligne" title="Ligne / Produit">
@@ -6956,105 +6349,101 @@ function renderPretCardEdit(i, op, sansEntete) {
         <button type="button" class="fin-expand" onclick="toggleFinRow(this)" title="Déplier / replier le détail"><i class="ti ti-chevron-down"></i></button>
         <button type="button" class="fin-del danger" onclick="deleteEntityRow('prets', ${i._originalIdx})" title="Supprimer le prêt"><i class="ti ti-trash"></i></button>
       </div>
-      ${pretChipsHtml(i)}`}
+      ${pretChipsHtml(i)}
 
-      <!-- Détail : le cycle du prêt est une SÉQUENCE d'étapes qui portent les
-           mêmes attributs - une date, un montant, une référence, un document.
-           C'est donc un tableau, et non trois cartes empilées : on lit une
-           colonne d'un coup d'oeil, et la hauteur tombe de moitié.
-           Les conditions suivent en lignes étiquetées, libellé à gauche du
-           champ : empiler libellé et champ doublait la hauteur pour rien. -->
+      <!-- Détail replié : ligne de vie éditable (3 cartes d'étape) + conditions -->
       <div class="fin-edetail">
-      <table class="tableau pd-cycle">
-        <thead><tr>
-          <th class="pd-etape">Étape</th><th>Date</th><th class="num">Montant (€)</th>
-          <th>Référence</th><th>Document</th>
-        </tr></thead>
-        <tbody>
-          <tr class="pd-${stDem}">
-            <td class="pd-etape"><span class="pd-dot"></span>Demande</td>
-            <td><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></td>
-            <td class="num pd-na">-</td>
-            <td><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}" placeholder="N° dossier"></td>
-            <td class="pd-na">-</td>
-          </tr>
-          <tr class="pd-${stDem}">
-            <td class="pd-etape"><span class="pd-dot"></span>Comité banque</td>
-            <td><input class="card-input" data-field="date_comite_banque" data-pret-comite value="${escapeHtml(i.date_comite_banque || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></td>
-            <td class="num pd-na">-</td>
-            <td class="pd-na">-</td>
-            <td class="pd-na">-</td>
-          </tr>
-          <tr class="pd-${stLO}">
-            <td class="pd-etape"><span class="pd-dot"></span>Lettre d'offre
-              <span class="auto-tag" data-lo-tag="${i._originalIdx}">${(!i.date_lo && i.date_comite_banque) ? 'prév.' : ''}</span></td>
-            <td><input class="card-input ${(!i.date_lo && i.date_comite_banque) ? 'previsional-input' : ''}" data-field="date_lo" data-pret-lo value="${escapeHtml(i.date_lo || (i.date_comite_banque ? previsionalLOFromComite(i.date_comite_banque) || '' : ''))}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></td>
-            <td class="num"><input type="number" min="0" class="card-input" data-field="montant_lo" value="${i.montant_lo || ''}" placeholder="-"></td>
-            <td><input class="card-input" data-field="date_caducite_lo" value="${escapeHtml(i.date_caducite_lo || '')}" placeholder="Caducité JJ/MM/AAAA"></td>
-            <td><input class="card-input" data-field="lien_sp_lo" value="${escapeHtml(i.lien_sp_lo || '')}" placeholder="Lien SharePoint"></td>
-          </tr>
-          <tr class="pd-${stCon}">
-            <td class="pd-etape"><span class="pd-dot"></span>Contrat</td>
-            <td><input class="card-input" data-field="date_contrat" value="${escapeHtml(i.date_contrat || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></td>
-            <td class="num"><input type="number" min="0" class="card-input" data-field="montant_contrat" value="${i.montant_contrat || ''}" placeholder="-"></td>
-            <td><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}" placeholder="N° contrat"></td>
-            <td><input class="card-input" data-field="lien_sp_contrat" value="${escapeHtml(i.lien_sp_contrat || '')}" placeholder="Lien SharePoint"></td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="pd-lignes">
-        <div class="pd-ligne">
-          <span class="pd-lab">Emprunt</span>
-          <label class="pd-f"><span>Durée</span><input type="number" min="0" class="card-input pd-w3" data-field="duree_emprunt" value="${i.duree_emprunt || ''}" placeholder="ans"></label>
-          ${/* Indice et marge sont branchés sur les VRAIES colonnes `index_taux`
-              et `marge`, pas sur les champs transitoires reconstruits depuis la
-              chaîne `taux`. 109 prêts portent « Livret A » dans `index_taux` ;
-              le formulaire affichait « TLA » par défaut et un enregistrement
-              aurait écrasé l'indice réel. Pas de valeur par défaut : un indice
-              non renseigné reste vide, il ne s'invente pas. */''}
-          <label class="pd-f"><span>Indice</span><select class="card-input pd-w6" data-field="index_taux">
-            <option value=""></option>
-            ${INDICES_PRET.map(s => `<option value="${escapeHtml(s)}"${indiceReel === s ? ' selected' : ''}>${escapeHtml(s)}</option>`).join('')}
-            ${(indiceReel && !INDICES_PRET.includes(indiceReel))
-              ? `<option value="${escapeHtml(indiceReel)}" selected>${escapeHtml(indiceReel)} (hors liste)</option>` : ''}
-          </select></label>
-          ${/* La marge est stockée en FRACTION (-0,002 = -0,20 %). On saisit en
-              pourcentage, la conversion se fait à la moisson. */''}
-          <label class="pd-f"><span>Marge</span><input class="card-input pd-w4" data-field="marge_pct" type="number" step="0.01" value="${margePct}" placeholder="%"></label>
-          <label class="pd-f"><span>Révision</span><select class="card-input pd-w6" data-field="revision"><option value=""></option>
-            ${getRef('revisions').map(s => `<option value="${escapeHtml(s)}"${i.revision === s ? ' selected' : ''}>${escapeHtml(s)}</option>`).join('')}
-          </select></label>
-          <label class="pd-f"><span>Profil amort.</span><input class="card-input pd-w6" data-field="profil_amort" value="${escapeHtml(i.profil_amort || '')}" placeholder="-"></label>
+      <div class="pe-stages">
+        <div class="pe-stage ${stDem}">
+          ${stageH('Demande', stDem)}
+          <div class="pe-grid">
+            <div class="card-edit-field"><label>Date demande LO</label><input class="card-input" data-field="date_demande" value="${escapeHtml(i.date_demande || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+            <div class="card-edit-field"><label>Date comité banque</label><input class="card-input" data-field="date_comite_banque" data-pret-comite value="${escapeHtml(i.date_comite_banque || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+            <div class="card-edit-field wide"><label>N° dossier</label><input class="card-input" data-field="n_dossier" value="${escapeHtml(i.n_dossier || '')}"></div>
+          </div>
         </div>
-
-        <div class="pd-ligne">
-          <span class="pd-lab">Préfinancement</span>
-          <label class="pd-f"><span>Durée</span><input type="number" min="0" class="card-input pd-w3" data-field="duree_prefi" value="${i.duree_prefi || ''}" placeholder="mois"></label>
-          <label class="pd-f"><span>Fin</span><input class="card-input pd-w5" data-field="date_fin_prefi" value="${escapeHtml(i.date_fin_prefi || '')}" placeholder="JJ/MM/AAAA"></label>
-          <label class="pd-f"><span>Avenant</span><input class="card-input pd-w5" data-field="avenant_duree_prefi" value="${escapeHtml(i.avenant_duree_prefi || '')}" placeholder="-"></label>
-          <label class="pd-f"><span>Fenêtre de tirage</span><input class="card-input pd-w6" data-field="fenetre_tirage" value="${escapeHtml(i.fenetre_tirage || '')}" placeholder="15/01 - 30/06"></label>
+        <div class="pe-stage ${stLO}">
+          ${stageH("Lettre d'offre", stLO)}
+          <div class="pe-grid">
+            <div class="card-edit-field"><label>Date LO <span class="auto-tag" data-lo-tag="${i._originalIdx}">${(!i.date_lo && i.date_comite_banque) ? '· prév. (comité +2sem.)' : ''}</span></label><input class="card-input ${(!i.date_lo && i.date_comite_banque) ? 'previsional-input' : ''}" data-field="date_lo" data-pret-lo value="${escapeHtml(i.date_lo || (i.date_comite_banque ? previsionalLOFromComite(i.date_comite_banque) || '' : ''))}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+            <div class="card-edit-field"><label>Montant LO (€)</label><input type="number" min="0" class="card-input" data-field="montant_lo" value="${i.montant_lo || ''}"></div>
+            <div class="card-edit-field"><label>Date caducité LO</label><input class="card-input" data-field="date_caducite_lo" value="${escapeHtml(i.date_caducite_lo || '')}" placeholder="JJ/MM/AAAA"></div>
+            ${sharepointEditFields([{ field: 'lien_sp_lo', label: 'Lien SharePoint LO', currentValue: i.lien_sp_lo }])}
+          </div>
         </div>
-
-        <div class="pd-ligne">
-          <span class="pd-lab">Échéancier</span>
-          <label class="pd-f"><span>Reçu</span><select class="card-input pd-w4" data-field="echeancier_recu"><option value=""></option>
-            <option value="Oui"${i.echeancier_recu === 'Oui' ? ' selected' : ''}>Oui</option>
-            <option value="Non"${i.echeancier_recu === 'Non' ? ' selected' : ''}>Non</option>
-          </select></label>
-          <label class="pd-f"><span>1re échéance</span><input class="card-input pd-w5" data-field="date_premiere_echeance" value="${escapeHtml(i.date_premiere_echeance || '')}" placeholder="JJ/MM/AAAA"></label>
-          <label class="pd-f"><span>Dernière</span><input class="card-input pd-w5" data-field="date_derniere_echeance" value="${escapeHtml(i.date_derniere_echeance || '')}" placeholder="JJ/MM/AAAA"></label>
+        <div class="pe-stage ${stCon}">
+          ${stageH('Contrat', stCon)}
+          <div class="pe-grid">
+            <div class="card-edit-field"><label>Date contrat</label><input class="card-input" data-field="date_contrat" value="${escapeHtml(i.date_contrat || '')}" placeholder="JJ/MM/AAAA" oninput="updatePretCycle(this)"></div>
+            <div class="card-edit-field"><label>Montant contrat (€)</label><input type="number" min="0" class="card-input" data-field="montant_contrat" value="${i.montant_contrat || ''}"></div>
+            <div class="card-edit-field"><label>N° contrat</label><input class="card-input" data-field="n_contrat" value="${escapeHtml(i.n_contrat || '')}"></div>
+            ${sharepointEditFields([{ field: 'lien_sp_contrat', label: 'Lien SharePoint contrat', currentValue: i.lien_sp_contrat }])}
+          </div>
         </div>
+      </div>
 
-        <div class="pd-ligne">
-          <span class="pd-lab">Divers</span>
-          <label class="pd-f"><span>Appel à projets</span><select class="card-input pd-w8" data-field="aap_id"><option value="">- Aucun -</option>${aapSelectOptions(i.aap_id)}</select></label>
-          <label class="pd-f pd-toggle"><input type="checkbox" data-field="non_garanti" data-bool ${i.non_garanti ? 'checked' : ''}><span>Sans garantie requise</span></label>
+      <!-- Conditions financières & remboursement (fusion des 3 anciens groupes) -->
+      <div class="card-edit-subgroup">
+        <div class="card-edit-subgroup-title">Conditions financières &amp; remboursement</div>
+        <div class="card-edit-grid">
+          <div class="card-edit-field"><label>Durée emprunt (ans)</label><input type="number" min="0" class="card-input" data-field="duree_emprunt" value="${i.duree_emprunt || ''}"></div>
+          <div class="card-edit-field"><label>Indice</label>
+            <select class="card-input" data-field="taux_index" onchange="onTauxIndexChange(this)">
+              ${getRef('taux_index').map(s => `<option value="${s}"${tauxIdx===s?' selected':''}>${s}</option>`).join('')}
+            </select>
+          </div>
+          <div class="card-edit-field" data-taux-spread-wrap${showSpread ? '' : ' style="display:none;"'}>
+            <label>${isFixe ? 'Taux (%)' : 'Marge (%)'}</label>
+            <input type="number" step="0.01" class="card-input" data-field="taux_spread" value="${parsed.spread != null ? parsed.spread : ''}" placeholder="${isFixe ? '1,20' : '+/- 0,20'}">
+          </div>
+          <div class="card-edit-field" data-taux-libre-wrap${isLibre ? '' : ' style="display:none;"'}>
+            <label>Taux (saisie libre)</label>
+            <input class="card-input" data-field="taux_libre" value="${escapeHtml(parsed.libre || '')}" placeholder="Ex: TEG 2,4% capé">
+          </div>
+          <div class="card-edit-field"><label>Révision</label>
+            <select class="card-input" data-field="revision">
+              <option value=""></option>
+              ${getRef('revisions').map(s => `<option value="${s}"${i.revision===s?' selected':''}>${s}</option>`).join('')}
+            </select>
+          </div>
+          <div class="card-edit-field"><label>Profil amort Caisse d'épargne</label><input class="card-input" data-field="profil_amort" value="${escapeHtml(i.profil_amort || '')}"></div>
+          <div class="card-edit-field"><label>Durée préfi (mois)</label><input type="number" min="0" class="card-input" data-field="duree_prefi" value="${i.duree_prefi || ''}"></div>
+          <div class="card-edit-field"><label>Date fin préfi</label><input class="card-input" data-field="date_fin_prefi" value="${escapeHtml(i.date_fin_prefi || '')}" placeholder="JJ/MM/AAAA"></div>
+          <div class="card-edit-field"><label>Avenant durée préfi</label><input class="card-input" data-field="avenant_duree_prefi" value="${escapeHtml(i.avenant_duree_prefi || '')}"></div>
+          <div class="card-edit-field"><label>Échéancier reçu</label>
+            <select class="card-input" data-field="echeancier_recu">
+              <option value=""></option>
+              ${['Oui', 'Non'].map(o => `<option value="${o}"${i.echeancier_recu===o?' selected':''}>${o}</option>`).join('')}
+            </select>
+          </div>
+          <div class="card-edit-field"><label>1re échéance</label><input class="card-input" data-field="date_premiere_echeance" value="${escapeHtml(i.date_premiere_echeance || '')}" placeholder="JJ/MM/AAAA"></div>
+          <div class="card-edit-field"><label>Dernière échéance</label><input class="card-input" data-field="date_derniere_echeance" value="${escapeHtml(i.date_derniere_echeance || '')}" placeholder="JJ/MM/AAAA"></div>
+          <div class="card-edit-field"><label>Fenêtre de tirage</label><input class="card-input" data-field="fenetre_tirage" value="${escapeHtml(i.fenetre_tirage || '')}" placeholder="Ex: 15/01 - 30/06"></div>
         </div>
+      </div>
 
-        <div class="pd-ligne pd-ligne-notes">
-          <span class="pd-lab">Commentaires</span>
-          <textarea class="card-input pd-notes" data-field="commentaires" rows="1" placeholder="Note libre sur ce prêt">${escapeHtml(i.commentaires || '')}</textarea>
+      <!-- Divers -->
+      <div class="card-edit-subgroup">
+        <div class="card-edit-subgroup-title">Divers</div>
+        <div class="card-edit-grid">
+          <div class="card-edit-field"><label>Appel à projets</label><select class="card-input" data-field="aap_id"><option value="">- Aucun -</option>${aapSelectOptions(i.aap_id)}</select></div>
+          <div class="card-edit-field"><label>Contact banque</label><input class="card-input" data-field="contact" value="${escapeHtml(i.contact || '')}"></div>
+          <div class="card-edit-field wide"><label class="toggle-row">
+            <span class="toggle-switch">
+              <input type="checkbox" data-field="non_garanti" data-bool ${i.non_garanti ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </span>
+            <span class="toggle-label">Prêt sans garantie requise</span>
+          </label></div>
+          <div class="card-edit-field wide"><label>Pièces attendues</label>
+            <div class="pieces-multiselect" data-field="pieces_attendues">
+              ${getRef('pieces_contrat').map(p => {
+                const selected = Array.isArray(i.pieces_attendues) ? i.pieces_attendues.includes(p) : (i.pieces_attendues || '').includes(p);
+                return `<label class="piece-checkbox"><input type="checkbox" value="${escapeHtml(p)}"${selected?' checked':''}>${escapeHtml(p)}</label>`;
+              }).join('')}
+            </div>
+          </div>
+          <div class="card-edit-field wide"><label>Commentaires</label><textarea class="card-input" data-field="commentaires" rows="2">${escapeHtml(i.commentaires || '')}</textarea></div>
         </div>
       </div>
       </div><!-- /fin-edetail -->
@@ -7425,21 +6814,22 @@ function renderGarantieCard(i) {
   `;
 }
 
-// `sansEntete` : même raison que pour les prêts - la ligne compacte fait doublon
-// avec la ligne du tableau, et masquée elle réécraserait quotité et statut.
-function renderGarantieCardEdit(i, op, sansEntete) {
-  // Les prêts proposés sont ceux de la tranche DE CETTE GARANTIE. La liste
-  // suivait la « tranche courante », notion qui n'existe plus depuis que toutes
-  // les tranches cohabitent dans le même tableau : elle proposait alors les
-  // prêts d'une autre tranche que celle de la ligne qu'on éditait.
-  const pretOpts = pretOptionsHtml(op, i.tranche, i.pret_lie);
+function renderGarantieCardEdit(i, op) {
+  // Build dropdown of prêts in current tranche
+  const t = op.tranches[selectedTrancheIdx];
+  const trCode = t ? (t.code_full ? t.code_full.split('-').slice(1).join('-') : t.id) : null;
+  const tranchePrets = (op.prets || []).filter(p => p.tranche === trCode);
+  const pretOpts = ['<option value="">- Sans prêt rattaché -</option>']
+    .concat(tranchePrets.map(p => {
+      const lbl = `${p.ligne || '?'} · ${p.financeur || '?'} (${fmtMontant(bestPretAmount(p))})`;
+      return `<option value="${escapeHtml(p.ligne || '')}"${i.pret_lie === p.ligne ? ' selected' : ''}>${escapeHtml(lbl)}</option>`;
+    })).join('');
 
   // Whether this is a CEGC-like guarantee (private/cautionnement) → show commission
   const isPrivateGuarantee = ['CEGC', 'Caution bancaire'].includes(i.garant);
 
   return `
     <div class="entity-card editing fin-erow${diffEntityClass('garanties', i)}" data-section="garanties" data-row-idx="${i._originalIdx}">
-      ${sansEntete ? `` : `
       <div class="fin-emain">
         <select class="card-input fin-cell" data-field="garant" title="Garant" onchange="onGarantChange(this); updateFinCycle(this,'garantie')">
           <option value=""></option>
@@ -7455,7 +6845,6 @@ function renderGarantieCardEdit(i, op, sansEntete) {
         <button type="button" class="fin-expand" onclick="toggleFinRow(this)" title="Déplier / replier"><i class="ti ti-chevron-down"></i></button>
         <button type="button" class="fin-del danger" onclick="deleteEntityRow('garanties', ${i._originalIdx})" title="Supprimer"><i class="ti ti-trash"></i></button>
       </div>
-`}
 
       <div class="fin-edetail">
       <!-- Group 2 - Workflow & dates -->
@@ -7763,7 +7152,7 @@ function renderReservataireCardEdit(i, op) {
 
 function selectOp(code) {
   // Garde-fou : si des modifs sont en cours, demander confirmation
-  if (hasUnsavedChanges()) {
+  if (editMode && hasUnsavedChanges()) {
     if (!confirm('Vous avez des modifications non enregistrées sur l\'opération en cours. Les abandonner et changer d\'opération ?')) {
       return;
     }
@@ -7772,31 +7161,24 @@ function selectOp(code) {
   }
   selectedOpCode = code;
   selectedTrancheIdx = 0;
+  editMode = false; // exit edit mode when switching ops
+  editSessionSnap = null;
   viewingSnapshotIdx = null;
   compareWithIdx = null;
   // Les vues de tranche n'ont plus de sens sur la nouvelle opération : retour à
   // la vue d'ensemble (les vues de niveau op restent conservées, pratique pour comparer).
   TR_SCOPE = null;
-  if (OPS_TAB === 'tr') {
+  if (OPS_TAB === 'tr' || OPS_TAB === 'fin') {
     OPS_TAB = 'home';
     try { sessionStorage.setItem('exnihilo_ops_tab', 'home'); } catch (e) {}
   }
   storageSet('selectedOp', code || '');
-  // La photo de référence est prise APRÈS le premier rendu, pas avant : rendre
-  // une fiche la normalise au passage (création des objets de bilan manquants,
-  // dérivations), et une photo prise trop tôt faisait apparaître le bandeau
-  // « modifications non enregistrées » sur une fiche que personne n'avait touchée.
   renderAll();
-  armEditSession(findOp(code), true);
-  syncSaveBar();
 }
 
 // Retourne true si l'op affichée a des modifs non sauvegardées (vs snapshot d'édition)
 function hasUnsavedChanges() {
-  if (!editSessionSnap) return false;
-  // Le témoin de frappe passe avant tout : il est le seul à voir une saisie qui
-  // n'a pas encore été moissonnée dans l'objet.
-  if (SAISIE_TOUCHEE) return true;
+  if (!editMode || !editSessionSnap) return false;
   const op = findOp(selectedOpCode);
   if (!op) return false;
   // La saisie clavier vit dans le DOM jusqu'à la moisson : le tracker de champs
@@ -7823,7 +7205,7 @@ function revertOpEdits() {
   editSessionSnap = null;
 }
 function selectTranche(idx) { selectedTrancheIdx = idx; renderTrancheDetail(); replaceTablerIcons(); if (typeof _syncOpsNav === 'function') _syncOpsNav(); }
-function renderAll() { renderSidebar(); renderOpDetail(); renderTrancheDetail(); replaceTablerIcons(); syncSaveBar(); }
+function renderAll() { renderSidebar(); renderOpDetail(); renderTrancheDetail(); replaceTablerIcons(); }
 
 
 // === Rebuild dashboard KPI tiles + bars dynamically from current DATA ===
@@ -10365,9 +9747,6 @@ function switchToTab(viewName) {
   const view = document.getElementById(`view-${viewName}`);
   if (tab) tab.classList.add('active');
   if (view) view.classList.add('active');
-  // Le bandeau d'enregistrement ne concerne que la fiche opération : il doit se
-  // retirer quand on part sur le Gantt ou la Synthèse, et revenir au retour.
-  if (typeof syncSaveBar === 'function') syncSaveBar();
   storageSet('activeView', viewName);
   // Trigger the same render as a real click would
   if (viewName === 'suivi') { renderSuivi(); }
@@ -12927,33 +12306,19 @@ async function loadFromSupabase(opts) {
       // Reset items for each known ref_key
       const refByKey = {};
       refRows.forEach(r => {
-        if (!refByKey[r.ref_key]) refByKey[r.ref_key] = { label: r.ref_label, items: [], _ids: [], postes: [] };
+        if (!refByKey[r.ref_key]) refByKey[r.ref_key] = { label: r.ref_label, items: [], _ids: [] };
         refByKey[r.ref_key].items.push(r.item_value);
         refByKey[r.ref_key]._ids.push(r.id);
-        // Postes du prix de revient : on retient le code stable et le numéro
-        // d'affichage à côté du libellé. `item_code` peut manquer (base pas
-        // encore migrée) ; on synthétise alors une clé, et `hasCode` dit à
-        // getRefPostes que ce référentiel ne fait pas encore autorité.
-        if (r.ref_key.indexOf('bilan_') === 0) {
-          refByKey[r.ref_key].postes.push({
-            code: r.item_code || slugPoste(r.item_value),
-            numero: (r.item_numero === null || r.item_numero === undefined) ? null : Number(r.item_numero),
-            libelle: r.item_value,
-            hasCode: !!r.item_code,
-            id: r.id,
-          });
-        }
       });
       // Replace items in REFERENTIELS (preserve label from DB)
       for (const k in refByKey) {
         if (REFERENTIELS[k]) {
           REFERENTIELS[k].items = refByKey[k].items;
           REFERENTIELS[k]._ids = refByKey[k]._ids; // store ids for later edits
-          REFERENTIELS[k].postes = refByKey[k].postes;
           REFERENTIELS[k].label = refByKey[k].label; // honor DB label
         } else {
           // Référentiel inconnu côté code, on l'ajoute dynamiquement
-          REFERENTIELS[k] = { label: refByKey[k].label, items: refByKey[k].items, _ids: refByKey[k]._ids, postes: refByKey[k].postes };
+          REFERENTIELS[k] = { label: refByKey[k].label, items: refByKey[k].items, _ids: refByKey[k]._ids };
         }
       }
       console.log(`Référentiels hydratés depuis Supabase : ${Object.keys(refByKey).length} référentiels, ${refRows.length} items`);
@@ -14784,7 +14149,7 @@ const _ED_STEP_SEL = '[data-edit-tranche-volagree], input[data-edit-tranche-fiel
 
 // Conteneur actif selon l'onglet : détail/financements de tranche ou Informations op
 function _edContainer() {
-  if (OPS_TAB === 'tr') return document.getElementById('trancheDetail');
+  if (OPS_TAB === 'tr' || OPS_TAB === 'fin') return document.getElementById('trancheDetail');
   if (OPS_TAB === 'dos') return document.getElementById('opDetail');
   return null;
 }
@@ -14957,13 +14322,6 @@ function initEditCockpit() {
     const el = document.getElementById(id);
     if (el) { el.classList.remove('edit-cockpit', 'only-missing', 'fin-cockpit'); el.querySelectorAll('.cockpit-hidden').forEach(x => x.classList.remove('cockpit-hidden')); }
   });
-  // Le rail de gauche est retiré : il n'existait qu'en mode édition, et
-  // dupliquait la navigation du bandeau tout en confisquant 240 px de largeur -
-  // c'est ce qui réduisait le champ « Adresse » à 68 px pour 161 nécessaires.
-  // La fonction ne fait plus que le nettoyage ci-dessus, pour que rien ne reste
-  // masqué par l'ancien filtre « Manquants seulement ».
-  if (RAIL_RETIRE) return;
-
   const c = _edContainer();
   if (!c || !editMode) return;
   const entries = _edEntries();
