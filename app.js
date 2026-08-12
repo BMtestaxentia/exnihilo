@@ -4852,7 +4852,10 @@ function renderOpDetail() {
           ${renderOpTags(op, effectiveEditMode)}
         </div>
       </div>
-      <div class="ops-hd-mid">${compareSelector}${phaseStepperHtml}</div>
+      ${/* Les jalons de phase ont quitté l'en-tête pour la Vue d'ensemble : ils
+          se consultent, ils ne se surveillent pas en permanence, et ils
+          coûtaient une rangée sur les cinq écrans. */''}
+      <div class="ops-hd-mid">${compareSelector}</div>
       <div class="ops-hd-actions">
         <button class="icon-btn" id="opFoldAllBtn" onclick="toggleAllSections()" title="Tout replier / tout déplier"><i class="ti ti-fold-all"></i></button>
         ${op.phases_history.length > 0 ? `<button class="icon-btn${compareWithIdx != null ? ' cmp-on' : ''}" onclick="toggleCompareFold()" title="Comparer avec une phase figée"><i class="ti ti-arrows-left-right"></i></button>` : ''}
@@ -4876,6 +4879,10 @@ function renderOpDetail() {
     ${/* Le tableau de bord n'existait qu'en consultation, et disparaissait dès
         qu'on voulait saisir. Il n'a aucune raison de s'effacer : ce sont des
         agrégats, ils se lisent pendant qu'on saisit ailleurs. */''}
+    ${/* Les jalons de phase ouvrent la Vue d'ensemble : c'est là qu'on regarde
+        où en est l'opération, pas au-dessus d'un écran de saisie. */''}
+    <div class="op-anchor" id="sec-op-phases" data-grp="home">${phaseStepperHtml}</div>
+
     <div class="op-home" data-grp="home">${renderOpHomeDashboard(op, displayedOp)}</div>
 
     ${/* Financements : un seul écran d'opération, toutes tranches dans le même

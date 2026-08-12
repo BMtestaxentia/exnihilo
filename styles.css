@@ -6278,3 +6278,29 @@ input[type="number"]::-webkit-inner-spin-button {
    l en-tete et sous chaque ligne, juste avant la colonne d actions. */
 .fin-tbl .fin-filler { width: 100%; padding: 0; }
 .fin-tbl td.fin-td, .fin-tbl th:not(.fin-filler) { width: 1%; white-space: nowrap; }
+
+/* ===== En-tete d'operation : deux rangees, pas cinq =====
+   Il occupait 388 px sur 630 - 62 % de la hauteur utile - repetes sur les cinq
+   ecrans. Le bloc d identite empilait code / titre / SharePoint / badges, et les
+   badges a eux seuls faisaient 110 px parce qu ils s enroulaient dans une
+   colonne bridee a 52 %. On met tout a plat : identite sur une rangee, badges
+   sur la suivante, et la largeur entiere pour les deux. */
+.ops-header .ops-hd-id {
+  max-width: none; flex: 1 1 100%;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px;
+}
+.ops-header .ops-hd-id > .detail-eyebrow { order: 1; flex: 0 0 auto; margin: 0; }
+.ops-header .ops-hd-id > .detail-title { order: 2; flex: 1 1 260px; min-width: 0; margin: 0; }
+.ops-header .ops-hd-id > .op-sharepoint-row { order: 3; flex: 1 1 200px; min-width: 0; margin: 0; }
+/* Les badges prennent leur propre rangee, mais toute la largeur : c est leur
+   enroulement dans une colonne etroite qui coutait cher. */
+.ops-header .ops-hd-id > .detail-badges {
+  order: 4; flex: 1 1 100%;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px;
+}
+.ops-header .ops-hd { align-items: flex-start; gap: 6px 14px; }
+.ops-header .ops-hd-mid { flex: 0 0 auto; }
+.ops-header .ops-hd-actions { order: 5; margin-left: auto; }
+.ops-header .detail-title { font-size: 17px; }
+.ops-header .op-sticky-top { padding: 6px 28px 0; }
+.ops-header .ops-kpis { margin-top: 4px; }
